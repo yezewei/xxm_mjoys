@@ -17,7 +17,7 @@
           超级管理员
         </a-button>
         <div class="user-info">
-          <a-avatar class="user-avatar" :size="30">
+          <a-avatar class="user-avatar" :size="60">
             <img src="/system_demo/头像.png" alt="avatar" />
           </a-avatar>
           <span class="user-name">yezewei</span>
@@ -396,6 +396,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 16px;
+  padding-left: 10px;
 }
 
 .logo-img {
@@ -405,13 +406,14 @@ watch(
 .page-title {
   font-size: 14px;
   color: rgba(0, 0, 0, 0.45);
-  margin-left: 20px;
+  margin-left: 40px;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 16px;
+  padding-right: 10px;
 }
 
 .header-action {
@@ -419,6 +421,7 @@ watch(
   cursor: pointer;
   text-decoration: none;
   font-size: 14px;
+  margin-right: 0px;
 }
 
 .header-action:hover {
@@ -440,6 +443,7 @@ watch(
   justify-content: center;
   height: 32px;
   box-sizing: border-box;
+  margin-right: 10px;
 }
 
 .admin-btn:hover {
@@ -450,14 +454,19 @@ watch(
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: -2px;
   cursor: pointer;
+  margin-left: -30px;
 }
 
 .user-avatar {
   background: transparent;
   border-radius: 50%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
 .user-avatar :deep(img) {
@@ -465,6 +474,8 @@ watch(
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+
+
 }
 
 .user-name {
