@@ -514,10 +514,9 @@ watch(
 .content {
   flex: 1;
   margin: 0;
-  padding: 24px;
+  padding: 0;
   background: #fff;
   height: calc(100vh - 64px);
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 </style>
