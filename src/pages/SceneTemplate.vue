@@ -473,10 +473,11 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import type { FormInstance, Rule } from 'ant-design-vue/es/form';
 import { message } from 'ant-design-vue';
 import { PlusOutlined, DownOutlined, CheckOutlined, LoadingOutlined, CheckCircleFilled, ExclamationCircleOutlined } from '@ant-design/icons-vue';
-import dayjs, { type Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
 
 interface TemplateItem {
   id: number;
@@ -537,6 +538,7 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const total = ref(88);
 const selectedSubItem = ref('');
+const router = useRouter();
 
 // 新建场景弹窗相关
 const createModalVisible = ref(false);
@@ -928,11 +930,7 @@ const handleCreateMenuClick = ({ key }: { key: string }) => {
 };
 
 // 新建场景模板（顶部按钮）
-const handleCreate = () => {
-  isCreateScene.value = false;
-  createModalVisible.value = true;
-  createForm.templateName = '';
-};
+// 注：此函数暂未使用，保留用于后续功能扩展
 
 // 创建场景（卡片按钮）
 const handleCreateScene = (item: TemplateItem) => {
@@ -1004,14 +1002,14 @@ const handleReferenceCancel = () => {
 // 引用场景变化时带出模板类型
 const handleReferenceSceneChange = (value: string) => {
   // 根据选择的场景带出对应的模板类型（级联格式：[分类名，子项名]）
-  const typeMap: Record<string, string[]> = {
-    '1': ['信用卡', '信用卡激活'],
-    '2': ['回访', '开卡回访'],
-    '3': ['信用卡', '信用卡换卡'],
-    '4': ['存款', '存款到期提醒'],
-    '5': ['信用卡', '信用卡促活'],
+  const typeMap: Record<string, string> = {
+    '1': '["信用卡", "信用卡激活"]',
+    '2': '["回访", "开卡回访"]',
+    '3': '["信用卡", "信用卡换卡"]',
+    '4': '["存款", "存款到期提醒"]',
+    '5': '["信用卡", "信用卡促活"]',
   };
-  referenceForm.templateType = typeMap[value] || null;
+  referenceForm.templateType = typeMap[value] ? JSON.parse(typeMap[value]) : null;
 };
 
 // 提交引用现有场景
@@ -1042,7 +1040,7 @@ const handleCreateSubmit = async () => {
 
 // 查看详情
 const handleDetail = (item: TemplateItem) => {
-  console.log('查看详情:', item);
+  router.push(`/scene-template-detail/${item.id}`);
 };
 
 // 模板检测

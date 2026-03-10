@@ -488,7 +488,6 @@ watch(
   flex: 1;
   margin-top: 64px;
   min-height: 0;
-  overflow: hidden;
 }
 
 .sider {
@@ -500,6 +499,10 @@ watch(
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 64px;
+  z-index: 10;
 }
 
 .side-menu {
@@ -513,10 +516,10 @@ watch(
 
 .content {
   flex: 1;
-  margin: 0;
-  padding: 0;
+  margin-left: 220px;
+  padding: 12px;
   background: #fff;
   height: calc(100vh - 64px);
-  overflow: hidden;
+  overflow-y: auto;
 }
 </style>
