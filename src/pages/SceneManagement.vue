@@ -1,22 +1,26 @@
 <template>
   <div class="scene-management">
+    <!-- 顶部工具栏 - 放在标签页上方 -->
+    <div class="top-toolbar">
+      <a-space class="toolbar-actions">
+        <a-button @click="handleImportScene">
+          <template #icon><import-outlined /></template>
+          导入场景
+        </a-button>
+        <a-button type="primary" @click="handleCreateScene">
+          <template #icon><plus-outlined /></template>
+          创建场景
+        </a-button>
+        <a-button type="primary" class="scene-shop-btn" @click="handleOpenSceneShop">
+          <template #icon><shop-outlined /></template>
+          场景小店
+        </a-button>
+      </a-space>
+    </div>
+
     <!-- 顶部标签页 -->
     <a-tabs v-model:activeKey="activeTab" class="scene-tabs">
       <a-tab-pane key="active" tab="开启场景">
-        <!-- 标签页操作按钮 -->
-        <template #tabBarExtraContent>
-          <a-space>
-            <a-button @click="handleImportScene">
-              <import-outlined />
-              导入场景
-            </a-button>
-            <a-button type="primary" @click="handleCreateScene">
-              <plus-outlined />
-              创建场景
-            </a-button>
-          </a-space>
-        </template>
-
         <!-- 搜索区域 -->
         <div class="search-area">
           <a-row :gutter="[16, 16]">
@@ -233,16 +237,172 @@
         <a-empty description="暂无过期场景" />
       </a-tab-pane>
     </a-tabs>
+
+    <!-- 场景小店弹窗 -->
+    <a-modal
+      v-model:open="sceneShopVisible"
+      title="场景小店"
+      :width="1200"
+      :footer="null"
+      class="scene-shop-modal"
+      @cancel="handleCloseSceneShop"
+    >
+      <div class="scene-shop-container">
+        <!-- 左侧分类菜单 -->
+        <div class="sidebar">
+          <div class="left-menu">
+            <!-- 全部选项 -->
+            <div
+              :class="['menu-all-item', { active: selectedShopCategory === '全部' }]"
+              @click="handleShopCategoryClick('全部')"
+            >
+              全部
+            </div>
+            <!-- 分类菜单 -->
+            <div
+              v-for="(category, index) in shopMenuCategories"
+              :key="index"
+              class="menu-category"
+            >
+              <div
+                class="menu-category-title"
+                @click="toggleShopCategory(index)"
+              >
+                <span class="category-name">{{ category.name }}</span>
+                <DownOutlined :class="{ 'menu-arrow-down': category.expanded }" />
+              </div>
+              <div v-if="category.expanded" class="menu-sub-items">
+                <div
+                  v-for="subItem in category.items"
+                  :key="subItem"
+                  :class="['menu-sub-item', { active: selectedShopCategory === subItem }]"
+                  @click="handleShopCategoryClick(subItem)"
+                >
+                  {{ subItem }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧内容区 -->
+        <div class="content">
+          <!-- 搜索栏 -->
+          <div class="search-bar">
+            <div class="search-row">
+              <a-input
+                v-model:value="searchKeyword"
+                placeholder="请输入场景名称搜索"
+                class="search-input"
+                :allow-clear="true"
+              >
+                <template #prefix>
+                  <search-outlined />
+                </template>
+              </a-input>
+              <a-select
+                v-model:value="selectedLine"
+                placeholder="所属条线"
+                class="line-select"
+                :allow-clear="true"
+              >
+                <a-select-option value="">全部条线</a-select-option>
+                <a-select-option value="retail">零售金融</a-select-option>
+                <a-select-option value="corporate">公司金融</a-select-option>
+                <a-select-option value="operation">运营管理</a-select-option>
+              </a-select>
+              <a-button type="primary" @click="handleSceneShopSearch">
+                <template #icon><search-outlined /></template>
+                搜索
+              </a-button>
+              <a-button @click="handleSceneShopReset">重置</a-button>
+            </div>
+          </div>
+
+          <!-- 场景卡片列表 -->
+          <div class="scene-shop-list">
+            <a-row :gutter="[16, 16]">
+              <a-col
+                v-for="scene in filteredSceneList"
+                :key="scene.id"
+                :xs="24"
+                :sm="12"
+                :md="8"
+              >
+                <a-card class="scene-shop-card" hoverable>
+                  <div class="scene-card-header">
+                    <span class="scene-name">{{ scene.name }}</span>
+                  </div>
+
+                  <div class="scene-tags">
+                    <a-tag
+                      v-for="tag in scene.tags"
+                      :key="tag"
+                      color="blue"
+                    >
+                      {{ tag }}
+                    </a-tag>
+                  </div>
+
+                  <p class="scene-description">{{ scene.description }}</p>
+
+                  <div class="scene-actions">
+                    <span v-if="scene.acquired" class="acquired-text">
+                      <check-circle-outlined />
+                      已获取
+                    </span>
+                    <a v-else class="get-scene-link" @click="handleGetScene(scene)">
+                      <download-outlined />
+                      获取场景
+                    </a>
+                  </div>
+                </a-card>
+              </a-col>
+            </a-row>
+          </div>
+
+          <!-- 分页 -->
+          <div class="pagination-container">
+            <a-pagination
+              v-model:current="currentPage"
+              v-model:pageSize="pageSize"
+              :total="shopTotal"
+              show-size-changer
+              show-quick-jumper
+              :show-total="((total: number) => `共 ${total} 条`) as any"
+              :locale="{
+                items_per_page: '条/页',
+                jump_to: '跳至',
+                page: '页',
+              }"
+            />
+          </div>
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
+import { ref, reactive, computed } from 'vue';
 import {
   SearchOutlined,
   ReloadOutlined,
   ImportOutlined,
   PlusOutlined,
+  ShopOutlined,
+  DownOutlined,
+  AppstoreOutlined,
+  ShoppingOutlined,
+  BellOutlined,
+  SafetyOutlined,
+  UserOutlined,
+  DownloadOutlined,
+  CheckCircleOutlined,
+  EllipsisOutlined,
+  EditOutlined,
+  CopyOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons-vue';
 
 // 场景数据接口
@@ -551,17 +711,385 @@ const handleScriptTest = (scene: SceneItem) => {
   console.log('话术测试:', scene.name);
   // TODO: 实现话术测试逻辑
 };
+
+// ==================== 场景小店相关 ====================
+
+// 场景小店弹窗可见性
+const sceneShopVisible = ref<boolean>(false);
+
+// 场景小店选中的分类
+const selectedShopCategory = ref<string>('全部');
+
+// 场景小店搜索关键词
+const searchKeyword = ref<string>('');
+
+// 场景小店所属条线
+const selectedLine = ref<string>('');
+
+// 场景小店分页
+const currentPage = ref<number>(1);
+const pageSize = ref<number>(9);
+const shopTotal = ref<number>(27);
+
+// 场景小店菜单分类接口
+interface ShopMenuCategory {
+  name: string;
+  expanded: boolean;
+  items: string[];
+}
+
+// 场景小店左侧菜单分类数据（参考 SceneTemplate.vue）
+const shopMenuCategories = reactive<ShopMenuCategory[]>([
+  {
+    name: '存款',
+    expanded: false,
+    items: ['定期存款', '通知存款', '大额存单', '结构性存款', '存款到期提醒', '存款续存', '外币存款'],
+  },
+  {
+    name: '理财',
+    expanded: false,
+    items: ['活期理财', '持有期型理财', '定期开放式理财', '封闭式理财', '开放式/每日可申赎理财', '理财服务开通', '外币理财'],
+  },
+  {
+    name: '资产提升',
+    expanded: false,
+    items: ['月日均资产提升', '余额资产提升', '资产提升 + 理财', '资产提升 + 存款'],
+  },
+  {
+    name: '信用卡',
+    expanded: false,
+    items: [
+      '信用卡开卡',
+      '信用卡激活',
+      '信用卡促活',
+      '信用卡账单分期',
+      '信用卡消费分期',
+      '信用卡现金分期',
+      '信用卡快捷支付绑卡',
+      '信用卡第三方绑卡',
+      '信用卡装修分期',
+      '信用卡自动还款',
+    ],
+  },
+  {
+    name: '借记卡',
+    expanded: false,
+    items: ['借记卡开卡', '借记卡促活', '借记卡换卡', '借记卡激活', '借记卡第三方绑卡', '借记卡快捷支付绑卡'],
+  },
+  {
+    name: '贷款',
+    expanded: false,
+    items: ['个人信用贷款', '个人抵押贷款', '企业信用贷款', '企业抵押贷款', '贷款促支', '贷款续贷'],
+  },
+  {
+    name: '手机银行',
+    expanded: false,
+    items: ['手机银行开通', '手机银行促活', '快捷支付活动', '手机银行功能介绍'],
+  },
+  {
+    name: '数字人民币',
+    expanded: false,
+    items: ['数字人民币开通', '数字人民币促活'],
+  },
+  {
+    name: '微信',
+    expanded: false,
+    items: ['企微加粉', '微信公众号'],
+  },
+  {
+    name: '外汇',
+    expanded: false,
+    items: ['结汇/售汇', '跨境功能产品营销', '跨境活动营销'],
+  },
+  {
+    name: '社保卡',
+    expanded: false,
+    items: ['社保卡开卡', '社保卡换卡', '社保卡激活'],
+  },
+  {
+    name: '个人养老金',
+    expanded: false,
+    items: ['个人养老金开户', '个人养老金缴存', '个人养老金开户 + 缴存'],
+  },
+  {
+    name: '对公业务',
+    expanded: false,
+    items: [
+      '对公套餐签约',
+      '对公开户',
+      '企业手机银行促活',
+      '对公促活',
+      '企业手机银行开通',
+      '企业网银开通',
+      '会计对账',
+      '对公资产提升',
+      '商户活动',
+    ],
+  },
+  {
+    name: '保险',
+    expanded: false,
+    items: ['保险营销'],
+  },
+  {
+    name: '基金',
+    expanded: false,
+    items: ['基金营销'],
+  },
+  {
+    name: '证券',
+    expanded: false,
+    items: ['证券开户', '三方存管', '证券 APP 促活'],
+  },
+  {
+    name: '贵金属',
+    expanded: false,
+    items: ['贵金属产品营销', '积存金'],
+  },
+  {
+    name: '电子医保卡',
+    expanded: false,
+    items: ['电子医保申领', '电子医保激活'],
+  },
+  {
+    name: '回访',
+    expanded: false,
+    items: ['开卡回访', '反诈骗回访', '活动回访', '调查问卷回访', '贷后回访', '满意度回访'],
+  },
+  {
+    name: '催收',
+    expanded: false,
+    items: ['信用卡还款提醒', '信用卡逾期催收', '贷款还钱提醒', '贷款逾期催收'],
+  },
+  {
+    name: '通知',
+    expanded: false,
+    items: ['一句话通知', '挽回式通知', '重听式通知', '一句话接通即转', '一句话转人工'],
+  },
+]);
+
+// 场景小店数据接口
+interface SceneShopItem {
+  id: number;
+  name: string;
+  tags: string[];
+  description: string;
+  category: string;
+  line: string;
+  acquired?: boolean; // 是否已获取
+}
+
+// 场景小店列表数据
+const sceneShopList = ref<SceneShopItem[]>([
+  {
+    id: 1,
+    name: '信用卡激活',
+    tags: ['标签 1', '标签 2', '标签 3'],
+    description: '用于短信下发后，再进行外呼。',
+    category: '信用卡',
+    line: 'retail',
+    acquired: true, // 已获取
+  },
+  {
+    id: 2,
+    name: '账户回访',
+    tags: ['标签 1', '标签 2', '标签 3'],
+    description: '成年版的开卡回访，无需跟进',
+    category: '回访',
+    line: 'retail',
+    acquired: false,
+  },
+  {
+    id: 3,
+    name: '信用卡换卡',
+    tags: ['标签 1', '标签 2', '标签 3'],
+    description: '信用卡到期换新卡',
+    category: '信用卡',
+    line: 'retail',
+    acquired: true,
+  },
+  {
+    id: 4,
+    name: '存款到期续存',
+    tags: ['标签 1', '标签 2', '标签 3'],
+    description: '定期存款到期后提醒转存',
+    category: '存款',
+    line: 'retail',
+    acquired: false,
+  },
+  {
+    id: 5,
+    name: '信用卡促活',
+    tags: ['标签 1', '标签 2', '标签 3'],
+    description: '用于短信下发后，再进行外呼。',
+    category: '信用卡',
+    line: 'retail',
+    acquired: false,
+  },
+  {
+    id: 6,
+    name: '手机银行签到',
+    tags: ['标签 1', '标签 2', '标签 3'],
+    description: '手机银行促活类',
+    category: '手机银行',
+    line: 'retail',
+    acquired: true,
+  },
+  {
+    id: 7,
+    name: '贷款营销场景',
+    tags: ['标签 1', '标签 2'],
+    description: '个人消费贷款营销推广',
+    category: '贷款',
+    line: 'retail',
+    acquired: false,
+  },
+  {
+    id: 8,
+    name: '企业开户通知',
+    tags: ['标签 1', '标签 3'],
+    description: '企业账户开户进度通知',
+    category: '对公业务',
+    line: 'corporate',
+    acquired: false,
+  },
+  {
+    id: 9,
+    name: '身份核验场景',
+    tags: ['标签 2', '标签 3'],
+    description: '客户身份信息核验确认',
+    category: '回访',
+    line: 'operation',
+    acquired: false,
+  },
+]);
+
+// 计算属性：过滤后的场景列表
+const filteredSceneList = computed<SceneShopItem[]>(() => {
+  let result = sceneShopList.value;
+  
+  // 按分类过滤
+  if (selectedShopCategory.value !== '全部') {
+    // 检查是否匹配子项
+    const matchedCategory = shopMenuCategories.find(cat => 
+      cat.items.includes(selectedShopCategory.value)
+    );
+    if (matchedCategory) {
+      result = result.filter(item => item.category === matchedCategory.name);
+    }
+  }
+  
+  // 按条线过滤
+  if (selectedLine.value) {
+    result = result.filter(item => item.line === selectedLine.value);
+  }
+  
+  // 按关键词过滤
+  if (searchKeyword.value) {
+    result = result.filter(item => 
+      item.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+    );
+  }
+  
+  return result;
+});
+
+/**
+ * 打开场景小店
+ */
+const handleOpenSceneShop = () => {
+  console.log('打开场景小店');
+  sceneShopVisible.value = true;
+};
+
+/**
+ * 关闭场景小店
+ */
+const handleCloseSceneShop = () => {
+  sceneShopVisible.value = false;
+  handleSceneShopReset();
+};
+
+/**
+ * 场景小店分类点击
+ */
+const handleShopCategoryClick = (category: string) => {
+  selectedShopCategory.value = category;
+  console.log('选择分类:', category);
+};
+
+/**
+ * 切换场景小店分类展开/收起
+ */
+const toggleShopCategory = (index: number) => {
+  shopMenuCategories[index].expanded = !shopMenuCategories[index].expanded;
+};
+
+/**
+ * 场景小店搜索
+ */
+const handleSceneShopSearch = () => {
+  console.log('场景小店搜索:', {
+    keyword: searchKeyword.value,
+    line: selectedLine.value,
+    category: selectedShopCategory.value,
+  });
+  currentPage.value = 1;
+};
+
+/**
+ * 场景小店重置
+ */
+const handleSceneShopReset = () => {
+  searchKeyword.value = '';
+  selectedLine.value = '';
+  selectedShopCategory.value = '全部';
+  currentPage.value = 1;
+};
+
+/**
+ * 获取场景
+ */
+const handleGetScene = (scene: SceneShopItem) => {
+  console.log('获取场景:', scene.name);
+  // 更新获取状态
+  scene.acquired = true;
+  // TODO: 实现获取场景逻辑
+};
+
+/**
+ * 模板检测
+ */
+const handleTemplateCheck = (scene: SceneShopItem) => {
+  console.log('模板检测:', scene.name);
+  // TODO: 实现模板检测逻辑
+};
 </script>
 
 <style scoped>
+/* 场景管理容器 */
 .scene-management {
   padding: 0;
+}
+
+/* 顶部工具栏 - 右上角按钮 */
+.top-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  margin-bottom: -10px;
+  padding: 0 24px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 12px;
 }
 
 /* 标签页样式 */
 .scene-tabs {
   background: #fff;
-  padding: 16px 24px;
+  padding: 0px 24px;
 }
 
 .scene-tabs :deep(.ant-tabs-nav) {
@@ -571,6 +1099,34 @@ const handleScriptTest = (scene: SceneItem) => {
 .scene-tabs :deep(.ant-tabs-tab) {
   font-size: 15px;
   font-weight: 500;
+}
+
+/* 场景小店按钮高亮样式 */
+.scene-shop-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  position: relative;
+  overflow: hidden;
+  animation: shop-btn-glow 2s ease-in-out infinite;
+  color: #fff !important;
+  font-weight: 600;
+  padding: 4px 16px;
+  height: 36px;
+}
+
+.scene-shop-btn:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
+}
+
+@keyframes shop-btn-glow {
+  0%, 100% {
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+  }
 }
 
 /* 搜索区域 */
@@ -864,5 +1420,253 @@ const handleScriptTest = (scene: SceneItem) => {
     width: 100%;
     text-align: center;
   }
+}
+
+/* ==================== 场景小店弹窗样式 ==================== */
+.scene-shop-modal {
+  :deep(.ant-modal-body) {
+    padding: 0;
+  }
+}
+
+.scene-shop-container {
+  display: flex;
+  min-height: 600px;
+  max-height: 70vh;
+}
+
+.scene-shop-modal .sidebar {
+  width: 220px;
+  border-right: 1px solid #f0f0f0;
+  background-color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 场景小店左侧菜单 */
+.scene-shop-modal .left-menu {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  margin: 12px;
+  height: calc(70vh - 144px);
+}
+
+/* 全部选项 */
+.scene-shop-modal .menu-all-item {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.scene-shop-modal .menu-all-item:hover {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.scene-shop-modal .menu-all-item.active {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.scene-shop-modal .menu-category {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.scene-shop-modal .menu-category:last-child {
+  border-bottom: none;
+}
+
+.scene-shop-modal .menu-category-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.scene-shop-modal .menu-category-title:hover {
+  background: #f5f5f5;
+}
+
+.scene-shop-modal .category-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.scene-shop-modal .menu-arrow-down {
+  transform: rotate(180deg);
+  transition: transform 0.3s;
+  color: #999;
+}
+
+.scene-shop-modal .menu-sub-items {
+  background: #fafafa;
+  padding: 8px 0;
+}
+
+.scene-shop-modal .menu-sub-item {
+  padding: 12px 12px 12px 24px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.scene-shop-modal .menu-sub-item:hover {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.scene-shop-modal .menu-sub-item.active {
+  background: #e6f7ff;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.scene-shop-modal .content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scene-shop-modal .search-bar {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: #fff;
+}
+
+.scene-shop-modal .search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.scene-shop-modal .search-input {
+  width: 300px;
+}
+
+.scene-shop-modal .line-select {
+  width: 150px;
+}
+
+.scene-shop-modal .scene-shop-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+.scene-shop-modal .scene-shop-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.scene-shop-modal .scene-shop-card :deep(.ant-card-body) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px;
+}
+
+.scene-shop-modal .scene-shop-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.scene-shop-modal .scene-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.scene-shop-modal .scene-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1f1f1f;
+  flex: 1;
+}
+
+.scene-shop-modal .scene-tags {
+  margin-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.scene-shop-modal .scene-description {
+  flex: 1;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  margin-bottom: 16px;
+  min-height: 60px;
+}
+
+.scene-shop-modal .scene-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 12px;
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.scene-shop-modal .scene-actions .acquired-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #52c41a;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: default;
+}
+
+.scene-shop-modal .scene-actions .get-scene-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #1677ff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.scene-shop-modal .scene-actions .get-scene-link:hover {
+  color: #40a9ff;
+  background-color: #e6f7ff;
+}
+
+.scene-shop-modal .pagination-container {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+  background-color: #fff;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>
