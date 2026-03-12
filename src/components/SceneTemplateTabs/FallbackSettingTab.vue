@@ -210,36 +210,11 @@
             </a-row>
             <a-form-item label="按键错误回复">
               <div class="reply-input-group">
-                <div
-                  v-for="(_reply, index) in fallbackForm.keyErrorReplies"
-                  :key="index"
-                  class="reply-input-item"
-                >
-                  <a-textarea
-                    v-model:value="fallbackForm.keyErrorReplies[index]"
-                    :rows="2"
-                    placeholder="请输入回复内容"
-                  />
-                  <div class="reply-actions">
-                    <a-button type="text" size="small" @click="handleMoveUpKeyErrorReply(index)" :disabled="index === 0">
-                      <up-outlined />
-                    </a-button>
-                    <a-button type="text" size="small" @click="handleMoveDownKeyErrorReply(index)" :disabled="index === fallbackForm.keyErrorReplies.length - 1">
-                      <down-outlined />
-                    </a-button>
-                    <a-button type="text" size="small" @click="handleDeleteKeyErrorReply(index)" :disabled="fallbackForm.keyErrorReplies.length === 1">
-                      <delete-outlined />
-                    </a-button>
-                  </div>
-                </div>
-                <a v-if="fallbackForm.keyErrorReplies.length === 0" class="add-reply-link" @click="handleAddKeyErrorReply">
-                  <plus-outlined />
-                  新增按键错误回复
-                </a>
-                <a v-else class="add-reply-link" @click="handleAddKeyErrorReply">
-                  <plus-outlined />
-                  新增按键错误回复
-                </a>
+                <a-textarea
+                  v-model:value="fallbackForm.keyErrorReplies[0]"
+                  :rows="2"
+                  placeholder="请输入回复内容"
+                />
               </div>
             </a-form-item>
             <a-row :gutter="[24, 24]">
@@ -268,36 +243,11 @@
           <div class="section-content">
             <a-form-item label="转人工坐席忙回复">
               <div class="reply-input-group">
-                <div
-                  v-for="(_reply, index) in fallbackForm.transferBusyReplies"
-                  :key="index"
-                  class="reply-input-item"
-                >
-                  <a-textarea
-                    v-model:value="fallbackForm.transferBusyReplies[index]"
-                    :rows="2"
-                    placeholder="请输入回复内容"
-                  />
-                  <div class="reply-actions">
-                    <a-button type="text" size="small" @click="handleMoveUpTransferBusyReply(index)" :disabled="index === 0">
-                      <up-outlined />
-                    </a-button>
-                    <a-button type="text" size="small" @click="handleMoveDownTransferBusyReply(index)" :disabled="index === fallbackForm.transferBusyReplies.length - 1">
-                      <down-outlined />
-                    </a-button>
-                    <a-button type="text" size="small" @click="handleDeleteTransferBusyReply(index)" :disabled="fallbackForm.transferBusyReplies.length === 1">
-                      <delete-outlined />
-                    </a-button>
-                  </div>
-                </div>
-                <a v-if="fallbackForm.transferBusyReplies.length === 0" class="add-reply-link" @click="handleAddTransferBusyReply">
-                  <plus-outlined />
-                  新增转忙回复
-                </a>
-                <a v-else class="add-reply-link" @click="handleAddTransferBusyReply">
-                  <plus-outlined />
-                  新增转忙回复
-                </a>
+                <a-textarea
+                  v-model:value="fallbackForm.transferBusyReplies[0]"
+                  :rows="2"
+                  placeholder="请输入回复内容"
+                />
               </div>
             </a-form-item>
             <a-row :gutter="[24, 24]">
@@ -390,11 +340,11 @@ const fallbackForm = reactive({
   hangupReplies: ['您好，上海建行温馨提示：您建行卡内有小额定期存款可以转出，请登录手机银行查看。'] as string[],
   // 按键行为设置
   keyInputTimeout: 10,
-  keyErrorReplies: [] as string[],
+  keyErrorReplies: [''] as string[],
   keyErrorRepeatMode: 'continuous',
   keyErrorCount: 3,
   // 其他设置
-  transferBusyReplies: [] as string[],
+  transferBusyReplies: [''] as string[],
   voiceBreakTimeout: 500,
   asrInitTimeout: 0,
 });
@@ -498,62 +448,6 @@ const handleDeleteHangupReply = (index: number) => {
   if (fallbackForm.hangupReplies.length > 1) {
     fallbackForm.hangupReplies.splice(index, 1);
   }
-};
-
-// 按键错误回复 - 上移
-const handleMoveUpKeyErrorReply = (index: number) => {
-  if (index > 0) {
-    [fallbackForm.keyErrorReplies[index - 1], fallbackForm.keyErrorReplies[index]] = 
-    [fallbackForm.keyErrorReplies[index], fallbackForm.keyErrorReplies[index - 1]];
-  }
-};
-
-// 按键错误回复 - 下移
-const handleMoveDownKeyErrorReply = (index: number) => {
-  if (index < fallbackForm.keyErrorReplies.length - 1) {
-    [fallbackForm.keyErrorReplies[index + 1], fallbackForm.keyErrorReplies[index]] = 
-    [fallbackForm.keyErrorReplies[index], fallbackForm.keyErrorReplies[index + 1]];
-  }
-};
-
-// 按键错误回复 - 删除
-const handleDeleteKeyErrorReply = (index: number) => {
-  if (fallbackForm.keyErrorReplies.length > 1) {
-    fallbackForm.keyErrorReplies.splice(index, 1);
-  }
-};
-
-// 按键错误回复 - 添加
-const handleAddKeyErrorReply = () => {
-  fallbackForm.keyErrorReplies.push('');
-};
-
-// 转人工坐席忙回复 - 上移
-const handleMoveUpTransferBusyReply = (index: number) => {
-  if (index > 0) {
-    [fallbackForm.transferBusyReplies[index - 1], fallbackForm.transferBusyReplies[index]] = 
-    [fallbackForm.transferBusyReplies[index], fallbackForm.transferBusyReplies[index - 1]];
-  }
-};
-
-// 转人工坐席忙回复 - 下移
-const handleMoveDownTransferBusyReply = (index: number) => {
-  if (index < fallbackForm.transferBusyReplies.length - 1) {
-    [fallbackForm.transferBusyReplies[index + 1], fallbackForm.transferBusyReplies[index]] = 
-    [fallbackForm.transferBusyReplies[index], fallbackForm.transferBusyReplies[index + 1]];
-  }
-};
-
-// 转人工坐席忙回复 - 删除
-const handleDeleteTransferBusyReply = (index: number) => {
-  if (fallbackForm.transferBusyReplies.length > 1) {
-    fallbackForm.transferBusyReplies.splice(index, 1);
-  }
-};
-
-// 转人工坐席忙回复 - 添加
-const handleAddTransferBusyReply = () => {
-  fallbackForm.transferBusyReplies.push('');
 };
 
 // 重置
