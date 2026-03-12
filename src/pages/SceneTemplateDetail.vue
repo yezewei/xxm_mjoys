@@ -1512,232 +1512,12 @@
 
     <!-- 主流程设置内容区域 -->
     <div v-else-if="activeTabKey === 'process'" class="process-content">
-      <div class="process-wrapper">
-        <!-- 流程图画布 -->
-        <div class="process-canvas-wrapper">
-          <!-- 画布工具栏 -->
-          <div class="canvas-toolbar">
-            <div class="toolbar-left">
-              <a-space>
-                <a-button size="small" @click="handleZoomIn">
-                  <zoom-in-outlined />
-                  放大
-                </a-button>
-                <a-button size="small" @click="handleZoomOut">
-                  <zoom-out-outlined />
-                  缩小
-                </a-button>
-                <a-button size="small" @click="handleResetZoom">
-                  <fullscreen-outlined />
-                  重置
-                </a-button>
-                <span class="zoom-text">缩放：{{ canvasZoom }}%</span>
-              </a-space>
-            </div>
-            <div class="toolbar-right">
-              <a-space>
-                <a-button size="small" @click="handleAutoLayout">
-                  <layout-outlined />
-                  自动布局
-                </a-button>
-                <a-button type="primary" size="small" @click="handleSaveProcess">
-                  <save-outlined />
-                  保存流程
-                </a-button>
-              </a-space>
-            </div>
-          </div>
-
-          <!-- 节点添加栏（固定在画布区域顶部） -->
-          <div class="node-palette">
-            <!-- <div class="palette-header">
-              <span>节点工具箱</span>
-            </div> -->
-            <div class="palette-content">
-              <div
-                v-for="nodeType in nodeTypes"
-                :key="nodeType.type"
-                class="palette-node-item"
-                draggable="true"
-                @dragstart="handlePaletteNodeDragStart($event, nodeType)"
-              >
-                <component :is="nodeType.icon" />
-                <span>{{ nodeType.label }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 画布区域 -->
-          <div
-            ref="canvasRef"
-            class="process-canvas"
-            @click="handleCanvasClick"
-            @dragover="handleCanvasDragOver"
-            @drop="handleCanvasDrop"
-          >
-            <div class="canvas-content" :style="{ transform: `scale(${canvasZoom / 100})`, transformOrigin: 'top left' }">
-              <!-- SVG 连接线层 -->
-              <svg class="connection-layer" :style="{ width: canvasSize.width + 'px', height: canvasSize.height + 'px' }">
-                <defs>
-                  <marker
-                    id="arrowhead"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#91d5ff" />
-                  </marker>
-                  <marker
-                    id="arrowhead-selected"
-                    markerWidth="10"
-                    markerHeight="7"
-                    refX="9"
-                    refY="3.5"
-                    orient="auto"
-                  >
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#1890ff" />
-                  </marker>
-                </defs>
-                <g v-for="connection in connections" :key="connection.id">
-                  <!-- 连接线（粗线用于点击检测） -->
-                  <path
-                    :d="getConnectionPath(connection)"
-                    class="connection-hit"
-                    :class="{ 'connection-selected': selectedConnection?.id === connection.id }"
-                    @click.stop="handleConnectionClick($event, connection)"
-                    @dblclick.stop="handleConnectionEdit(connection)"
-                  />
-                  <!-- 连接线（细线用于显示） -->
-                  <path
-                    :d="getConnectionPath(connection)"
-                    class="connection-line"
-                    :class="{ 'connection-selected': selectedConnection?.id === connection.id }"
-                    @click.stop="handleConnectionClick($event, connection)"
-                    @dblclick.stop="handleConnectionEdit(connection)"
-                  />
-                  <!-- 意图标签（流程线上展示勾选的意图名称） -->
-                  <foreignObject
-                    v-if="connection.intents && connection.intents.length > 0"
-                    :x="getConnectionMidpoint(connection).x - 50"
-                    :y="getConnectionMidpoint(connection).y - 20"
-                    width="100"
-                    height="40"
-                    class="connection-intent-label"
-                  >
-                    <div class="intent-tags">
-                      <a-tag
-                        v-for="intent in connection.intents"
-                        :key="intent.id"
-                        size="small"
-                        color="blue"
-                      >
-                        {{ intent.intentName }}
-                      </a-tag>
-                    </div>
-                  </foreignObject>
-                  <!-- 删除按钮 -->
-                  <g
-                    v-if="selectedConnection?.id === connection.id"
-                    @click.stop="handleDeleteConnection(connection)"
-                    class="connection-delete"
-                  >
-                    <circle :cx="getConnectionMidpoint(connection).x" :cy="getConnectionMidpoint(connection).y - 12" r="10" fill="#ff4d4f" />
-                    <text
-                      :x="getConnectionMidpoint(connection).x"
-                      :y="getConnectionMidpoint(connection).y - 8"
-                      fill="#fff"
-                      font-size="12"
-                      text-anchor="middle"
-                    >×</text>
-                  </g>
-                </g>
-              </svg>
-
-              <!-- 节点层 -->
-              <div
-                v-for="node in processNodes"
-                :key="node.id"
-                class="process-node"
-                :class="['node-type-' + node.type, { 'node-selected': selectedNode?.id === node.id }]"
-                :style="{ left: node.x + 'px', top: node.y + 'px' }"
-                @click.stop="handleNodeClick($event, node)"
-                @mousedown="handleNodeMouseDown($event, node)"
-                @dblclick.stop="openNodeEditModal(node)"
-              >
-                <!-- 节点头部 -->
-                <div class="node-header">
-                  <component :is="getNodeIcon(node.type)" />
-                  <span class="node-title">{{ node.name }}</span>
-                  <div class="node-actions">
-                    <a-button
-                      type="text"
-                      size="small"
-                      class="node-action-btn"
-                      @click.stop="openNodeEditModal(node)"
-                    >
-                      <edit-outlined />
-                    </a-button>
-                    <a-button
-                      v-if="node.type !== 'start'"
-                      type="text"
-                      size="small"
-                      class="node-action-btn"
-                      @click.stop="handleDeleteNode(node)"
-                    >
-                      <close-outlined />
-                    </a-button>
-                  </div>
-                </div>
-                <!-- 节点内容 -->
-                <div class="node-content">
-                  <template v-if="node.type === 'start'">
-                    <span class="node-desc">流程起点</span>
-                  </template>
-                  <template v-else-if="node.type === 'script'">
-                    <span class="node-desc">{{ node.content?.text || '暂无话术内容' }}</span>
-                  </template>
-                  <template v-else-if="node.type === 'success_end'">
-                    <span class="node-desc">成功结束</span>
-                  </template>
-                  <template v-else-if="node.type === 'fail_end'">
-                    <span class="node-desc">失败结束</span>
-                  </template>
-                  <template v-else-if="node.type === 'transfer'">
-                    <span class="node-desc">{{ node.content?.text || '暂无转人工话术' }}</span>
-                  </template>
-                  <template v-else-if="node.type === 'verify'">
-                    <span class="node-desc">{{ node.content?.text || '暂无验证话术' }}</span>
-                  </template>
-                </div>
-                <!-- 连接点（输出） -->
-                <div
-                  v-if="node.type !== 'success_end' && node.type !== 'fail_end'"
-                  class="node-connector node-connector-out"
-                  :style="getConnectorPosition(node, 'out')"
-                  @mousedown.stop="handleConnectorMouseDown($event, node)"
-                ></div>
-                <!-- 连接点（输入） -->
-                <div
-                  v-if="node.type !== 'start'"
-                  class="node-connector node-connector-in"
-                  :style="getConnectorPosition(node, 'in')"
-                ></div>
-              </div>
-
-              <!-- 拖拽连线 -->
-              <svg v-if="isDrawingConnection" class="temp-connection-layer" :style="{ width: canvasSize.width + 'px', height: canvasSize.height + 'px' }">
-                <path
-                  :d="getTempConnectionPath()"
-                  class="temp-connection-line"
-                  fill="none"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProcessSettingTab
+        v-model:nodes="processNodes"
+        v-model:connections="connections"
+        v-model:intent-list="intentList"
+        @save="handleProcessSave"
+      />
     </div>
 
     <!-- 场景短信内容区域 -->
@@ -2626,6 +2406,7 @@ import {
   LeftOutlined,
 } from '@ant-design/icons-vue';
 import QaGuideModal from '../components/QaGuideModal.vue';
+import ProcessSettingTab from '../components/SceneTemplateTabs/ProcessSettingTab.vue';
 
 // ==================== 接口定义 ====================
 
@@ -4697,6 +4478,13 @@ const handleSaveProcess = () => {
     nodes: processNodes.value,
     connections: connections.value,
   });
+  message.success('流程保存成功');
+};
+
+// 处理主流程设置保存（用于子组件回调）
+const handleProcessSave = (data: any) => {
+  console.log('主流程设置保存:', data);
+  // 由于子组件使用 v-model 双向绑定，数据已经同步，这里只需要提示成功即可
   message.success('流程保存成功');
 };
 

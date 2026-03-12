@@ -480,7 +480,7 @@ onMounted(() => {
   pointer-events: all;
 }
 
-:deep(.process-node) {
+/* :deep(.process-node) {
   position: absolute;
   width: 200px;
   height: 80px;
@@ -490,7 +490,7 @@ onMounted(() => {
   cursor: move;
   z-index: 2;
   transition: box-shadow 0.2s;
-}
+} */
 
 :deep(.process-node:hover) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

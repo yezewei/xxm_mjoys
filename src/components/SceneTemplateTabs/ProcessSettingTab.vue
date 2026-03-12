@@ -1374,6 +1374,7 @@ const handleAiGenerateAddReply = () => {
 .process-node {
   position: absolute;
   width: 200px;
+  height: 100px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
