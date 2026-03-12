@@ -7687,6 +7687,7 @@ const handleGuideClose = () => {
   flex-direction: column;
   overflow: hidden;
   min-height: 100%; /* 允许 flex 子项缩小 */
+  height: 100%;
 }
 
 /* 画布工具栏 */

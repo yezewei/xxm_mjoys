@@ -37,6 +37,11 @@ const routes = [
     component: () => import("./pages/SceneTemplateDetail.vue"),
   },
   {
+    path: "/scene-detail/:id",
+    name: "SceneDetail",
+    component: () => import("./pages/SceneDetail.vue"),
+  },
+  {
     path: "/scene-management",
     name: "SceneManagement",
     component: () => import("./pages/SceneManagement.vue"),

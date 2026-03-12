@@ -385,6 +385,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   SearchOutlined,
   ReloadOutlined,
@@ -404,6 +405,8 @@ import {
   CopyOutlined,
   DeleteOutlined,
 } from '@ant-design/icons-vue';
+
+const router = useRouter();
 
 // 场景数据接口
 interface SceneItem {
@@ -621,7 +624,7 @@ const handleRefreshStatus = () => {
  */
 const handleView = (scene: SceneItem) => {
   console.log('查看场景:', scene.name);
-  // TODO: 跳转到详情页
+  router.push(`/scene-detail/${scene.id}`);
 };
 
 /**
