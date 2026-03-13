@@ -86,6 +86,9 @@
             <a-menu-item key="quality-task">
               <span>质检任务</span>
             </a-menu-item>
+            <a-menu-item key="quality-rule">
+              <span>质检规则</span>
+            </a-menu-item>
           </a-sub-menu>
 
           <a-sub-menu key="seat">
@@ -237,6 +240,7 @@ const menuRouteMap: Record<string, string> = {
   'quality-workbench': '/quality-workbench',
   'quality-model': '/quality-model',
   'quality-task': '/quality-task',
+  'quality-rule': '/quality-rule',
   'seat-config': '/seat-config',
   'seat-monitor': '/seat-monitor',
   'skill-group': '/skill-group',
@@ -276,6 +280,7 @@ const menuTitleMap: Record<string, string> = {
   'quality-workbench': '工作台',
   'quality-model': '质检模型',
   'quality-task': '质检任务',
+  'quality-rule': '质检规则',
   seat: '坐席管理',
   'seat-config': '直营坐席配置',
   'seat-monitor': '坐席监控',
@@ -341,6 +346,7 @@ watch(
       '/quality-workbench': 'quality-workbench',
       '/quality-model': 'quality-model',
       '/quality-task': 'quality-task',
+      '/quality-rule': 'quality-rule',
       '/seat-config': 'seat-config',
       '/seat-monitor': 'seat-monitor',
       '/skill-group': 'skill-group',

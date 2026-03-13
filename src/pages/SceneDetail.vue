@@ -9,6 +9,7 @@
         <a-tab-pane key="intent" data-tab-key="intent" tab="意图库" />
         <a-tab-pane key="fallback" data-tab-key="fallback" tab="流程兜底设置" />
         <a-tab-pane key="script" data-tab-key="script" tab="话术管理" />
+        <a-tab-pane key="scene-voice" data-tab-key="scene-voice" tab="场景语音" />
         <a-tab-pane key="user-classify" data-tab-key="user-classify" tab="用户分类" />
         <a-tab-pane key="system-settings" data-tab-key="system-settings" tab="场景系统设置" />
         <a-tab-pane key="sms" data-tab-key="sms" tab="场景短信" />
@@ -62,6 +63,14 @@
         @compliance="handleComplianceCheck"
       />
 
+      <!-- 场景语音 -->
+      <SceneVoiceTab
+        v-if="activeTabKey === 'scene-voice'"
+        v-model="sceneVoiceData"
+        @save="handleSaveSceneVoice"
+        @reset="handleResetSceneVoice"
+      />
+
       <!-- 用户分类 -->
       <UserClassifyTab
         v-if="activeTabKey === 'user-classify'"
@@ -85,13 +94,88 @@
         @delete="handleDeleteSms"
       />
     </div>
+
+    <!-- 遮罩层 -->
+    <div v-if="guideVisible" class="guide-mask">
+      <div
+        class="guide-highlight"
+        :style="{
+          top: highlightRect.top + 'px',
+          left: highlightRect.left + 'px',
+          width: highlightRect.width + 'px',
+          height: highlightRect.height + 'px',
+        }"
+      />
+    </div>
+
+    <!-- 气泡引导 -->
+    <div
+      v-if="guideVisible && guideSteps[guideCurrentStep]"
+      class="guide-overlay"
+      :class="{ 'guide-with-transition': enableGuideTransition }"
+      :style="{ top: guidePosition.top + 'px', left: guidePosition.left + 'px' }"
+    >
+      <div class="guide-popover">
+        <div class="guide-header">
+          <span class="guide-step-indicator">步骤 {{ guideSteps[guideCurrentStep].step }} / {{ guideSteps.length }}</span>
+          <a-button type="text" size="small" class="guide-close-btn" @click="handleGuideClose">
+            <close-outlined />
+          </a-button>
+        </div>
+        <div class="guide-body">
+          <h4 class="guide-title">{{ guideSteps[guideCurrentStep].title }}</h4>
+          <p class="guide-description">{{ guideSteps[guideCurrentStep].description }}</p>
+        </div>
+        <div class="guide-footer" :class="{ 'guide-footer-first': guideCurrentStep === 0 }">
+          <a-button
+            v-if="guideCurrentStep > 0"
+            size="small"
+            @click="handleGuidePrev"
+          >
+            上一步
+          </a-button>
+          <a-button
+            type="primary"
+            size="small"
+            @click="handleGuideNext"
+            :style="{ marginLeft: guideCurrentStep === 0 ? 'auto' : '0' }"
+          >
+            {{ guideCurrentStep === guideSteps.length - 1 ? '完成引导' : '下一步' }}
+          </a-button>
+        </div>
+        <!-- 引导步骤指示器 -->
+        <div class="guide-steps-indicator">
+          <div
+            v-for="(step, index) in guideSteps"
+            :key="step.step"
+            :class="['step-dot', { active: guideCurrentStep === index }]"
+            @click="handleGuideJump(index)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 重新引导按钮（右下角） -->
+    <a-button
+      class="restart-guide-btn"
+      type="primary"
+      shape="circle"
+      size="large"
+      @click="showGuide"
+    >
+      <question-outlined />
+    </a-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { message, Modal } from 'ant-design-vue';
+import { message } from 'ant-design-vue';
+import {
+  CloseOutlined,
+  QuestionOutlined,
+} from '@ant-design/icons-vue';
 
 // 导入可复用的 Tab 组件
 import {
@@ -101,6 +185,7 @@ import {
   IntentLibraryTab,
   FallbackSettingTab,
   ScriptManagementTab,
+  SceneVoiceTab,
   UserClassifyTab,
   SystemSettingsTab,
   SmsManagementTab,
@@ -143,6 +228,9 @@ const fallbackData = ref<any>({});
 // 话术管理数据
 const scriptData = ref<any>({});
 
+// 场景语音数据
+const sceneVoiceData = ref<any>({});
+
 // 用户分类数据
 const userClassifyData = ref<any>({});
 
@@ -151,6 +239,107 @@ const systemSettingsData = ref<any>({});
 
 // 场景短信数据
 const smsData = ref<any>({});
+
+// ==================== 引导相关数据 ====================
+
+// 引导步骤接口
+interface GuideStep {
+  step: number;
+  title: string;
+  description: string;
+  target: string;
+  placement: 'top' | 'bottom' | 'left' | 'right';
+}
+
+// 引导步骤配置
+const guideSteps: GuideStep[] = [
+  {
+    step: 1,
+    title: '配置话术主流程',
+    description: '点击"主流程设置"标签，配置机器人拨打的话术流程，包括开场白、产品介绍、成功/失败结束等节点。',
+    target: '[data-tab-key="process"]',
+    placement: 'bottom',
+  },
+  {
+    step: 2,
+    title: '引用通用/行业 QA',
+    description: '点击"QA 库"标签，引用通用或行业 QA，并编辑回复内容，丰富机器人的应答能力。',
+    target: '[data-tab-key="qa"]',
+    placement: 'bottom',
+  },
+  {
+    step: 3,
+    title: '维护意图库',
+    description: '点击"意图库"标签，添加或编辑意图，定义用户可能的意图和对应的处理方式。',
+    target: '[data-tab-key="intent"]',
+    placement: 'bottom',
+  },
+  {
+    step: 4,
+    title: '检查兜底设置',
+    description: '点击"流程兜底设置"标签，检查静音超时、语义为空、强制挂断等配置项是否完整。',
+    target: '[data-tab-key="fallback"]',
+    placement: 'bottom',
+  },
+  {
+    step: 5,
+    title: '消保审核和上传录音',
+    description: '点击"话术管理"标签，对所有话术文本进行消保审核，并上传录音文件。',
+    target: '[data-tab-key="script"]',
+    placement: 'bottom',
+  },
+  {
+    step: 6,
+    title: '配置场景语音',
+    description: '点击"场景语音"标签，配置语音识别资源、语音合成资源、语音生成方式等语音相关设置。',
+    target: '[data-tab-key="scene-voice"]',
+    placement: 'bottom',
+  },
+  {
+    step: 7,
+    title: '定义用户分类',
+    description: '点击"用户分类"标签，根据业务场景定义用户分类规则，如意向客户、无意向客户等。',
+    target: '[data-tab-key="user-classify"]',
+    placement: 'bottom',
+  },
+  {
+    step: 8,
+    title: '配置场景系统设置',
+    description: '点击"场景系统设置"标签，配置客户跟进规则和人机协同规则，包括意向客户推送、转人工条件等。',
+    target: '[data-tab-key="system-settings"]',
+    placement: 'bottom',
+  },
+  {
+    step: 9,
+    title: '配置短信内容模板',
+    description: '点击"场景短信"标签，配置当前场景使用到的短信内容模板，包括挂机短信等。',
+    target: '[data-tab-key="sms"]',
+    placement: 'bottom',
+  },
+];
+
+// 引导状态
+const guideVisible = ref(false);
+const guideCurrentStep = ref(0);
+const guideStarted = ref(false);
+
+// 引导框位置
+const guidePosition = reactive({
+  top: 0,
+  left: 0,
+});
+
+// 是否启用过渡动画（首次显示时不启用，后续步骤切换时启用）
+const enableGuideTransition = ref(false);
+
+// 遮罩层位置和高亮区域
+const highlightElement = ref<HTMLElement | null>(null);
+const highlightRect = reactive({
+  top: 0,
+  left: 0,
+  width: 0,
+  height: 0,
+});
 
 // ==================== 方法定义 ====================
 
@@ -250,6 +439,22 @@ const handleComplianceCheck = (script: any) => {
 };
 
 /**
+ * 保存场景语音设置
+ */
+const handleSaveSceneVoice = (data: any) => {
+  console.log('保存场景语音设置:', data);
+  // TODO: 实现保存逻辑
+};
+
+/**
+ * 重置场景语音设置
+ */
+const handleResetSceneVoice = () => {
+  console.log('重置场景语音设置');
+  // TODO: 实现重置逻辑
+};
+
+/**
  * 保存用户分类
  */
 const handleSaveClassify = (data: any) => {
@@ -289,14 +494,181 @@ const handleDeleteSms = (sms: any) => {
   // TODO: 实现删除逻辑
 };
 
+// ==================== 引导相关方法 ====================
+
+// 计算引导框位置
+const calculateGuidePosition = () => {
+  nextTick(() => {
+    setTimeout(() => {
+      const tabKey = guideSteps[guideCurrentStep.value].target.replace('[data-tab-key="', '').replace('"]', '');
+      console.log('计算引导位置，tabKey:', tabKey);
+
+      // step1 时，强制使用"主流程设置"tab 的位置
+      const targetTabKey = guideCurrentStep.value === 0 ? 'process' : tabKey;
+
+      // 查找 tab 元素
+      let targetElement = document.querySelector(`.ant-tabs-tab[data-node-key="${targetTabKey}"]`) as HTMLElement;
+
+      // 如果找不到，尝试通过 aria-controls 查找
+      if (!targetElement) {
+        const tabs = document.querySelectorAll('[role="tab"]');
+        for (let i = 0; i < tabs.length; i++) {
+          const tab = tabs[i] as HTMLElement;
+          if (tab.getAttribute('aria-controls')?.includes(targetTabKey)) {
+            targetElement = tab;
+            break;
+          }
+        }
+      }
+
+      // 如果还是找不到，尝试通过文本内容匹配
+      if (!targetElement) {
+        const tabTextMap: Record<string, string> = {
+          'process': '主流程设置',
+          'qa': 'QA 库',
+          'intent': '意图库',
+          'fallback': '流程兜底设置',
+          'script': '话术管理',
+          'scene-voice': '场景语音',
+          'user-classify': '用户分类',
+          'system-settings': '场景系统设置',
+          'sms': '场景短信',
+        };
+        const tabText = tabTextMap[targetTabKey];
+        if (tabText) {
+          const tabs = document.querySelectorAll('.ant-tabs-tab');
+          for (let i = 0; i < tabs.length; i++) {
+            const tab = tabs[i];
+            if (tab.textContent?.includes(tabText)) {
+              targetElement = tab;
+              break;
+            }
+          }
+        }
+      }
+
+      console.log('目标元素:', targetElement);
+
+      if (targetElement) {
+        const rect = targetElement.getBoundingClientRect();
+        console.log('目标元素位置:', rect);
+
+        // 使用 fixed 定位，直接使用视口坐标
+        guidePosition.left = rect.left;
+        guidePosition.top = rect.bottom + 14; // 8px + 6px 间距
+
+        // 设置高亮区域
+        highlightElement.value = targetElement;
+        highlightRect.top = rect.top;
+        highlightRect.left = rect.left;
+        highlightRect.width = rect.width;
+        highlightRect.height = rect.height;
+
+        console.log('引导框位置:', guidePosition);
+      } else {
+        console.log('未找到目标元素:', targetTabKey);
+        // 如果找不到元素，使用默认位置
+        guidePosition.top = 70;
+        guidePosition.left = 24;
+      }
+    }, 50);
+  });
+};
+
+// 显示引导
+const showGuide = () => {
+  console.log('显示引导');
+  guideCurrentStep.value = 0;
+  guideStarted.value = true;
+  // 先隐藏引导框，不启用过渡动画
+  guideVisible.value = false;
+  enableGuideTransition.value = false;
+
+  // 计算位置并显示引导框
+  setTimeout(() => {
+    calculateGuidePosition();
+    // 等位置计算好后再显示引导框
+    setTimeout(() => {
+      guideVisible.value = true;
+    }, 100);
+  }, 100);
+};
+
+// 隐藏引导
+const hideGuide = () => {
+  guideVisible.value = false;
+  guideStarted.value = false;
+  // 清除高亮区域
+  highlightElement.value = null;
+  highlightRect.top = 0;
+  highlightRect.left = 0;
+  highlightRect.width = 0;
+  highlightRect.height = 0;
+  // 用户完成引导后，记录到 localStorage
+  localStorage.setItem('sceneGuideShown', 'true');
+};
+
+// 下一步
+const handleGuideNext = () => {
+  if (guideCurrentStep.value < guideSteps.length - 1) {
+    guideCurrentStep.value++;
+    // 启用过渡动画
+    enableGuideTransition.value = true;
+    // 计算下一个步骤的引导框位置
+    setTimeout(() => {
+      calculateGuidePosition();
+    }, 50);
+  } else {
+    hideGuide();
+  }
+};
+
+// 上一步
+const handleGuidePrev = () => {
+  if (guideCurrentStep.value > 0) {
+    guideCurrentStep.value--;
+    // 启用过渡动画
+    enableGuideTransition.value = true;
+    // 计算上一个步骤的引导框位置
+    setTimeout(() => {
+      calculateGuidePosition();
+    }, 50);
+  }
+};
+
+// 跳至指定步骤
+const handleGuideJump = (step: number) => {
+  guideCurrentStep.value = step;
+  // 启用过渡动画
+  enableGuideTransition.value = true;
+  // 计算指定步骤的引导框位置
+  setTimeout(() => {
+    calculateGuidePosition();
+  }, 50);
+};
+
+// 关闭引导
+const handleGuideClose = () => {
+  hideGuide();
+};
+
 // ==================== 生命周期 ====================
 
 onMounted(() => {
   // 获取场景 ID
   const sceneId = route.params.id as string;
-  
+
   // TODO: 根据场景 ID 加载场景详情数据
   console.log('加载场景详情:', sceneId);
+
+  // 检查是否已显示过引导
+  const hasShownGuide = localStorage.getItem('sceneGuideShown');
+  if (!hasShownGuide) {
+    // 延迟显示引导，确保 DOM 已渲染
+    setTimeout(() => {
+      showGuide();
+    }, 500);
+  }
 });
 </script>
 
@@ -642,5 +1014,151 @@ onMounted(() => {
 
 :deep(.node-type-verify) {
   border-left: 4px solid #722ed1;
+}
+
+/* ==================== 引导样式 ==================== */
+.guide-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.guide-highlight {
+  position: absolute;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.guide-overlay {
+  position: fixed;
+  width: 300px;
+  z-index: 9999;
+}
+
+.guide-overlay.guide-with-transition {
+  animation: guide-popover-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes guide-popover-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.guide-popover {
+  position: relative;
+  z-index: 10000;
+  width: 100%;
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 12px 16px;
+}
+
+.guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.guide-step-indicator {
+  font-size: 11px;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.guide-close-btn {
+  color: #8c8c8c;
+  font-size: 14px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.guide-close-btn:hover {
+  color: #595959;
+}
+
+.guide-body {
+  margin-bottom: 12px;
+}
+
+.guide-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #262626;
+  margin: 0 0 6px 0;
+}
+
+.guide-description {
+  font-size: 12px;
+  color: #595959;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.guide-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.guide-footer-first {
+  justify-content: flex-end;
+}
+
+.guide-steps-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d9d9d9;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.step-dot.active {
+  width: 16px;
+  border-radius: 3px;
+  background: #1890ff;
+}
+
+.step-dot:hover {
+  background: #40a9ff;
+}
+
+/* 重新引导按钮 */
+.restart-guide-btn {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  width: 56px;
+  height: 56px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
+.restart-guide-btn:hover {
+  transform: scale(1.1);
 }
 </style>

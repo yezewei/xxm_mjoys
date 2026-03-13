@@ -75,9 +75,6 @@
 
         <!-- 规则列表区域 -->
         <div class="rule-list-container">
-          <!-- 暂无数据提示 -->
-          <a-empty v-if="currentCategoryRules.length === 0 && editingRules.length === 0" description="暂无数据" />
-
           <!-- 已保存的规则列表 -->
           <div v-if="currentCategoryRules.length > 0" class="saved-rule-list">
             <div

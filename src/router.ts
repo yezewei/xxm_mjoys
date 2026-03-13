@@ -87,6 +87,11 @@ const routes = [
     component: () => import("./pages/QualityTask.vue"),
   },
   {
+    path: "/quality-rule",
+    name: "QualityRule",
+    component: () => import("./pages/QualityRule.vue"),
+  },
+  {
     path: "/seat-config",
     name: "SeatConfig",
     component: () => import("./pages/SeatConfig.vue"),

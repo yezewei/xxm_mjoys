@@ -9,6 +9,7 @@
         <a-tab-pane key="intent" data-tab-key="intent" tab="意图库" />
         <a-tab-pane key="fallback" data-tab-key="fallback" tab="流程兜底设置" />
         <a-tab-pane key="script" data-tab-key="script" tab="话术管理" />
+        <a-tab-pane key="scene-voice" data-tab-key="scene-voice" tab="场景语音" />
         <a-tab-pane key="user-classify" data-tab-key="user-classify" tab="用户分类" />
         <a-tab-pane key="system-settings" data-tab-key="system-settings" tab="场景系统设置" />
         <a-tab-pane key="sms" data-tab-key="sms" tab="场景短信" />
@@ -192,9 +193,6 @@
                 </a-table>
               </div>
             </div>
-
-            <!-- 空状态 -->
-            <a-empty v-if="qaList.length === 0" description="暂无 QA 数据" />
           </div>
 
           <!-- 分页 -->
@@ -246,424 +244,25 @@
       />
     </div>
 
+    <!-- 场景语音内容区域 -->
+    <div v-else-if="activeTabKey === 'scene-voice'" class="scene-voice-content">
+      <SceneVoiceTab
+        @save="handleSaveSceneVoice"
+        @reset="handleResetSceneVoice"
+      />
+    </div>
+
     <!-- 场景系统设置内容区域 -->
     <div v-else-if="activeTabKey === 'system-settings'" class="system-settings-content">
-      <!-- 引导弹窗 -->
-      <div v-if="guideVisible && guideSteps[guideCurrentStep]" class="guide-overlay">
-        <div class="guide-popover">
-          <div class="guide-header">
-            <span class="guide-step-indicator">步骤 {{ guideSteps[guideCurrentStep].step }} / {{ guideSteps.length }}</span>
-            <a-button type="text" size="small" class="guide-close-btn" @click="handleGuideClose">
-              <close-outlined />
-            </a-button>
-          </div>
-          <div class="guide-body">
-            <h4 class="guide-title">{{ guideSteps[guideCurrentStep].title }}</h4>
-            <p class="guide-description">{{ guideSteps[guideCurrentStep].description }}</p>
-          </div>
-          <div class="guide-footer" :class="{ 'guide-footer-first': guideCurrentStep === 0 }">
-            <a-button
-              v-if="guideCurrentStep > 0"
-              size="small"
-              @click="handleGuidePrev"
-            >
-              上一步
-            </a-button>
-            <a-button
-              type="primary"
-              size="small"
-              @click="handleGuideNext"
-              :style="{ marginLeft: guideCurrentStep === 0 ? 'auto' : '0' }"
-            >
-              {{ guideCurrentStep === guideSteps.length - 1 ? '完成引导' : '下一步' }}
-            </a-button>
-          </div>
-          <!-- 引导步骤指示器 -->
-          <div class="guide-steps-indicator">
-            <div
-              v-for="(step, index) in guideSteps"
-              :key="step.step"
-              :class="['step-dot', { active: guideCurrentStep === index }]"
-              @click="handleGuideJump(index)"
-            />
-          </div>
-        </div>
-      </div>
-      <div class="system-settings-wrapper">
-        <!-- 客户跟进配置 -->
-        <div class="settings-section">
-          <div class="section-title">
-            <div class="title-bar"></div>
-            <span>客户跟进配置</span>
-          </div>
-          <div class="section-content">
-            <a-form layout="vertical">
-              <!-- 意向客户推送 -->
-              <a-form-item label="意向客户推送：" class="required-label">
-                <a-switch v-model:checked="systemSettingsForm.intentCustomerPush" />
-                <div class="form-tip">机器人拨打电话后是否需要将意向客户推送给客户经理进行跟进，提高业务转化率</div>
-              </a-form-item>
-
-              <!-- 推送意向范围 -->
-              <a-form-item label="推送意向范围：" v-if="systemSettingsForm.intentCustomerPush">
-                <a-checkbox-group v-model:value="systemSettingsForm.pushIntentRange">
-                  <a-checkbox value="有意向">有意向</a-checkbox>
-                  <a-checkbox value="可能有意向">可能有意向</a-checkbox>
-                  <a-checkbox value="无意向">无意向</a-checkbox>
-                  <a-checkbox value="未接通">未接通</a-checkbox>
-                </a-checkbox-group>
-                <div class="form-tip">用户分类对将用户拨打的数据进行分发</div>
-              </a-form-item>
-
-              <!-- "意向率"包括 -->
-              <a-form-item label='"意向率"包括：'>
-                <a-checkbox-group v-model:value="systemSettingsForm.intentRateRange">
-                  <a-checkbox value="有意向">有意向</a-checkbox>
-                  <a-checkbox value="可能有意向">可能有意向</a-checkbox>
-                  <a-checkbox value="无意向">无意向</a-checkbox>
-                  <a-checkbox value="未接通">未接通</a-checkbox>
-                </a-checkbox-group>
-                <div class="form-tip">请勾选 系统统计 指标"有意向"包含哪些客户标签</div>
-              </a-form-item>
-
-
-           
-
-              <!-- 当前场景跟进表单字段设置 -->
-              <a-form-item label="当前场景跟进表单字段设置：">
-                <div class="checkbox-grid">
-                  <a-checkbox v-for="field in followUpFields" :key="field.value" v-model:checked="field.checked">
-                    {{ field.label }}
-                  </a-checkbox>
-                </div>
-                <div class="form-tip">客户跟进字段可以前往<a href="#" class="link-text">客户信息配置</a>中进行管理</div>
-              </a-form-item>
-
-      
-            </a-form>
-          </div>
-        </div>
-
-        <!-- 人机协同配置 -->
-        <div class="settings-section">
-          <div class="section-title">
-            <div class="title-bar"></div>
-            <span>人机协同配置</span>
-          </div>
-          <div class="section-content">
-            <a-form layout="vertical">
-              <!-- 人机协同模式 -->
-              <a-form-item label="人机协同模式：">
-                <a-switch v-model:checked="systemSettingsForm.humanMachineCollaboration" />
-                <question-circle-outlined class="help-icon" />
-                <span class="label-text" style="margin-left: 12px;">话术中是否配置转人工：<span :class="hasTransferScript ? 'success-text' : 'error-text'">{{ hasTransferScript ? '是' : '否' }}</span></span>
-              </a-form-item>
-
-              <!-- 协同方式 -->
-              <a-form-item label="协同方式" class="required-label" v-if="systemSettingsForm.humanMachineCollaboration">
-                <a-radio-group v-model:value="systemSettingsForm.collaborationMode">
-                  <a-radio value="active-intervention">主动介入</a-radio>
-                  <a-radio value="transfer">转人工</a-radio>
-                  <a-radio value="both">主动介入 + 转人工</a-radio>
-                </a-radio-group>
-              </a-form-item>
-
-              <!-- 转人工条件 -->
-              <a-form-item label="转人工条件：" class="required-label" v-if="systemSettingsForm.humanMachineCollaboration">
-                <a-radio-group v-model:value="systemSettingsForm.transferCondition">
-                  <a-radio value="auto-transfer">接通自动转接</a-radio>
-                  <a-radio value="after-intro">听完开场白自动转接</a-radio>
-                  <a-radio value="trigger">触发话术/QA 转接</a-radio>
-                </a-radio-group>
-                <div class="form-tip" style="margin-top: 8px;">
-                  <question-circle-outlined style="margin-right: 4px;" />
-                  <question-circle-outlined style="margin-right: 4px;" />
-                  <question-circle-outlined />
-                </div>
-                <div class="form-tip error-text" style="margin-top: 12px;">
-                  注意：接通自动转接模式中话术/QA 中的转人工配置不生效
-                </div>
-              </a-form-item>
-
-              <!-- 协同策略 -->
-              <a-form-item label="协同策略：" class="required-label" v-if="systemSettingsForm.humanMachineCollaboration">
-                <a-radio-group v-model:value="systemSettingsForm.collaborationStrategy">
-                  <a-radio value="random-free">随机空闲转接</a-radio>
-                  <a-radio value="distribution">按分发策略转接</a-radio>
-                  <a-radio value="external-skill">转接给外部技能组</a-radio>
-                </a-radio-group>
-                <question-circle-outlined class="help-icon" style="margin-left: 8px;" v-for="i in 3" :key="i" />
-              </a-form-item>
-            </a-form>
-          </div>
-        </div>
-
-        <!-- 底部按钮 -->
-        <div class="form-footer">
-          <a-button>
-            <rollback-outlined />
-            返回
-          </a-button>
-          <a-button type="primary">
-            <save-outlined />
-            保存
-          </a-button>
-          <span class="save-tip">保存成功后，5 分钟后生效</span>
-        </div>
-      </div>
+      <SystemSettingsTab
+        @save="handleSystemSettingsSave"
+        @back="handleSystemSettingsBack"
+      />
     </div>
 
     <!-- 用户分类内容区域 -->
     <div v-else-if="activeTabKey === 'user-classify'" class="user-classify-content">
-      <div class="user-classify-wrapper">
-        <!-- 左侧分类列表 -->
-        <div class="classify-sidebar">
-          <div class="sidebar-title">用户分类</div>
-          <div
-            v-for="(category, index) in userCategories"
-            :key="category.id"
-            :class="['category-item', { active: selectedCategoryId === category.id }]"
-            @click="handleSelectCategory(category.id)"
-          >
-            <span class="category-name">{{ category.name }}</span>
-            <div class="category-item-right">
-              <a-switch
-                v-model:checked="category.enabled"
-                size="small"
-                @click.stop="handleToggleCategoryEnabled(category)"
-                :checked-children="'启用'"
-                :un-checked-children="'停用'"
-              />
-              <a-dropdown trigger="click">
-                <a-button
-                  type="text"
-                  size="small"
-                  class="more-action-btn"
-                  @click.stop
-                >
-                  <ellipsis-outlined />
-                </a-button>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item
-                      key="edit"
-                      @click.stop="handleEditCategory(category, index)"
-                    >
-                      <edit-outlined />
-                      编辑
-                    </a-menu-item>
-                    <a-menu-item
-                      v-if="index >= 3"
-                      key="delete"
-                      class="delete-menu-item"
-                      @click.stop="handleDeleteCategory(category)"
-                    >
-                      <delete-outlined />
-                      删除
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
-            </div>
-          </div>
-          <div class="add-category-btn" @click="handleAddCategory">
-            <plus-outlined />
-            添加分类
-          </div>
-        </div>
-
-        <!-- 右侧规则配置区 -->
-        <div class="classify-main-content">
-          <!-- 顶部默认规则提示 -->
-          <div class="default-rule-alert-wrapper">
-            <div class="default-rule-alert">
-              <exclamation-circle-outlined style="margin-right: 8px; color: #faad14;" />
-              默认规则：通话意图"反向>=1"、"静音=全程"、"否定=全程"，标记客户为无意向；该规则优先级最高
-            </div>
-            <div class="save-btn-top-right">
-              <a-button type="primary" @click="handleSaveClassify">
-                <save-outlined />
-                保存
-              </a-button>
-            </div>
-          </div>
-
-          <!-- 规则列表区域 -->
-          <div class="rule-list-container">
-            <!-- 暂无数据提示 -->
-            <a-empty v-if="currentCategoryRules.length === 0 && editingRules.length === 0" description="暂无数据" />
-
-            <!-- 已保存的规则列表 -->
-            <div v-if="currentCategoryRules.length > 0" class="saved-rule-list">
-              <div
-                v-for="(rule, index) in currentCategoryRules"
-                :key="rule.id"
-                class="rule-item"
-              >
-                <div class="rule-header">
-                  <span class="rule-index">表达式{{ index + 1 }}</span>
-                  <a-popconfirm
-                    title="确定删除该规则？"
-                    ok-text="确定"
-                    cancel-text="取消"
-                    @confirm="handleDeleteRule(rule)"
-                  >
-                    <a-button type="text" class="delete-btn">
-                      <delete-outlined />
-                    </a-button>
-                  </a-popconfirm>
-                </div>
-                <div class="rule-content">
-                  <!-- 条件列表 -->
-                  <div class="condition-display-list">
-                    <div
-                      v-for="(condition, cIndex) in rule.conditions"
-                      :key="cIndex"
-                      class="condition-display-item"
-                    >
-                      <span class="condition-field">{{ condition.fieldType }}</span>
-                      <span class="condition-operator">{{ condition.operator }}</span>
-                      <span class="condition-value">{{ condition.value }}</span>
-                      <span v-if="cIndex < rule.conditions.length - 1" class="condition-connector">且</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 编辑中的规则列表 -->
-            <div v-if="editingRules.length > 0" class="editing-rule-list">
-              <div
-                v-for="(rule, ruleIndex) in editingRules"
-                :key="rule.id"
-                class="rule-item-editing"
-              >
-                <div class="rule-header">
-                  <span class="rule-index">表达式{{ ruleIndex + 1 }}</span>
-                  <a-button
-                    v-if="editingRules.length > 1"
-                    type="text"
-                    size="small"
-                    class="delete-expression-btn"
-                    @click="handleDeleteExpression(ruleIndex)"
-                  >
-                    <delete-outlined />
-                    删除表达式
-                  </a-button>
-                </div>
-                <div class="editing-expression-wrapper">
-                  <!-- 条件列表 -->
-                  <div class="condition-list">
-                    <div
-                      v-for="(condition, conditionIndex) in rule.conditions"
-                      :key="condition.id"
-                      class="condition-item"
-                    >
-                      <span class="condition-index">条件{{ conditionIndex + 1 }}:</span>
-                      <a-select
-                        v-model:value="condition.fieldType"
-                        style="width: 140px"
-                        placeholder="字段类型"
-                      >
-                        <a-select-option value="QA 标签">QA 标签</a-select-option>
-                        <a-select-option value="意图">意图</a-select-option>
-                        <a-select-option value="通话时长">通话时长</a-select-option>
-                        <a-select-option value="静音次数">静音次数</a-select-option>
-                      </a-select>
-                      <a-select
-                        v-model:value="condition.operator"
-                        style="width: 110px"
-                        placeholder="操作符"
-                      >
-                        <a-select-option value="包含">包含</a-select-option>
-                        <a-select-option value="不包含">不包含</a-select-option>
-                        <a-select-option value="等于">等于</a-select-option>
-                        <a-select-option value="大于">大于</a-select-option>
-                        <a-select-option value="小于">小于</a-select-option>
-                      </a-select>
-                      <a-input
-                        v-model:value="condition.value"
-                        style="width: 180px"
-                        placeholder="请输入值"
-                      />
-                      <a-button
-                        type="text"
-                        size="small"
-                        @click="handleAddCondition(ruleIndex)"
-                        v-if="conditionIndex === rule.conditions.length - 1"
-                        class="add-condition-btn"
-                      >
-                        <plus-circle-outlined />
-                        添加条件
-                      </a-button>
-                      <a-button
-                        type="text"
-                        size="small"
-                        @click="handleRemoveCondition(ruleIndex, conditionIndex)"
-                        v-if="rule.conditions.length > 1"
-                        class="remove-condition-btn"
-                      >
-                        <minus-circle-outlined />
-                        删除
-                      </a-button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 新增表达式按钮 -->
-            <div class="add-rule-btn-wrapper">
-              <a-button @click="handleAddExpression">
-                <plus-outlined />
-                新增表达式
-              </a-button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 添加/编辑分类弹窗 -->
-      <a-modal
-        v-model:open="categoryModalVisible"
-        :title="categoryModalTitle"
-        width="500px"
-        ok-text="确定"
-        cancel-text="取消"
-        @ok="handleCategoryModalOk"
-        @cancel="handleCategoryModalCancel"
-      >
-        <a-form
-          ref="categoryFormRef"
-          :model="categoryForm"
-          :rules="categoryFormRules"
-          layout="vertical"
-        >
-          <a-form-item label="分类名称" name="name">
-            <a-input
-              v-model:value="categoryForm.name"
-              :disabled="categoryForm.id > 0 && categoryForm.id <= 3"
-              :placeholder="categoryForm.id > 0 && categoryForm.id <= 3 ? '默认分类，不可编辑' : '请输入分类名称'"
-            />
-          </a-form-item>
-          <a-form-item label="分类优先级" name="priority">
-            <a-input-number
-              v-model:value="categoryForm.priority"
-              style="width: 100%"
-              :min="1"
-              :max="999"
-              placeholder="请输入优先级数字，数字越小优先级越高"
-            />
-          </a-form-item>
-          <a-form-item label="是否默认分类" name="isDefault">
-            <a-switch
-              v-model:checked="categoryForm.isDefault"
-              checked-children="是"
-              un-checked-children="否"
-            />
-          </a-form-item>
-        </a-form>
-      </a-modal>
+      <UserClassifyTab />
     </div>
 
     <!-- 主流程设置内容区域 -->
@@ -678,132 +277,7 @@
 
     <!-- 场景短信内容区域 -->
     <div v-else-if="activeTabKey === 'sms'" class="sms-content">
-      <div class="sms-scroll-wrapper">
-        <!-- 顶部操作区 -->
-        <div class="sms-toolbar-section">
-          <div class="sms-toolbar-left">
-            <a-space>
-              <a-input
-                v-model:value="smsTemplateNameFilter"
-                placeholder="请输入模版名称"
-                style="width: 200px"
-                @press-enter="handleSmsSearch"
-              >
-                <template #prefix>
-                  <search-outlined />
-                </template>
-              </a-input>
-              <a-input
-                v-model:value="smsContentFilter"
-                placeholder="请输入短信内容"
-                style="width: 200px"
-                @press-enter="handleSmsSearch"
-              >
-                <template #prefix>
-                  <search-outlined />
-                </template>
-              </a-input>
-              <a-button type="primary" @click="handleSmsSearch">
-                <search-outlined />
-                搜索
-              </a-button>
-              <a-button @click="handleSmsReset">
-                <reload-outlined />
-                重置
-              </a-button>
-            </a-space>
-          </div>
-          <div class="sms-toolbar-right">
-            <a-space>
-              <a-button type="primary" @click="handleImportSmsTemplate">
-                <upload-outlined />
-                导入模版
-              </a-button>
-              <a-button type="primary" @click="handleCreateSms">
-                <plus-outlined />
-                新增短信
-              </a-button>
-            </a-space>
-          </div>
-        </div>
-
-        <!-- 数据表格 -->
-        <div class="sms-list">
-          <div class="sms-table-wrapper">
-            <a-table
-              :columns="smsColumns"
-              :data-source="smsList"
-              :pagination="false"
-              row-key="id"
-              size="middle"
-              @change="handleSmsTableChange"
-              :scroll="{ x: 1200 }"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'id'">
-                  <span>{{ record.id }}</span>
-                </template>
-                <template v-if="column.key === 'smsName'">
-                  <span class="sms-name">{{ record.smsName }}</span>
-                </template>
-                <template v-if="column.key === 'smsCode'">
-                  <span class="sms-code">{{ record.smsCode }}</span>
-                </template>
-                <template v-if="column.key === 'smsContent'">
-                  <span class="sms-content-text">{{ record.smsContent }}</span>
-                </template>
-                <template v-if="column.key === 'modifyTime'">
-                  <span class="modify-time">{{ record.modifyTime }}</span>
-                </template>
-                <template v-if="column.key === 'action'">
-                  <a-space :size="8">
-                    <a-button type="link" size="small" @click="handleEditSms(record)">
-                      <edit-outlined />
-                      编辑
-                    </a-button>
-                    <a-popconfirm
-                      title="确定删除该短信？"
-                      ok-text="确定"
-                      cancel-text="取消"
-                      @confirm="handleDeleteSms(record)"
-                    >
-                      <a-button type="link" size="small" danger>
-                        <delete-outlined />
-                        删除
-                      </a-button>
-                    </a-popconfirm>
-                  </a-space>
-                </template>
-              </template>
-            </a-table>
-          </div>
-          <!-- 分页 -->
-          <div class="sms-pagination">
-            <span class="total-text">总共 {{ smsTotal }} 条</span>
-            <a-pagination
-              v-model:current="smsPagination.current"
-              v-model:page-size="smsPagination.pageSize"
-              :total="smsPagination.total"
-              show-size-changer
-              show-quick-jumper
-              :show-total="(total: number) => `共 ${total} 条`"
-              :page-size-options="['10', '20', '50']"
-              :locale="{
-                items_per_page: '条/页',
-                jump_to: '跳转至',
-                page: '页',
-              }"
-              @change="handleSmsPageChange"
-              @show-size-change="handleSmsPageSizeChange"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 其他标签页内容占位 -->
-    <div v-else class="other-tab-placeholder">
-      <a-empty :description="`这里是${getTabName(activeTabKey)}内容`" />
+      <SmsManagementTab />
     </div>
 
     <!-- 节点编辑弹窗 -->
@@ -947,7 +421,6 @@
               </div>
             </div>
           </div>
-          <a-empty v-if="createQaForm.replies.length === 0" description="请添加回复内容" style="padding: 20px 0;" />
         </div>
       </a-form>
       <div class="modal-footer">
@@ -1300,46 +773,6 @@
       </div>
     </a-modal>
 
-    <!-- 编辑短信弹窗 -->
-    <a-modal
-      v-model:open="editSmsModalVisible"
-      title="编辑短信"
-      width="600px"
-      :footer="null"
-      @cancel="handleEditSmsCancel"
-    >
-      <a-form
-        ref="editSmsFormRef"
-        :model="editSmsForm"
-        :rules="editSmsRules"
-        layout="vertical"
-      >
-        <a-form-item label="短信名称" name="smsName">
-          <a-input
-            v-model:value="editSmsForm.smsName"
-            placeholder="请输入短信名称"
-          />
-        </a-form-item>
-        <a-form-item label="短信 CODE" name="smsCode">
-          <a-input
-            v-model:value="editSmsForm.smsCode"
-            placeholder="请输入短信 CODE"
-          />
-        </a-form-item>
-        <a-form-item label="短信内容" name="smsContent">
-          <a-textarea
-            v-model:value="editSmsForm.smsContent"
-            placeholder="请输入短信内容"
-            :rows="6"
-          />
-        </a-form-item>
-      </a-form>
-      <div class="modal-footer">
-        <a-button @click="handleEditSmsCancel">取消</a-button>
-        <a-button type="primary" @click="handleEditSmsSubmit">保存</a-button>
-      </div>
-    </a-modal>
-
     <!-- 遮罩层 -->
     <div v-if="guideVisible" class="guide-mask">
       <div 
@@ -1456,6 +889,10 @@ import ProcessSettingTab from '../components/SceneTemplateTabs/ProcessSettingTab
 import ScriptManagementTab from '../components/SceneTemplateTabs/ScriptManagementTab.vue';
 import IntentLibraryTab from '../components/SceneTemplateTabs/IntentLibraryTab.vue';
 import FallbackSettingTab from '../components/SceneTemplateTabs/FallbackSettingTab.vue';
+import UserClassifyTab from '../components/SceneTemplateTabs/UserClassifyTab.vue';
+import SystemSettingsTab from '../components/SceneTemplateTabs/SystemSettingsTab.vue';
+import SmsManagementTab from '../components/SceneTemplateTabs/SmsManagementTab.vue';
+import SceneVoiceTab from '../components/SceneTemplateTabs/SceneVoiceTab.vue';
 
 // ==================== 接口定义 ====================
 
@@ -1792,111 +1229,6 @@ const isDraggingNode = ref(false);
 const draggingNode = ref<ProcessNode | null>(null);
 const dragOffset = reactive({ x: 0, y: 0 });
 
-// ==================== 场景短信相关数据 ====================
-
-// 短信接口
-interface SmsItem {
-  id: number;
-  smsName: string;
-  smsCode: string;
-  smsContent: string;
-  modifyTime: string;
-}
-
-// 短信模版名称筛选
-const smsTemplateNameFilter = ref('');
-
-// 短信内容筛选
-const smsContentFilter = ref('');
-
-// 短信列表数据（模拟数据）
-const smsList = ref<SmsItem[]>([
-  {
-    id: 125,
-    smsName: '挂机短信',
-    smsCode: 'SMS122123',
-    smsContent: '这是挂机短信',
-    modifyTime: '2026-03-11 16:22:37',
-  },
-]);
-
-// 短信分页
-const smsPagination = reactive({
-  current: 1,
-  pageSize: 10,
-  total: 1,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => `共 ${total} 条`,
-  pageSizeOptions: ['10', '20', '50'],
-  locale: {
-    items_per_page: '条/页',
-    jump_to: '跳转至',
-    page: '页',
-  },
-});
-
-// 短信总数
-const smsTotal = ref(1);
-
-// 编辑短信弹窗
-const editSmsModalVisible = ref(false);
-const editSmsFormRef = ref<FormInstance>();
-const editSmsForm = reactive({
-  id: 0,
-  smsName: '',
-  smsCode: '',
-  smsContent: '',
-});
-
-const editSmsRules: Record<string, Rule[]> = {
-  smsName: [{ required: true, message: '请输入短信名称', trigger: 'blur' }],
-  smsCode: [{ required: true, message: '请输入短信 CODE', trigger: 'blur' }],
-  smsContent: [{ required: true, message: '请输入短信内容', trigger: 'blur' }],
-};
-
-// 短信表格列配置
-const smsColumns = [
-  {
-    title: '短信 ID',
-    dataIndex: 'id',
-    key: 'id',
-    width: 80,
-  },
-  {
-    title: '短信名称',
-    dataIndex: 'smsName',
-    key: 'smsName',
-    width: 120,
-  },
-  {
-    title: '短信 CODE',
-    dataIndex: 'smsCode',
-    key: 'smsCode',
-    width: 120,
-  },
-  {
-    title: '短信内容',
-    dataIndex: 'smsContent',
-    key: 'smsContent',
-    width: 300,
-    ellipsis: true,
-  },
-  {
-    title: '最后一次修改时间',
-    dataIndex: 'modifyTime',
-    key: 'modifyTime',
-    width: 160,
-    sorter: true,
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 120,
-    fixed: 'right' as const,
-  },
-];
-
 // ==================== 场景系统设置相关数据 ====================
 
 // 跟进表单字段接口
@@ -2012,20 +1344,27 @@ const guideSteps: GuideStep[] = [
   },
   {
     step: 6,
+    title: '配置场景语音',
+    description: '点击"场景语音"标签，配置语音识别资源、语音合成资源、语音生成方式等语音相关设置。',
+    target: '[data-tab-key="scene-voice"]',
+    placement: 'bottom',
+  },
+  {
+    step: 7,
     title: '定义用户分类',
     description: '点击"用户分类"标签，根据业务场景定义用户分类规则，如意向客户、无意向客户等。',
     target: '[data-tab-key="user-classify"]',
     placement: 'bottom',
   },
   {
-    step: 7,
+    step: 8,
     title: '配置场景系统设置',
     description: '点击"场景系统设置"标签，配置客户跟进规则和人机协同规则，包括意向客户推送、转人工条件等。',
     target: '[data-tab-key="system-settings"]',
     placement: 'bottom',
   },
   {
-    step: 8,
+    step: 9,
     title: '配置短信内容模板',
     description: '点击"场景短信"标签，配置当前场景使用到的短信内容模板，包括挂机短信等。',
     target: '[data-tab-key="sms"]',
@@ -2175,67 +1514,6 @@ const calculateGuidePosition = () => {
 
 // ==================== 用户分类相关数据 ====================
 
-// 用户分类接口
-interface UserCategory {
-  id: number;
-  name: string;
-  priority: number;
-  isDefault: boolean;
-  enabled: boolean; // 启用/停用状态
-  rules: CategoryRule[];
-}
-
-interface CategoryRule {
-  id: number;
-  expression: string;
-  resultType?: string;
-  conditions?: RuleCondition[];
-}
-
-interface RuleCondition {
-  id: number;
-  fieldType: string;
-  operator: string;
-  value: string;
-}
-
-// 用户分类列表
-const userCategories = ref<UserCategory[]>([
-  {
-    id: 1,
-    name: '有意向',
-    priority: 1,
-    isDefault: true,
-    enabled: true,
-    rules: [],
-  },
-  {
-    id: 2,
-    name: '可能有意向',
-    priority: 2,
-    isDefault: false,
-    enabled: true,
-    rules: [],
-  },
-  {
-    id: 3,
-    name: '无意向',
-    priority: 3,
-    isDefault: true,
-    enabled: true,
-    rules: [],
-  },
-]);
-
-// 当前选中的分类 ID
-const selectedCategoryId = ref<number>(1);
-
-// 计算属性：当前分类的规则列表
-const currentCategoryRules = computed(() => {
-  const category = userCategories.value.find(c => c.id === selectedCategoryId.value);
-  return category ? category.rules : [];
-});
-
 // 回复表格列配置
 const replyColumns = computed(() => [
   {
@@ -2304,71 +1582,6 @@ const currentAddQa = ref<QaItem | null>(null);
 
 const addReplyRules: Record<string, Rule[]> = {
   replyText: [{ required: true, message: '请输入回复文本', trigger: 'blur' }],
-};
-
-// 添加/编辑分类弹窗
-const categoryModalVisible = ref(false);
-const categoryModalTitle = ref('添加分类');
-const categoryFormRef = ref<FormInstance>();
-const categoryForm = reactive({
-  id: 0,
-  name: '',
-  priority: 1,
-  isDefault: false,
-  enabled: true,
-});
-
-const categoryFormRules: Record<string, Rule[]> = {
-  name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
-  priority: [{ required: true, message: '请输入优先级', trigger: 'blur' }],
-};
-
-// 新增规则表达式相关
-const showAddRuleForm = ref(false);
-const newRuleIndex = ref(1);
-const newRuleForm = reactive({
-  resultType: '',
-  conditions: [] as RuleCondition[],
-});
-let conditionIdCounter = 1;
-
-// 编辑中的规则列表（支持多个表达式）
-const editingRules = ref<CategoryRule[]>([]);
-let ruleIdCounter = 1;
-
-// 初始化新规则表单
-const initNewRuleForm = () => {
-  newRuleForm.resultType = '';
-  newRuleForm.conditions = [{
-    id: conditionIdCounter++,
-    fieldType: 'QA 标签',
-    operator: '不包含',
-    value: '',
-  }];
-};
-
-// 初始化编辑规则
-const initEditingRules = () => {
-  const category = userCategories.value.find(c => c.id === selectedCategoryId.value);
-  if (category && category.rules.length > 0) {
-    // 复制已有规则用于编辑
-    editingRules.value = category.rules.map(rule => ({
-      ...rule,
-      conditions: rule.conditions ? rule.conditions.map(c => ({ ...c })) : [],
-    }));
-  } else {
-    // 新建一个空规则
-    editingRules.value = [{
-      id: ruleIdCounter++,
-      resultType: '',
-      conditions: [{
-        id: conditionIdCounter++,
-        fieldType: 'QA 标签',
-        operator: '不包含',
-        value: '',
-      }],
-    }];
-  }
 };
 
 // 添加用户问法弹窗
@@ -3354,286 +2567,6 @@ const handleDeleteIntent = (intent: IntentItem) => {
   console.log('删除意图:', intent);
 };
 
-// ==================== 场景短信相关方法 ====================
-
-// 搜索短信
-const handleSmsSearch = () => {
-  console.log('搜索短信:', smsTemplateNameFilter.value, smsContentFilter.value);
-  message.info(`搜索：模版名称="${smsTemplateNameFilter.value || '全部'}", 短信内容="${smsContentFilter.value || '全部'}"`);
-  // TODO: 实现搜索逻辑
-};
-
-// 重置短信搜索
-const handleSmsReset = () => {
-  smsTemplateNameFilter.value = '';
-  smsContentFilter.value = '';
-  console.log('重置短信搜索');
-  message.success('已重置搜索条件');
-};
-
-// 短信表格变化
-const handleSmsTableChange = (pagination: any) => {
-  smsPagination.current = pagination.current;
-  smsPagination.pageSize = pagination.pageSize;
-  console.log('短信表格变化:', pagination);
-  // TODO: 实现数据加载
-};
-
-// 短信分页变化
-const handleSmsPageChange = (page: number) => {
-  smsPagination.current = page;
-  console.log('短信分页变化:', page);
-  // TODO: 实现数据加载
-};
-
-// 短信每页条数变化
-const handleSmsPageSizeChange = (_current: number, size: number) => {
-  smsPagination.pageSize = size;
-  smsPagination.current = 1;
-  console.log('短信每页条数变化:', size);
-  // TODO: 实现数据加载
-};
-
-// 导入模版
-const handleImportSmsTemplate = () => {
-  message.info('导入模版功能开发中...');
-  // TODO: 实现导入模版弹窗
-};
-
-// 新增短信
-const handleCreateSms = () => {
-  message.info('新增短信功能开发中...');
-  // TODO: 实现新增短信弹窗
-};
-
-// 编辑短信
-const handleEditSms = (record: SmsItem) => {
-  console.log('编辑短信:', record);
-  editSmsForm.id = record.id;
-  editSmsForm.smsName = record.smsName;
-  editSmsForm.smsCode = record.smsCode;
-  editSmsForm.smsContent = record.smsContent;
-  editSmsModalVisible.value = true;
-};
-
-// 取消编辑短信
-const handleEditSmsCancel = () => {
-  editSmsModalVisible.value = false;
-  editSmsFormRef.value?.resetFields();
-};
-
-// 提交编辑短信
-const handleEditSmsSubmit = async () => {
-  try {
-    await editSmsFormRef.value?.validate();
-    const index = smsList.value.findIndex(item => item.id === editSmsForm.id);
-    if (index !== -1) {
-      smsList.value[index].smsName = editSmsForm.smsName;
-      smsList.value[index].smsCode = editSmsForm.smsCode;
-      smsList.value[index].smsContent = editSmsForm.smsContent;
-      smsList.value[index].modifyTime = new Date().toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }).replace(/\//g, '-');
-    }
-    message.success('保存短信成功');
-    editSmsModalVisible.value = false;
-    editSmsFormRef.value?.resetFields();
-  } catch (error) {
-    console.error('表单验证失败:', error);
-  }
-};
-
-// 删除短信
-const handleDeleteSms = (record: SmsItem) => {
-  console.log('删除短信:', record);
-  const index = smsList.value.findIndex(item => item.id === record.id);
-  if (index !== -1) {
-    smsList.value.splice(index, 1);
-    smsTotal.value = smsList.value.length;
-    message.success('删除短信成功');
-  }
-};
-
-// ==================== 用户分类相关方法 ====================
-
-// 编辑分类
-const handleEditCategory = (category: UserCategory, index: number) => {
-  // 默认分类（前 3 个）不允许编辑名称
-  if (index < 3) {
-    categoryModalTitle.value = '查看分类';
-  } else {
-    categoryModalTitle.value = '编辑分类';
-  }
-  categoryForm.id = category.id;
-  categoryForm.name = category.name;
-  categoryForm.priority = category.priority;
-  categoryForm.isDefault = category.isDefault;
-  categoryModalVisible.value = true;
-};
-
-// 添加分类
-const handleAddCategory = () => {
-  categoryModalTitle.value = '添加分类';
-  categoryForm.id = 0;
-  categoryForm.name = '';
-  categoryForm.priority = 1;
-  categoryForm.isDefault = false;
-  categoryForm.enabled = true;
-  categoryModalVisible.value = true;
-};
-
-// 分类弹窗确认
-const handleCategoryModalOk = () => {
-  categoryFormRef.value?.validate().then(() => {
-    if (categoryForm.id === 0) {
-      // 新增
-      const newId = Math.max(...userCategories.value.map(c => c.id), 0) + 1;
-      userCategories.value.push({
-        id: newId,
-        name: categoryForm.name,
-        priority: categoryForm.priority,
-        isDefault: categoryForm.isDefault,
-        enabled: true,
-        rules: [],
-      });
-      message.success('添加分类成功');
-    } else {
-      // 编辑
-      const category = userCategories.value.find(c => c.id === categoryForm.id);
-      if (category) {
-        // 默认分类（前 3 个）不允许修改名称
-        if (category.id > 3) {
-          category.name = categoryForm.name;
-        }
-        category.priority = categoryForm.priority;
-        category.isDefault = categoryForm.isDefault;
-      }
-      message.success('保存成功');
-    }
-    categoryModalVisible.value = false;
-  }).catch(() => {
-    // 验证失败
-  });
-};
-
-// 切换分类启用/停用状态
-const handleToggleCategoryEnabled = (category: UserCategory) => {
-  category.enabled = !category.enabled;
-  message.success(category.enabled ? '已启用' : '已停用');
-};
-
-// 删除分类
-const handleDeleteCategory = (category: UserCategory) => {
-  Modal.confirm({
-    title: '删除分类',
-    content: `确定要删除分类"${category.name}"吗？删除后不可恢复！`,
-    okText: '确定',
-    cancelText: '取消',
-    onOk: () => {
-      const index = userCategories.value.findIndex(c => c.id === category.id);
-      if (index !== -1) {
-        userCategories.value.splice(index, 1);
-        // 如果删除的是当前选中的分类，切换到第一个分类
-        if (selectedCategoryId.value === category.id) {
-          selectedCategoryId.value = userCategories.value[0]?.id || 0;
-        }
-        message.success('删除分类成功');
-      }
-    },
-  });
-};
-
-// 分类弹窗取消
-const handleCategoryModalCancel = () => {
-  categoryModalVisible.value = false;
-};
-
-// 选择分类时初始化编辑规则
-const handleSelectCategory = (id: number) => {
-  selectedCategoryId.value = id;
-  initEditingRules();
-};
-
-// 新增表达式
-const handleAddExpression = () => {
-  editingRules.value.push({
-    id: ruleIdCounter++,
-    resultType: '',
-    conditions: [{
-      id: conditionIdCounter++,
-      fieldType: 'QA 标签',
-      operator: '不包含',
-      value: '',
-    }],
-  });
-};
-
-// 删除表达式
-const handleDeleteExpression = (ruleIndex: number) => {
-  if (editingRules.value.length > 1) {
-    editingRules.value.splice(ruleIndex, 1);
-  } else {
-    message.warning('至少保留一个表达式');
-  }
-};
-
-// 添加条件
-const handleAddCondition = (ruleIndex: number) => {
-  const rule = editingRules.value[ruleIndex];
-  rule.conditions.push({
-    id: conditionIdCounter++,
-    fieldType: 'QA 标签',
-    operator: '不包含',
-    value: '',
-  });
-};
-
-// 删除条件
-const handleRemoveCondition = (ruleIndex: number, conditionIndex: number) => {
-  const rule = editingRules.value[ruleIndex];
-  if (rule.conditions.length > 1) {
-    rule.conditions.splice(conditionIndex, 1);
-  } else {
-    message.warning('至少保留一个条件');
-  }
-};
-
-// 保存用户分类配置
-const handleSaveClassify = () => {
-  const category = userCategories.value.find(c => c.id === selectedCategoryId.value);
-  if (category) {
-    category.rules = editingRules.value.map(rule => ({
-      ...rule,
-      conditions: rule.conditions ? rule.conditions.map(c => ({ ...c })) : [],
-    }));
-  }
-
-  console.log('保存用户分类:', userCategories.value);
-  message.success('保存成功');
-};
-
-// 删除规则
-const handleDeleteRule = (rule: CategoryRule) => {
-  const category = userCategories.value.find(c => c.id === selectedCategoryId.value);
-  if (category) {
-    const ruleIndex = category.rules.findIndex(r => r.id === rule.id);
-    if (ruleIndex !== -1) {
-      category.rules.splice(ruleIndex, 1);
-    }
-  }
-  // 同时从编辑列表中移除
-  const editIndex = editingRules.value.findIndex(r => r.id === rule.id);
-  if (editIndex !== -1) {
-    editingRules.value.splice(editIndex, 1);
-  }
-  message.success('删除规则成功');
-};
-
 // 重置流程兜底设置
 const handleResetFallback = () => {
   // 由 FallbackSettingTab 组件内部处理
@@ -3644,6 +2577,20 @@ const handleSaveFallback = (data: object) => {
   console.log('流程兜底设置表单数据:', data);
   // TODO: 实现保存逻辑
   message.success('保存成功');
+};
+
+// 保存场景语音设置
+const handleSaveSceneVoice = (data: object) => {
+  console.log('保存场景语音设置:', data);
+  // TODO: 实现保存逻辑
+  message.success('保存成功');
+};
+
+// 重置场景语音设置
+const handleResetSceneVoice = () => {
+  console.log('重置场景语音设置');
+  // TODO: 实现重置逻辑
+  message.success('已重置');
 };
 
 // 新增回复
@@ -3916,8 +2863,6 @@ const handleDeleteQa = (qa: QaItem) => {
 // 初始化
 onMounted(() => {
   console.log('SceneTemplateDetail 组件已挂载');
-  // 初始化用户分类编辑规则
-  initEditingRules();
 });
 
 // 监听 tab 变化，在 QA 标签页首次加载时显示引导
@@ -3998,15 +2943,6 @@ const hideGuide = () => {
   localStorage.setItem('sceneTemplateGuideShown', 'true');
 };
 
-// 切换到指定 tab
-const switchToTab = (tabKey: string) => {
-  activeTabKey.value = tabKey;
-  // 切换 tab 后滚动到顶部
-  setTimeout(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, 100);
-};
-
 // 下一步
 const handleGuideNext = () => {
   if (guideCurrentStep.value < guideSteps.length - 1) {
@@ -4046,14 +2982,29 @@ const handleGuideJump = (step: number) => {
   }, 50);
 };
 
-// 完成引导
-const handleGuideFinish = () => {
-  hideGuide();
-};
-
 // 关闭引导
 const handleGuideClose = () => {
   hideGuide();
+};
+
+// 切换到指定 tab
+const switchToTab = (tabKey: string) => {
+  activeTabKey.value = tabKey;
+  // 切换 tab 后滚动到顶部
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 100);
+};
+
+// 保存场景系统设置
+const handleSystemSettingsSave = (data: object) => {
+  console.log('保存场景系统设置:', data);
+  message.success('保存成功');
+};
+
+// 返回
+const handleSystemSettingsBack = () => {
+  console.log('返回操作');
 };
 </script>
 

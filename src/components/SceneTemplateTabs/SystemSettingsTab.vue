@@ -72,8 +72,6 @@
               <a-checkbox-group v-model:value="systemSettingsForm.intentRateRange">
                 <a-checkbox value="有意向">有意向</a-checkbox>
                 <a-checkbox value="可能有意向">可能有意向</a-checkbox>
-                <a-checkbox value="无意向">无意向</a-checkbox>
-                <a-checkbox value="未接通">未接通</a-checkbox>
               </a-checkbox-group>
               <div class="form-tip">请勾选 系统统计 指标"有意向"包含哪些客户标签</div>
             </a-form-item>
@@ -122,11 +120,11 @@
                 <a-radio value="after-intro">听完开场白自动转接</a-radio>
                 <a-radio value="trigger">触发话术/QA 转接</a-radio>
               </a-radio-group>
-              <div class="form-tip" style="margin-top: 8px;">
+              <!-- <div class="form-tip" style="margin-top: 8px;">
                 <question-circle-outlined style="margin-right: 4px;" />
                 <question-circle-outlined style="margin-right: 4px;" />
                 <question-circle-outlined />
-              </div>
+              </div> -->
               <div class="form-tip error-text" style="margin-top: 12px;">
                 注意：接通自动转接模式中话术/QA 中的转人工配置不生效
               </div>
@@ -139,7 +137,7 @@
                 <a-radio value="distribution">按分发策略转接</a-radio>
                 <a-radio value="external-skill">转接给外部技能组</a-radio>
               </a-radio-group>
-              <question-circle-outlined class="help-icon" style="margin-left: 8px;" v-for="i in 3" :key="i" />
+              <!-- <question-circle-outlined class="help-icon" style="margin-left: 8px;" v-for="i in 3" :key="i" /> -->
             </a-form-item>
           </a-form>
         </div>

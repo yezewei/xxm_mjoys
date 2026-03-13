@@ -427,11 +427,174 @@
         </div>
       </div>
     </div>
+
+    <!-- 新建录音包弹窗 -->
+    <a-modal
+      v-model:open="createAudioPackageModalVisible"
+      title="新建录音包"
+      width="600px"
+      :mask-closable="false"
+      @ok="handleCreateAudioPackageSubmit"
+      @cancel="handleCreateAudioPackageCancel"
+    >
+      <a-form
+        ref="createAudioPackageFormRef"
+        :model="createAudioPackageForm"
+        :label-col="{ span: 6 }"
+        :wrapper-col="{ span: 16 }"
+      >
+        <a-form-item
+          label="录音包名称"
+          name="packageName"
+          :rules="[{ required: true, message: '请输入录音包名称' }]"
+        >
+          <a-input v-model:value="createAudioPackageForm.packageName" placeholder="请输入录音包名称" />
+        </a-form-item>
+        <a-form-item
+          label="录音师"
+          name="recorder"
+          :rules="[{ required: true, message: '请输入录音师' }]"
+        >
+          <a-input v-model:value="createAudioPackageForm.recorder" placeholder="请输入录音师" />
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="handleCreateAudioPackageCancel">取消</a-button>
+        <a-button type="primary" @click="handleCreateAudioPackageSubmit">确定</a-button>
+      </template>
+    </a-modal>
+
+    <!-- 编辑录音包弹窗 -->
+    <a-modal
+      v-model:open="editAudioPackageModalVisible"
+      title="编辑录音包"
+      width="600px"
+      :mask-closable="false"
+      @ok="handleEditAudioPackageSubmit"
+      @cancel="handleEditAudioPackageCancel"
+    >
+      <a-form
+        ref="editAudioPackageFormRef"
+        :model="editAudioPackageForm"
+        :label-col="{ span: 6 }"
+        :wrapper-col="{ span: 16 }"
+      >
+        <a-form-item
+          label="录音包名称"
+          name="packageName"
+          :rules="[{ required: true, message: '请输入录音包名称' }]"
+        >
+          <a-input v-model:value="editAudioPackageForm.packageName" placeholder="请输入录音包名称" />
+        </a-form-item>
+        <a-form-item
+          label="录音师"
+          name="recorder"
+          :rules="[{ required: true, message: '请输入录音师' }]"
+        >
+          <a-input v-model:value="editAudioPackageForm.recorder" placeholder="请输入录音师" />
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="handleEditAudioPackageCancel">取消</a-button>
+        <a-button type="primary" @click="handleEditAudioPackageSubmit">确定</a-button>
+      </template>
+    </a-modal>
+
+    <!-- 编辑话术弹窗 -->
+    <a-modal
+      v-model:open="editScriptModalVisible"
+      title="编辑话术"
+      width="700px"
+      :mask-closable="false"
+      @ok="handleEditScriptSubmit"
+      @cancel="handleEditScriptCancel"
+    >
+      <a-form
+        ref="editScriptFormRef"
+        :model="editScriptForm"
+        :label-col="{ span: 4 }"
+        :wrapper-col="{ span: 19 }"
+      >
+        <a-form-item
+          label="话术文本"
+          name="replyText"
+          :rules="[{ required: true, message: '请输入话术文本' }]"
+        >
+          <a-textarea
+            v-model:value="editScriptForm.replyText"
+            :rows="6"
+            placeholder="请输入话术文本"
+          />
+        </a-form-item>
+      </a-form>
+      <template #footer>
+        <a-button @click="handleEditScriptCancel">取消</a-button>
+        <a-button type="primary" @click="handleEditScriptSubmit">确定</a-button>
+      </template>
+    </a-modal>
+
+    <!-- 导入变量弹窗 -->
+    <a-modal
+      v-model:open="importVariableModalVisible"
+      title="导入变量"
+      width="550px"
+      :mask-closable="false"
+      @cancel="handleImportVariableCancel"
+    >
+      <div class="import-variable-content" style="padding: 10px 0;">
+        <!-- 步骤 1：下载模板 -->
+        <div class="import-step" style="margin-bottom: 20px;">
+          <div class="step-header" style="display: flex; align-items: center; margin-bottom: 12px;">
+            <span class="step-number" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #1890ff; color: #fff; border-radius: 50%; font-size: 12px; font-weight: 500; margin-right: 8px;">1</span>
+            <span class="step-title" style="font-size: 14px; font-weight: 500; color: #262626;">下载变量模板</span>
+          </div>
+          <p style="margin: 0 0 12px 32px; font-size: 13px; color: #595959;">请先下载变量模板文件，按照模板格式填写变量数据</p>
+          <a-button type="primary" block @click="handleDownloadVariableTemplate" style="margin-left: 32px; width: calc(100% - 32px);">
+            <download-outlined />
+            下载变量模板
+          </a-button>
+        </div>
+
+        <!-- 步骤 2：上传文件 -->
+        <div class="import-step">
+          <div class="step-header" style="display: flex; align-items: center; margin-bottom: 12px;">
+            <span class="step-number" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: #52c41a; color: #fff; border-radius: 50%; font-size: 12px; font-weight: 500; margin-right: 8px;">2</span>
+            <span class="step-title" style="font-size: 14px; font-weight: 500; color: #262626;">上传变量文件</span>
+          </div>
+          <p style="margin: 0 0 12px 32px; font-size: 13px; color: #595959;">填写完成后，上传变量文件进行导入</p>
+          <a-button block @click="triggerVariableFileSelect" style="margin-left: 32px; width: calc(100% - 32px);">
+            <upload-outlined />
+            上传变量文件
+          </a-button>
+        </div>
+
+        <!-- 提示信息 -->
+        <a-alert
+          type="info"
+          style="margin-top: 20px;"
+          message="支持格式：.xlsx, .xls, .csv"
+          show-icon
+        />
+      </div>
+      <template #footer>
+        <a-button @click="handleImportVariableCancel">关闭</a-button>
+      </template>
+    </a-modal>
+
+    <!-- 隐藏的文件输入框用于上传变量 -->
+    <input
+      ref="variableFileInputRef"
+      type="file"
+      accept=".xlsx,.xls,.csv"
+      style="display: none"
+      @change="handleVariableFileChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
+import { message, Modal } from 'ant-design-vue';
 import {
   SearchOutlined,
   PlusOutlined,
@@ -442,6 +605,7 @@ import {
   CloseCircleOutlined,
   UploadOutlined,
   LeftOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons-vue';
 import type { TableColumnsType, TablePaginationConfig } from 'ant-design-vue';
 
@@ -483,30 +647,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
   (e: 'sub-tab-change', key: string): void;
-  (e: 'script-search', keyword: string): void;
-  (e: 'script-reset'): void;
-  (e: 'batch-delete-selected'): void;
-  (e: 'batch-delete-all'): void;
-  (e: 'batch-export-selected'): void;
-  (e: 'batch-export-all'): void;
-  (e: 'edit-script', script: ScriptItem): void;
-  (e: 'compliance-pass', script: ScriptItem): void;
-  (e: 'compliance-reject', script: ScriptItem): void;
-  (e: 'create-audio-package'): void;
-  (e: 'audio-package-search', keyword: string): void;
-  (e: 'audio-package-reset'): void;
-  (e: 'view-audio-package-detail', pkg: AudioPackageItem): void;
-  (e: 'edit-audio-package', pkg: AudioPackageItem): void;
-  (e: 'set-default-audio-package', pkg: AudioPackageItem): void;
-  (e: 'delete-audio-package', pkg: AudioPackageItem): void;
-  (e: 'back-to-audio-package'): void;
-  (e: 'import-audio'): void;
-  (e: 'voice-check'): void;
-  (e: 'trigger-audio-file-select'): void;
-  (e: 'add-variable'): void;
-  (e: 'variable-search', keyword: string): void;
-  (e: 'edit-variable-value', variable: VariableItem): void;
-  (e: 'save-variable-value', variable: VariableItem): void;
 }>();
 
 // ==================== 响应式数据 ====================
@@ -647,6 +787,19 @@ const variableList = ref<VariableItem[]>([
   { id: 4, variableName: 'points', variableValue: '10000' },
   { id: 5, variableName: 'productRate', variableValue: '4.5%' },
 ]);
+
+// ==================== 弹窗相关数据 ====================
+// 编辑话术弹窗
+const editScriptModalVisible = ref(false);
+const editScriptFormRef = ref();
+const editScriptForm = reactive({
+  id: 0,
+  replyText: '',
+});
+
+// 导入变量弹窗
+const importVariableModalVisible = ref(false);
+const variableFileInputRef = ref<HTMLInputElement>();
 
 // ==================== 表格列配置 ====================
 // 话术表格列配置
@@ -801,55 +954,131 @@ const getComplianceStatusColor = (status?: string): string => {
 
 // 话术子 tab 变化
 const handleScriptSubTabChange = (key: string) => {
+  console.log('切换话术子 tab:', key);
+  // 切换 tab 时重置搜索条件
+  scriptSearchKeyword.value = '';
+  audioPackageSearchKeyword.value = '';
+  variableSearchKeyword.value = '';
   emit('sub-tab-change', key);
 };
 
 // 话术搜索
 const handleScriptSearch = () => {
-  emit('script-search', scriptSearchKeyword.value);
+  console.log('搜索话术:', scriptSearchKeyword.value);
+  message.info(`搜索：${scriptSearchKeyword.value || '全部'}`);
+  // TODO: 实现搜索逻辑
 };
 
 // 话术重置
 const handleScriptReset = () => {
   scriptSearchKeyword.value = '';
-  variableSearchKeyword.value = '';
   audioPackageSearchKeyword.value = '';
-  emit('script-reset');
+  variableSearchKeyword.value = '';
+  console.log('重置话术搜索');
+  message.success('已重置搜索条件');
 };
 
-// 批量删除所选
+// 批量删除 - 删除所选
 const handleBatchDeleteSelected = () => {
-  emit('batch-delete-selected');
+  if (selectedScriptRowKeys.value.length === 0) {
+    message.warning('请先选择要删除的话术');
+    return;
+  }
+  Modal.confirm({
+    title: '删除选中',
+    content: `删除后对应话术来源配置的话术文本将被清空，确定要删除选中的 ${selectedScriptRowKeys.value.length} 条话术吗？此操作不可恢复！`,
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      scriptList.value = scriptList.value.filter(item => !selectedScriptRowKeys.value.includes(item.id));
+      selectedScriptRowKeys.value = [];
+      scriptTotal.value = scriptList.value.length;
+      message.success('删除选中话术成功');
+    },
+  });
 };
 
-// 批量删除全部
+// 批量删除 - 删除全部
 const handleBatchDeleteAll = () => {
-  emit('batch-delete-all');
+  Modal.confirm({
+    title: '删除全部',
+    content: '删除后对应话术来源配置的话术文本将被清空，确定要删除全部话术吗？此操作不可恢复！',
+    okText: '确定',
+    cancelText: '取消',
+    onOk: () => {
+      scriptList.value = [];
+      selectedScriptRowKeys.value = [];
+      scriptTotal.value = 0;
+      message.success('删除全部话术成功');
+    },
+  });
 };
 
-// 批量导出所选
+// 批量导出 - 导出所选
 const handleBatchExportSelected = () => {
-  emit('batch-export-selected');
+  if (selectedScriptRowKeys.value.length === 0) {
+    message.warning('请先选择要导出的话术');
+    return;
+  }
+  const selectedScripts = scriptList.value.filter(item => selectedScriptRowKeys.value.includes(item.id));
+  console.log('导出选中话术:', selectedScripts);
+  message.success(`已导出 ${selectedScripts.length} 条话术`);
 };
 
-// 批量导出全部
+// 批量导出 - 导出全部
 const handleBatchExportAll = () => {
-  emit('batch-export-all');
+  console.log('导出全部话术:', scriptList.value);
+  message.success(`已导出 ${scriptList.value.length} 条话术`);
 };
 
 // 编辑话术
 const handleEditScript = (record: ScriptItem) => {
-  emit('edit-script', record);
+  console.log('编辑话术:', record);
+  editScriptForm.id = record.id;
+  editScriptForm.replyText = record.replyText;
+  editScriptModalVisible.value = true;
+};
+
+// 取消编辑话术
+const handleEditScriptCancel = () => {
+  editScriptModalVisible.value = false;
+  editScriptFormRef.value?.resetFields();
+};
+
+// 提交编辑话术
+const handleEditScriptSubmit = async () => {
+  try {
+    await editScriptFormRef.value?.validate();
+    // 找到对应的话术并更新
+    const record = scriptList.value.find(item => item.id === editScriptForm.id);
+    if (record) {
+      // 仅当话术内容发生变化时才更新
+      if (record.replyText !== editScriptForm.replyText) {
+        record.replyText = editScriptForm.replyText;
+        // 话术发生变化时重置消保状态为未消保
+        record.complianceStatus = '未消保';
+        message.success('保存话术成功，内容已更新，消保状态已重置为未消保');
+      } else {
+        message.info('话术内容未发生变化');
+      }
+    }
+    editScriptModalVisible.value = false;
+    editScriptFormRef.value?.resetFields();
+  } catch (error) {
+    console.error('表单验证失败:', error);
+  }
 };
 
 // 消保通过
 const handleCompliancePass = (record: ScriptItem) => {
-  emit('compliance-pass', record);
+  record.complianceStatus = '消保通过';
+  message.success('已设置为消保通过');
 };
 
 // 消保不通过
 const handleComplianceReject = (record: ScriptItem) => {
-  emit('compliance-reject', record);
+  record.complianceStatus = '消保不通过';
+  message.success('已设置为消保不通过');
 };
 
 // 话术表格行选择变化
@@ -862,76 +1091,124 @@ const handleScriptTableChange = (pagination: TablePaginationConfig) => {
   scriptPagination.current = pagination.current;
   scriptPagination.pageSize = pagination.pageSize;
   scriptPagination.total = pagination.total;
+  console.log('话术表格变化:', pagination);
 };
 
 // 话术分页变化
 const handleScriptPageChange = (page: number, pageSize: number) => {
+  scriptPagination.current = page;
   console.log('话术分页变化:', page, pageSize);
 };
 
 // 话术每页条数变化
 const handleScriptPageSizeChange = (current: number, size: number) => {
+  scriptPagination.pageSize = size;
+  scriptPagination.current = 1;
   console.log('话术每页条数变化:', current, size);
 };
 
 // 新建录音包
 const handleCreateAudioPackage = () => {
-  emit('create-audio-package');
+  createAudioPackageForm.packageName = '';
+  createAudioPackageForm.recorder = '';
+  createAudioPackageModalVisible.value = true;
 };
 
 // 录音包搜索
 const handleAudioPackageSearch = () => {
-  emit('audio-package-search', audioPackageSearchKeyword.value);
+  console.log('搜索录音包:', audioPackageSearchKeyword.value);
+  message.info(`搜索：${audioPackageSearchKeyword.value || '全部'}`);
 };
 
 // 录音包重置
 const handleAudioPackageReset = () => {
   audioPackageSearchKeyword.value = '';
-  emit('audio-package-reset');
+  console.log('重置录音包搜索');
+  message.success('已重置搜索条件');
 };
 
 // 查看录音包详情
 const handleViewAudioPackageDetail = (record: AudioPackageItem) => {
   currentAudioPackage.value = record;
   showAudioDetail.value = true;
-  emit('view-audio-package-detail', record);
+  console.log('查看录音包详情:', record);
 };
 
 // 编辑录音包
 const handleEditAudioPackage = (record: AudioPackageItem) => {
-  emit('edit-audio-package', record);
+  editAudioPackageForm.id = record.id;
+  editAudioPackageForm.packageName = record.packageName;
+  editAudioPackageForm.recorder = record.recorder;
+  editAudioPackageModalVisible.value = true;
+  console.log('编辑录音包:', record);
 };
 
 // 设为默认录音包
 const handleSetDefaultAudioPackage = (record: AudioPackageItem) => {
-  emit('set-default-audio-package', record);
+  // 将所有录音包的 isDefault 设为 false
+  audioPackageList.value.forEach(item => {
+    item.isDefault = false;
+  });
+  // 将当前录音包设为默认
+  record.isDefault = true;
+  message.success('已设为默认录音包');
 };
 
 // 删除录音包
 const handleDeleteAudioPackage = (record: AudioPackageItem) => {
-  emit('delete-audio-package', record);
+  // 至少保留一个录音包
+  if (audioPackageList.value.length === 1) {
+    message.warning('至少保留一个录音包');
+    return;
+  }
+  console.log('删除录音包:', record);
+  const index = audioPackageList.value.findIndex(item => item.id === record.id);
+  if (index !== -1) {
+    audioPackageList.value.splice(index, 1);
+    message.success('删除录音包成功');
+  }
 };
 
 // 返回录音包列表
 const handleBackToAudioPackage = () => {
   showAudioDetail.value = false;
   currentAudioPackage.value = null;
-  emit('back-to-audio-package');
 };
 
 // 批量导入录音
 const handleImportAudio = () => {
-  emit('import-audio');
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'audio/*';
+  input.onchange = (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      console.log('导入录音文件:', target.files[0]);
+      message.success('录音导入成功');
+    }
+  };
+  input.click();
 };
 
 // 语音检测
 const handleVoiceCheck = () => {
-  emit('voice-check');
+  message.info('开始语音检测...');
+  console.log('语音检测');
 };
 
 // 触发音频文件选择
 const triggerAudioFileSelect = () => {
-  emit('trigger-audio-file-select');
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'audio/*';
+  input.onchange = (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      console.log('上传录音文件:', target.files[0]);
+      message.success('录音上传成功');
+    }
+  };
+  input.click();
 };
 
 // 音频播放错误处理
@@ -944,28 +1221,138 @@ const handleAudioPackageTableChange = (pagination: TablePaginationConfig) => {
   audioPackagePagination.current = pagination.current;
   audioPackagePagination.pageSize = pagination.pageSize;
   audioPackagePagination.total = pagination.total;
+  console.log('录音包表格变化:', pagination);
 };
 
 // 变量搜索
 const handleVariableSearch = () => {
-  emit('variable-search', variableSearchKeyword.value);
+  console.log('搜索变量:', variableSearchKeyword.value);
+  message.info(`搜索：${variableSearchKeyword.value || '全部'}`);
 };
 
 // 导入变量
 const handleAddVariable = () => {
-  emit('add-variable');
+  importVariableModalVisible.value = true;
+};
+
+// 下载变量模板
+const handleDownloadVariableTemplate = () => {
+  console.log('下载变量模板');
+  // 创建示例模板数据
+  const templateData = '变量名，变量值\ncustomerName，张先生\ncardNo，****1234\nloanAmount，50 万\npoints，10000';
+  const blob = new Blob([templateData], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = '变量模板.csv';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  message.success('模板下载成功');
+};
+
+// 触发变量文件选择
+const triggerVariableFileSelect = () => {
+  variableFileInputRef.value?.click();
+};
+
+// 变量文件变化处理
+const handleVariableFileChange = (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0];
+    console.log('上传变量文件:', file);
+    // TODO: 实现文件解析和导入逻辑
+    message.success(`文件"${file.name}"上传成功，正在导入...`);
+    // 清空文件输入框，允许重复选择同一文件
+    target.value = '';
+    importVariableModalVisible.value = false;
+  }
+};
+
+// 关闭导入变量弹窗
+const handleImportVariableCancel = () => {
+  importVariableModalVisible.value = false;
 };
 
 // 编辑变量值
 const handleEditVariableValue = (record: VariableItem) => {
   editingVariableId.value = record.id;
-  emit('edit-variable-value', record);
 };
 
 // 保存变量值
 const handleSaveVariableValue = (record: VariableItem) => {
+  console.log('保存变量值:', record.variableName, record.variableValue);
   editingVariableId.value = null;
-  emit('save-variable-value', record);
+  message.success('保存变量值成功');
+};
+
+// ==================== 录音包弹窗相关数据和方法 ====================
+// 新建录音包弹窗
+const createAudioPackageModalVisible = ref(false);
+const createAudioPackageFormRef = ref();
+const createAudioPackageForm = reactive({
+  packageName: '',
+  recorder: '',
+});
+
+// 编辑录音包弹窗
+const editAudioPackageModalVisible = ref(false);
+const editAudioPackageFormRef = ref();
+const editAudioPackageForm = reactive({
+  id: 0,
+  packageName: '',
+  recorder: '',
+});
+
+// 取消新建录音包
+const handleCreateAudioPackageCancel = () => {
+  createAudioPackageModalVisible.value = false;
+  createAudioPackageFormRef.value?.resetFields();
+};
+
+// 提交新建录音包
+const handleCreateAudioPackageSubmit = async () => {
+  try {
+    await createAudioPackageFormRef.value?.validate();
+    const newPackage = {
+      id: Date.now(),
+      packageName: createAudioPackageForm.packageName,
+      recorder: createAudioPackageForm.recorder,
+      progressPercent: 0,
+      completedCount: 0,
+      totalCount: 200,
+      uploadStatus: '未完成',
+      isDefault: false,
+    };
+    audioPackageList.value.push(newPackage);
+    message.success('新建录音包成功');
+    createAudioPackageModalVisible.value = false;
+    createAudioPackageFormRef.value?.resetFields();
+  } catch (error) {
+    console.error('表单验证失败:', error);
+  }
+};
+
+// 取消编辑录音包
+const handleEditAudioPackageCancel = () => {
+  editAudioPackageModalVisible.value = false;
+  editAudioPackageFormRef.value?.resetFields();
+};
+
+// 提交编辑录音包
+const handleEditAudioPackageSubmit = async () => {
+  try {
+    await editAudioPackageFormRef.value?.validate();
+    const record = audioPackageList.value.find(item => item.id === editAudioPackageForm.id);
+    if (record) {
+      record.packageName = editAudioPackageForm.packageName;
+      record.recorder = editAudioPackageForm.recorder;
+    }
+    message.success('编辑录音包成功');
+    editAudioPackageModalVisible.value = false;
+    editAudioPackageFormRef.value?.resetFields();
+  } catch (error) {
+    console.error('表单验证失败:', error);
+  }
 };
 </script>
 

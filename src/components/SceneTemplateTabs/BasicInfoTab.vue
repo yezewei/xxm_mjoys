@@ -2,6 +2,40 @@
   <div class="basic-info-tab">
     <div class="basic-form-wrapper">
       <a-descriptions bordered :column="2" size="large">
+        <a-descriptions-item label="场景 ID" :span="1">
+          {{ basicForm.sceneId }}
+        </a-descriptions-item>
+
+        <a-descriptions-item label="场景名称" :span="1">
+          {{ basicForm.sceneTemplate }}
+        </a-descriptions-item>
+
+        <a-descriptions-item label="场景简称" :span="1">
+          {{ basicForm.sceneShortName }}
+        </a-descriptions-item>
+
+         <a-descriptions-item label="归属机构" :span="1">
+          {{ basicForm.organization }}
+        </a-descriptions-item>
+
+        <a-descriptions-item label="创建人" :span="1">
+          {{ basicForm.creator }}
+        </a-descriptions-item>
+       
+
+        <a-descriptions-item label="创建时间" :span="1">
+          {{ basicForm.createTime }}
+        </a-descriptions-item>
+
+       <a-descriptions-item label="上线时间" :span="1">
+          {{ basicForm.createTime }}
+        </a-descriptions-item>
+
+
+        <a-descriptions-item label="到期时间" :span="1">
+          {{ basicForm.expireTime }}
+        </a-descriptions-item>
+      
         <a-descriptions-item label="模板名称" :span="1">
           {{ basicForm.templateName }}
         </a-descriptions-item>
@@ -38,6 +72,13 @@ import { reactive, computed } from 'vue';
 
 // 定义接口
 interface BasicForm {
+  sceneId: string;
+  creator: string;
+  organization: string;
+  sceneTemplate: string;
+  createTime: string;
+  expireTime: string;
+  sceneShortName: string;
   templateName: string;
   templateType: string[];
   tags: string[];
@@ -64,6 +105,13 @@ const emit = defineEmits<{
 
 // 基本信息表单数据
 const basicForm = reactive<BasicForm>({
+  sceneId: props.modelValue?.sceneId || '232',
+  creator: props.modelValue?.creator || 'admin',
+  organization: props.modelValue?.organization || '上海中行',
+  sceneTemplate: props.modelValue?.sceneTemplate || '信用卡激活',
+  createTime: props.modelValue?.createTime || '2025-09-05 13:44:19',
+  expireTime: props.modelValue?.expireTime || '2027-03-17 00:00:00',
+  sceneShortName: props.modelValue?.sceneShortName || '上海中行信用卡激活',
   templateName: props.modelValue?.templateName || '信用卡激活模板',
   templateType: props.modelValue?.templateType || ['信用卡', '信用卡激活'],
   tags: props.modelValue?.tags || ['信用卡', '激活流程', '高频场景'],

@@ -81,7 +81,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick } from 'vue';
-import { CloseOutlined, InfoCircleOutlined } from '@ant-design/icons-vue';
+import { CloseOutlined } from '@ant-design/icons-vue';
 
 // ==================== Props & Emits ====================
 interface GuideStep {
@@ -253,7 +253,7 @@ const handleClose = () => {
 
 // 重置到第一步
 const resetToFirstStep = () => {
-  currentStep.value = 0;
+  internalCurrentStep.value = 0;
   enableTransition.value = false;
 };
 
@@ -298,7 +298,7 @@ defineExpose({
 <style scoped>
 .qa-guide-overlay {
   position: fixed;
-  width: 300px;
+  width: 280px;
   z-index: 9999;
 }
 
@@ -333,11 +333,11 @@ defineExpose({
   z-index: 10000;
   width: 100%;
   background: #fff;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 16px 20px;
   animation: qa-guide-popover-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 280px;
+  max-height: 220px;
   overflow-y: auto;
 }
 
@@ -357,8 +357,8 @@ defineExpose({
   display: flex;
   justify-content: center;
   gap: 6px;
-  margin-top: 6px;
-  margin-bottom: 8px;
+  margin-top: 8px;
+  margin-bottom: 4px;
 }
 
 .qa-step-dot {
@@ -371,7 +371,7 @@ defineExpose({
 }
 
 .qa-step-dot.active {
-  width: 18px;
+  width: 16px;
   border-radius: 3px;
   background: #1890ff;
 }
@@ -389,11 +389,11 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .qa-guide-step-indicator {
-  font-size: 11px;
+  font-size: 12px;
   color: #1890ff;
   font-weight: 500;
 }
@@ -404,6 +404,9 @@ defineExpose({
   padding: 0;
   width: 20px;
   height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .qa-guide-close-btn:hover {
@@ -411,14 +414,14 @@ defineExpose({
 }
 
 .qa-guide-body {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .qa-guide-title {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: #262626;
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
 }
 
 .qa-guide-description {
@@ -430,18 +433,18 @@ defineExpose({
 
 /* 特别说明 */
 .qa-guide-notice {
-  margin-top: 8px;
-  padding: 6px 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
   background: #e6f7ff;
   border: 1px solid #91d5ff;
   border-radius: 4px;
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: flex-start;
 }
 
 .notice-icon {
-  font-size: 14px;
+  font-size: 16px;
   color: #1890ff;
   flex-shrink: 0;
   margin-top: 1px;
@@ -449,8 +452,8 @@ defineExpose({
 
 .notice-text {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.5;
   color: #0050b3;
 }
 
@@ -459,11 +462,28 @@ defineExpose({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid #f0f0f0;
 }
 
 .qa-guide-footer-first {
   justify-content: flex-end;
+}
+
+.qa-guide-footer :deep(.ant-btn) {
+  padding: 4px 14px;
+  font-size: 13px;
+  height: 26px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qa-guide-footer :deep(.ant-btn-primary) {
+  padding: 4px 14px;
+  font-size: 13px;
+  height: 26px;
+  line-height: 1;
 }
 </style>
