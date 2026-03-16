@@ -3,8 +3,11 @@
     v-model:open="visible"
     title="质检规则列表"
     class="quality-rule-list-modal"
+    wrap-class-name="quality-rule-list-modal-wrap"
     :width="1000"
     :footer="null"
+    :body-style="{ padding: '0', display: 'flex', flexDirection: 'column' }"
+    :modal-style="{ top: '30px', paddingBottom: '60px' }"
   >
     <div class="rule-list-content">
       <!-- 搜索栏 -->
@@ -186,10 +189,35 @@ defineExpose({
 })
 </script>
 
+<style>
+/* 质检规则列表弹窗包裹器样式 */
+body .quality-rule-list-modal-wrap .ant-modal {
+  top: 30px !important;
+  padding-bottom: 0 !important;
+  margin: 0 auto;
+}
+
+body .quality-rule-list-modal-wrap .ant-modal-content {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+body .quality-rule-list-modal-wrap .ant-modal-body {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: auto;
+}
+</style>
+
 <style scoped>
 .quality-rule-list-modal :deep(.ant-modal-header) {
   padding: 16px 24px;
   border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 .quality-rule-list-modal :deep(.ant-modal-title) {
@@ -198,16 +226,13 @@ defineExpose({
   color: #1f2329;
 }
 
-.quality-rule-list-modal :deep(.ant-modal-body) {
-  padding: 24px;
-  max-height: 700px;
-  overflow-y: auto;
-}
-
 .rule-list-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 24px;
+  flex: 1;
+  overflow: auto;
 }
 
 /* 搜索栏 */

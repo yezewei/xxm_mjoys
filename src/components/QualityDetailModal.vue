@@ -3,9 +3,11 @@
     v-model:open="visible"
     title="质检详情"
     class="quality-detail-modal"
+    wrap-class-name="quality-detail-modal-wrap"
     :width="1200"
     :footer="null"
-    :body-style="{ padding: '0' }"
+    :body-style="{ padding: '0', display: 'flex', flexDirection: 'column' }"
+    :modal-style="{ top: '30px', paddingBottom: '60px' }"
   >
     <div class="quality-detail-content">
       <!-- 左侧对话区域 -->
@@ -53,8 +55,9 @@
               <div v-if="msg.role === 'agent'" class="message-time">{{ msg.time }}</div>
               <div
                 class="message-bubble"
+                :ref="(el: HTMLElement) => setMessageBubbleRef(el, index)"
                 :class="{ 'highlighted': msg.highlighted }"
-                @click="(e) => selectMessage(msg, e)"
+                @click="(e) => selectMessage(msg, e, index)"
               >
                 <span v-html="highlightText(msg.content, msg.triggerRules)"></span>
               </div>
@@ -63,9 +66,9 @@
               <!-- 触发质检项标签 -->
               <div v-if="msg.triggerRules && msg.triggerRules.length > 0" class="trigger-rules">
                 <span class="trigger-label">触发质检项：</span>
-                <a-tooltip v-for="rule in msg.triggerRules" :key="rule.code" :title="getRuleTypeLabel(rule.type)">
-                  <a-tag 
-                    :color="getRuleTypeColor(rule.type)" 
+                <a-tooltip v-for="rule in filterRules(msg.triggerRules)" :key="rule.code" :title="getRuleTypeLabel(rule.type)">
+                  <a-tag
+                    :color="getRuleTypeColor(rule.type)"
                     class="rule-tag"
                     :class="['rule-tag-' + rule.type]"
                   >
@@ -79,13 +82,10 @@
         </div>
       </div>
 
-      <!-- 右侧质检小结区域 -->
+      <!-- 右侧质检结果区域 -->
       <div class="right-panel">
-        <div class="summary-header">
-          <h3>质检小结</h3>
-        </div>
-
-        <a-tabs v-model:activeKey="activeTab" class="summary-tabs">
+        <!-- AI 质检任务显示三个标签页 -->
+        <a-tabs v-model:activeKey="activeTab" class="summary-tabs" v-if="isAiTask">
           <a-tab-pane key="ai" tab="AI 质检结果">
             <div class="ai-result-list">
               <div
@@ -173,11 +173,76 @@
             </div>
           </a-tab-pane>
         </a-tabs>
+        <!-- 人工质检任务显示两个标签页：关键词识别结果和人工审核结果 -->
+        <a-tabs v-model:activeKey="activeTab" class="summary-tabs" v-else>
+          <a-tab-pane key="keyword" tab="关键词识别结果">
+            <div class="keyword-result-list">
+              <div
+                v-for="(result, index) in keywordResults"
+                :key="index"
+                class="result-item"
+                :class="{ 'last-item': index === keywordResults.length - 1 }"
+              >
+                <div class="result-content">
+                  <div class="rule-info">
+                    <span class="rule-label">规则编号：</span>
+                    <span class="rule-code">{{ result.ruleCode }}</span>
+                    <span class="rule-desc">{{ result.ruleDesc }}</span>
+                  </div>
+                  <div class="dialog-content">
+                    <span class="content-label">对话内容：</span>
+                    <span class="content-text">{{ result.dialogContent }}</span>
+                  </div>
+                  <div class="remark-content">
+                    <span class="remark-label">质检备注：</span>
+                    <span class="remark-text">{{ result.remark || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+              <a-empty v-if="keywordResults.length === 0" description="无关键词识别结果" />
+            </div>
+          </a-tab-pane>
+
+          <a-tab-pane key="manual" tab="人工审核结果">
+            <div class="manual-result-list">
+              <div
+                v-for="(result, index) in manualResults"
+                :key="index"
+                class="result-item"
+                :class="{ 'last-item': index === manualResults.length - 1 }"
+              >
+                <div class="result-content">
+                  <div class="rule-info">
+                    <span class="rule-label">规则编号：</span>
+                    <span class="rule-code">{{ result.ruleCode }}</span>
+                    <span class="rule-type-badge" :class="'rule-type-' + result.sourceType">
+                      {{ getSourceTypeLabel(result.sourceType) }}
+                    </span>
+                    <span class="rule-desc">{{ result.ruleDesc }}</span>
+                  </div>
+                  <div class="dialog-content">
+                    <span class="content-label">对话内容：</span>
+                    <span class="content-text">{{ result.dialogContent }}</span>
+                  </div>
+                  <div class="remark-content">
+                    <span class="remark-label">质检备注：</span>
+                    <span class="remark-text">{{ result.remark || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+              <a-empty v-if="manualResults.length === 0" description="暂无人工质检结果" />
+            </div>
+          </a-tab-pane>
+        </a-tabs>
       </div>
     </div>
 
     <!-- 质检项编辑浮窗 -->
-    <div class="quality-edit-popover" v-if="selectedMessage">
+    <div 
+      class="quality-edit-popover" 
+      v-if="selectedMessage"
+      :style="{ top: popoverTop + 'px', left: popoverLeft + 'px', transform: popoverTransform }"
+    >
       <div class="popover-header">
         <span class="popover-title">触发质检项</span>
         <a class="close-btn" @click="closeEditPanel">
@@ -206,13 +271,6 @@
       </div>
     </div>
 
-    <!-- 底部操作栏 -->
-    <div class="modal-footer" v-if="!selectedMessage">
-      <a-button @click="handlePrevious">上一条</a-button>
-      <a-button type="primary" @click="handleSaveManualResult">保存人工审核结果</a-button>
-      <a-button @click="handleNext">下一条</a-button>
-    </div>
-
     <!-- 已审核印章 -->
     <div class="approved-stamp" v-if="isApproved">
       <div class="stamp-content">
@@ -220,6 +278,13 @@
           <span class="stamp-text">已审核</span>
         </div>
       </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="modal-footer">
+      <a-button @click="handlePrevious">上一条</a-button>
+      <a-button type="primary" @click="handleSaveManualResult">保存人工审核结果</a-button>
+      <a-button @click="handleNext">下一条</a-button>
     </div>
   </a-modal>
 
@@ -242,9 +307,11 @@ import { message } from 'ant-design-vue'
 // 弹窗显示状态
 const visible = ref(false)
 
-// 打开弹窗
-const open = () => {
+// 打开弹窗（taskType: 'ai' | 'manual'）
+const open = (taskType: 'ai' | 'manual' = 'ai') => {
   console.log('QualityDetailModal open called')
+  isAiTask.value = taskType === 'ai'
+  activeTab.value = taskType === 'ai' ? 'ai' : 'manual'
   visible.value = true
 }
 
@@ -268,8 +335,30 @@ const totalTime = ref('00:00')
 // 当前激活的标签页
 const activeTab = ref('ai')
 
+// 是否为 AI 质检任务（用于控制是否显示 AI 质检结果标签页）
+const isAiTask = ref(true)
+
 // 当前选中的消息
 const selectedMessage = ref<any>(null)
+
+// 浮窗顶部位置
+const popoverTop = ref(150)
+
+// 浮窗左侧位置
+const popoverLeft = ref(0)
+
+// 浮窗水平变换
+const popoverTransform = ref('translateX(-50%)')
+
+// 对话气泡 ref 数组
+const messageBubbleRefs = ref<HTMLElement[]>([])
+
+// 设置气泡 ref
+const setMessageBubbleRef = (el: HTMLElement | null, index: number) => {
+  if (el) {
+    messageBubbleRefs.value[index] = el
+  }
+}
 
 // 选中的质检项
 const selectedRules = ref<string[]>([])
@@ -479,7 +568,7 @@ const aiResults = ref([
 const keywordResults = computed(() => {
   const results: any[] = []
   const ruleMap = new Map<string, any>()
-  
+
   conversationList.value.forEach(msg => {
     if (msg.triggerRules && msg.triggerRules.length > 0) {
       msg.triggerRules.forEach((rule: any) => {
@@ -494,32 +583,32 @@ const keywordResults = computed(() => {
       })
     }
   })
-  
+
   return Array.from(ruleMap.values())
 })
 
-// 人工审核结果（展示所有来源：AI、关键词、人工标注）
+// 人工审核结果（展示所有质检项，包括所有对话中触发的所有规则）
 const manualResults = computed(() => {
   const results: any[] = []
-  const ruleMap = new Map<string, any>()
-  
+
   conversationList.value.forEach(msg => {
     if (msg.triggerRules && msg.triggerRules.length > 0) {
       msg.triggerRules.forEach((rule: any) => {
-        if (!ruleMap.has(rule.code)) {
-          ruleMap.set(rule.code, {
-            ruleCode: rule.code,
-            ruleDesc: getRuleDescription(rule.code),
-            dialogContent: msg.content,
-            remark: msg.remark || '-',
-            sourceType: rule.type
-          })
-        }
+        // 人工质检任务不显示 AI 识别的质检项
+        if (!isAiTask.value && rule.type === 'ai') return
+        
+        results.push({
+          ruleCode: rule.code,
+          ruleDesc: getRuleDescription(rule.code),
+          dialogContent: msg.content,
+          remark: msg.remark || '-',
+          sourceType: rule.type
+        })
       })
     }
   })
-  
-  return Array.from(ruleMap.values())
+
+  return results
 })
 
 // 获取规则描述
@@ -580,12 +669,48 @@ const getRuleTypeLabel = (type?: string): string => {
   return '未知来源'
 }
 
+// 过滤规则（人工质检任务只显示关键词和人工标注）
+const filterRules = (rules: any[]) => {
+  if (isAiTask.value) return rules
+  return rules.filter(rule => rule.type === 'keyword' || rule.type === 'manual')
+}
+
 // 选择消息
-const selectMessage = (msg: any, event?: MouseEvent) => {
+const selectMessage = (msg: any, event?: MouseEvent, index?: number) => {
   console.log('选择消息:', msg)
   selectedMessage.value = msg
   selectedRules.value = msg.triggerRules?.map((r: any) => r.code) || []
   editRemark.value = msg.remark || ''
+  
+  // 计算浮窗位置 - 基于气泡框位置
+  setTimeout(() => {
+    const bubbleEl = index !== undefined ? messageBubbleRefs.value[index] : null
+    if (!bubbleEl) return
+    
+    const popoverHeight = 280 // 浮窗预估高度
+    const popoverWidth = 400 // 浮窗宽度
+    const bubbleRect = bubbleEl.getBoundingClientRect()
+    const windowHeight = window.innerHeight
+    const windowWidth = window.innerWidth
+    
+    // 计算垂直位置
+    if (bubbleRect.bottom + popoverHeight > windowHeight - 100) {
+      popoverTop.value = bubbleRect.top - popoverHeight - 10
+    } else {
+      popoverTop.value = bubbleRect.bottom + 10
+    }
+    
+    // 计算水平位置 - 根据对话角色决定对齐方式
+    if (msg.role === 'customer') {
+      // 客户对话（左侧）：浮窗左边缘与对话气泡左边缘对齐
+      popoverLeft.value = bubbleRect.left
+      popoverTransform.value = 'translateX(0)'
+    } else {
+      // 客服对话（右侧）：浮窗右边缘与对话气泡右边缘对齐
+      popoverLeft.value = bubbleRect.right
+      popoverTransform.value = 'translateX(-100%)'
+    }
+  }, 0)
 }
 
 // 关闭编辑面板
@@ -593,6 +718,7 @@ const closeEditPanel = () => {
   selectedMessage.value = null
   selectedRules.value = []
   editRemark.value = ''
+  messageBubbleRefs.value = []
 }
 
 // 保存编辑
@@ -627,6 +753,7 @@ const handleNext = () => {
 .quality-detail-modal :deep(.ant-modal-header) {
   padding: 16px 24px;
   border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 .quality-detail-modal :deep(.ant-modal-title) {
@@ -639,26 +766,7 @@ const handleNext = () => {
   padding: 0;
   position: relative;
   z-index: 1;
-}
-
-.quality-detail-content {
-  display: flex;
-  height: 700px;
-}
-
-/* 质检项编辑浮窗 */
-.quality-edit-popover {
-  position: absolute;
-  z-index: 1000;
-  width: 400px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  border: 1px solid #f0f0f0;
-  padding: 16px 20px;
-  left: 50%;
-  top: 150px;
-  transform: translateX(-50%);
+  overflow: hidden;
 }
 
 /* 左侧面板 */
@@ -950,22 +1058,13 @@ const handleNext = () => {
   overflow: hidden;
 }
 
-.summary-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid #f0f0f0;
-  text-align: center;
-}
-
-.summary-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: #1f2329;
-}
-
 .summary-tabs {
   flex: 1;
   overflow: hidden;
+}
+
+.summary-tabs :deep(.ant-tabs-nav) {
+  padding-left: 24px;
 }
 
 .summary-tabs :deep(.ant-tabs-content) {
@@ -1096,30 +1195,6 @@ const handleNext = () => {
   color: #595959;
 }
 
-/* 人工审核结果 */
-.manual-result {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 底部操作栏 */
-.modal-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
-  background: #fafafa;
-}
-
-.modal-footer .ant-btn {
-  min-width: 100px;
-  height: 36px;
-  font-size: 14px;
-}
-
 .popover-header {
   display: flex;
   justify-content: space-between;
@@ -1167,68 +1242,6 @@ const handleNext = () => {
   background-color: #ffec3d;
   cursor: pointer;
 }
-
-/* 已审核印章 */
-.approved-stamp {
-  position: absolute;
-  top: 80px;
-  right: 40px;
-  z-index: 100;
-  animation: stamp-in 0.3s ease-out;
-  pointer-events: none;
-}
-
-@keyframes stamp-in {
-  0% {
-    transform: scale(2) rotate(-15deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1) rotate(-5deg);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1) rotate(-10deg);
-    opacity: 1;
-  }
-}
-
-.stamp-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.stamp-circle {
-  width: 100px;
-  height: 100px;
-  border: 4px solid #ff4d4f;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: rgba(255, 77, 79, 0.05);
-  transform: rotate(-10deg);
-}
-
-.stamp-circle::before {
-  content: '';
-  position: absolute;
-  width: 88px;
-  height: 88px;
-  border: 2px dashed rgba(255, 77, 79, 0.5);
-  border-radius: 50%;
-}
-
-.stamp-text {
-  font-size: 28px;
-  font-weight: bold;
-  color: #ff4d4f;
-  text-shadow: 0 0 2px rgba(255, 77, 79, 0.3);
-  letter-spacing: 4px;
-  writing-mode: horizontal-tb;
-}
 </style>
 
 <style>
@@ -1248,29 +1261,71 @@ const handleNext = () => {
   cursor: pointer;
 }
 
+/* 质检详情弹窗包裹器样式 */
+body .quality-detail-modal-wrap .ant-modal {
+  top: 30px !important;
+  padding-bottom: 0 !important;
+  margin: 0 auto;
+}
+
+body .quality-detail-modal-wrap .ant-modal-content {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+}
+
+body .quality-detail-modal-wrap .ant-modal-body {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: auto;
+}
+
+body .quality-detail-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 底部操作栏 */
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.modal-footer .ant-btn {
+  min-width: 90px;
+  height: 32px;
+  font-size: 14px;
+}
+
+/* 质检项编辑浮窗 */
+.quality-edit-popover {
+  position: fixed;
+  z-index: 1000;
+  width: 400px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid #f0f0f0;
+  padding: 16px 20px;
+}
+
 /* 已审核印章 - 全局样式 */
 .approved-stamp {
   position: absolute;
   top: 80px;
   right: 40px;
   z-index: 100;
-  animation: stamp-in 0.3s ease-out;
   pointer-events: none;
-}
-
-@keyframes stamp-in {
-  0% {
-    transform: scale(2) rotate(-15deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1) rotate(-5deg);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1) rotate(-10deg);
-    opacity: 1;
-  }
 }
 
 .stamp-content {
@@ -1282,13 +1337,13 @@ const handleNext = () => {
 .stamp-circle {
   width: 100px;
   height: 100px;
-  border: 4px solid #ff4d4f;
+  border: 4px solid #52c41a;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  background: rgba(255, 77, 79, 0.05);
+  background: rgba(82, 196, 26, 0.05);
   transform: rotate(-10deg);
 }
 
@@ -1297,16 +1352,15 @@ const handleNext = () => {
   position: absolute;
   width: 88px;
   height: 88px;
-  border: 2px dashed rgba(255, 77, 79, 0.5);
+  border: 2px dashed rgba(82, 196, 26, 0.5);
   border-radius: 50%;
 }
 
 .stamp-text {
   font-size: 28px;
   font-weight: bold;
-  color: #ff4d4f;
-  text-shadow: 0 0 2px rgba(255, 77, 79, 0.3);
+  color: #52c41a;
   letter-spacing: 4px;
-  writing-mode: horizontal-tb;
+  white-space: nowrap;
 }
 </style>
