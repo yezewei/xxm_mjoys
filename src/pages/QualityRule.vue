@@ -279,7 +279,22 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检',
     tags: '',
     tagsArray: [],
-    keywordRules: '',
+    keywordRules: `利率
+收益率
+年化
+有效期
+起息日
+到期日
+保本
+无风险
+稳赚
+利息
+收益
+费率
+手续费
+提前支取
+罚息
+违约金`,
   },
   {
     key: '2',
@@ -291,7 +306,21 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检',
     tags: '',
     tagsArray: [],
-    keywordRules: '',
+    keywordRules: `风险提示
+风险等级
+本金损失
+投资有风险
+谨慎投资
+仔细阅读
+条款
+免责
+免责声明
+重要提示
+请注意
+务必
+确认
+知晓
+理解`,
   },
   {
     key: '3',
@@ -303,7 +332,21 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检',
     tags: '',
     tagsArray: [],
-    keywordRules: '',
+    keywordRules: `这个我不清楚
+需要查询
+稍后回复
+问一下领导
+咨询一下
+回头告诉您
+不太确定
+可能
+应该
+大概
+也许
+说不准
+不方便透露
+公司规定
+不能说的`,
   },
   {
     key: '4',
@@ -315,7 +358,22 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检（人工）',
     tags: '',
     tagsArray: [],
-    keywordRules: '',
+    keywordRules: `请问您是
+本人吗
+确认一下身份
+您是 xxx 吗
+核对信息
+身份验证
+请问怎么称呼
+先生/女士
+您的姓名
+身份证
+手机号
+不是本人
+我是代接
+我是家属
+我是朋友
+我是同事`,
   },
   {
     key: '5',
@@ -327,7 +385,26 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检（人工）',
     tags: '',
     tagsArray: [],
-    keywordRules: '',
+    keywordRules: `身份证号码
+身份证号
+电话号码
+手机号
+银行卡号
+卡号
+账户余额
+资产
+存款
+理财金额
+投资金额
+您的尾号
+后四位
+前六位
+住址
+地址
+工作单位
+单位地址
+职业
+收入`,
   },
 ]);
 
