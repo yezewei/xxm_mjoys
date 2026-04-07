@@ -66,7 +66,7 @@
               <!-- 触发质检项标签 -->
               <div v-if="msg.triggerRules && msg.triggerRules.length > 0" class="trigger-rules">
                 <span class="trigger-label">触发质检项：</span>
-                <a-tooltip v-for="rule in filterRules(msg.triggerRules)" :key="rule.code" :title="getRuleTypeLabel(rule.type)">
+                <a-tooltip v-for="(rule, ruleIndex) in msg.triggerRules" :key="rule.code + '-' + ruleIndex + '-' + rule.type" :title="getRuleTypeLabel(rule.type)">
                   <a-tag
                     :color="getRuleTypeColor(rule.type)"
                     class="rule-tag"
@@ -111,6 +111,16 @@
                 </div>
               </div>
               <a-empty v-if="aiResults.length === 0" description="暂无 AI 质检结果" />
+              <!-- AI 质检小结 -->
+              <div v-if="aiResults.length > 0" class="ai-summary-box">
+                <div class="summary-title">
+                  <RobotOutlined class="summary-icon" />
+                  <span>AI 质检小结</span>
+                </div>
+                <div class="summary-content">
+                  {{ aiSummaryText }}
+                </div>
+              </div>
             </div>
           </a-tab-pane>
 
@@ -130,11 +140,7 @@
                   </div>
                   <div class="dialog-content">
                     <span class="content-label">对话内容：</span>
-                    <span class="content-text">{{ result.dialogContent }}</span>
-                  </div>
-                  <div class="remark-content">
-                    <span class="remark-label">质检备注：</span>
-                    <span class="remark-text">{{ result.remark || '-' }}</span>
+                    <span class="content-text" v-html="highlightKeywordText(result.dialogContent, result.ruleCode)"></span>
                   </div>
                 </div>
               </div>
@@ -170,6 +176,19 @@
                 </div>
               </div>
               <a-empty v-if="manualResults.length === 0" description="暂无人工审核结果" />
+              <!-- 人工质检总结输入框 -->
+              <div class="manual-summary-input-box">
+                <div class="input-title">
+                  <EditOutlined class="input-icon" />
+                  <span>人工质检总结</span>
+                </div>
+                <a-textarea
+                  v-model:value="manualSummaryText"
+                  placeholder="请输入人工质检总结..."
+                  :rows="4"
+                  class="summary-textarea"
+                />
+              </div>
             </div>
           </a-tab-pane>
         </a-tabs>
@@ -191,11 +210,7 @@
                   </div>
                   <div class="dialog-content">
                     <span class="content-label">对话内容：</span>
-                    <span class="content-text">{{ result.dialogContent }}</span>
-                  </div>
-                  <div class="remark-content">
-                    <span class="remark-label">质检备注：</span>
-                    <span class="remark-text">{{ result.remark || '-' }}</span>
+                    <span class="content-text" v-html="highlightKeywordText(result.dialogContent, result.ruleCode)"></span>
                   </div>
                 </div>
               </div>
@@ -231,6 +246,19 @@
                 </div>
               </div>
               <a-empty v-if="manualResults.length === 0" description="暂无人工质检结果" />
+              <!-- 人工质检总结输入框 -->
+              <div class="manual-summary-input-box">
+                <div class="input-title">
+                  <EditOutlined class="input-icon" />
+                  <span>人工质检总结</span>
+                </div>
+                <a-textarea
+                  v-model:value="manualSummaryText"
+                  placeholder="请输入人工质检总结..."
+                  :rows="4"
+                  class="summary-textarea"
+                />
+              </div>
             </div>
           </a-tab-pane>
         </a-tabs>
@@ -293,13 +321,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, defineExpose } from 'vue'
+import { ref, reactive, computed, defineExpose, nextTick } from 'vue'
 import {
   PlayCircleOutlined,
   SoundOutlined,
   UserOutlined,
   CustomerServiceOutlined,
-  CloseOutlined
+  CloseOutlined,
+  RobotOutlined,
+  EditOutlined
 } from '@ant-design/icons-vue'
 import QualityRuleListModal from './QualityRuleListModal.vue'
 import { message } from 'ant-design-vue'
@@ -309,10 +339,17 @@ const visible = ref(false)
 
 // 打开弹窗（taskType: 'ai' | 'manual'）
 const open = (taskType: 'ai' | 'manual' = 'ai') => {
-  console.log('QualityDetailModal open called')
-  isAiTask.value = taskType === 'ai'
-  activeTab.value = taskType === 'ai' ? 'ai' : 'manual'
-  visible.value = true
+  console.log('QualityDetailModal open called with taskType:', taskType)
+  // 先关闭再打开，确保状态重置
+  visible.value = false
+  // 使用 nextTick 确保状态更新
+  nextTick(() => {
+    isAiTask.value = taskType === 'ai'
+    activeTab.value = taskType === 'ai' ? 'ai' : 'manual'
+    console.log('isAiTask set to:', isAiTask.value)
+    console.log('activeTab set to:', activeTab.value)
+    visible.value = true
+  })
 }
 
 // 关闭弹窗
@@ -366,6 +403,12 @@ const selectedRules = ref<string[]>([])
 // 编辑的备注
 const editRemark = ref('')
 
+// AI 质检小结文本
+const aiSummaryText = ref('本通电话中，坐席在客户明确否认"老用户"身份后，仍继续营销行为，违反身份核实前置要求 (B1)。此外，坐席在通话中完整念出客户身份证号码、电话号码、银行卡号、账户余额、住址、工作单位等敏感个人信息，严重违反客户信息保密规定 (B2)。建议：1) 加强身份核实流程培训；2) 强化客户隐私保护意识；3) 规范敏感信息核对话术。')
+
+// 人工质检总结输入框
+const manualSummaryText = ref('')
+
 // 是否已审核（盖章状态）
 const isApproved = ref(false)
 
@@ -409,6 +452,25 @@ const highlightText = (text: string, triggerRules?: any[]) => {
   if (uniqueKeywords.length === 0) {
     return text
   }
+  
+  // 构建正则表达式
+  const escapedKeywords = uniqueKeywords.map(kw => kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const regex = new RegExp(`(${escapedKeywords.join('|')})`, 'gi')
+  
+  return text.replace(regex, '<span class="highlight-keyword">$1</span>')
+}
+
+// 高亮关键词文本 - 用于关键词识别结果 tab 中高亮匹配到的关键词
+const highlightKeywordText = (text: string, ruleCode: string): string => {
+  if (!text) return ''
+  
+  const keywords = ruleKeywords[ruleCode] || []
+  if (keywords.length === 0) {
+    return text
+  }
+  
+  // 去重并按长度排序（长的关键词优先匹配）
+  const uniqueKeywords = Array.from(new Set(keywords)).sort((a, b) => b.length - a.length)
   
   // 构建正则表达式
   const escapedKeywords = uniqueKeywords.map(kw => kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
@@ -669,16 +731,11 @@ const getRuleTypeLabel = (type?: string): string => {
   return '未知来源'
 }
 
-// 过滤规则（人工质检任务只显示关键词和人工标注）
-const filterRules = (rules: any[]) => {
-  if (isAiTask.value) return rules
-  return rules.filter(rule => rule.type === 'keyword' || rule.type === 'manual')
-}
-
 // 选择消息
 const selectMessage = (msg: any, event?: MouseEvent, index?: number) => {
   console.log('选择消息:', msg)
   selectedMessage.value = msg
+  // 选中该消息所有已有的质检项（包括 AI、关键词、人工的所有来源）
   selectedRules.value = msg.triggerRules?.map((r: any) => r.code) || []
   editRemark.value = msg.remark || ''
   
@@ -724,7 +781,12 @@ const closeEditPanel = () => {
 // 保存编辑
 const saveEdit = () => {
   if (selectedMessage.value) {
-    selectedMessage.value.triggerRules = selectedRules.value.map(code => ({ code, type: 'manual' }))
+    // 保留原有的 AI 和关键词质检项，只更新人工选择的质检项
+    const existingRules = selectedMessage.value.triggerRules?.filter((r: any) => r.type !== 'manual') || []
+    // 添加人工选择的质检项（标记为 manual 类型）
+    const manualRules = selectedRules.value.map(code => ({ code, type: 'manual' }))
+    // 合并所有质检项
+    selectedMessage.value.triggerRules = [...existingRules, ...manualRules]
     selectedMessage.value.remark = editRemark.value
     console.log('保存质检项:', selectedMessage.value)
     closeEditPanel()
@@ -1029,6 +1091,15 @@ const handleNext = () => {
   font-size: 12px;
 }
 
+/* 关键词高亮样式 */
+.highlight-keyword {
+  background-color: #fff566;
+  color: #000;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-weight: 500;
+}
+
 /* AI 识别 - 蓝色 */
 .rule-tag-ai {
   background-color: #e6f4ff;
@@ -1193,6 +1264,66 @@ const handleNext = () => {
 
 .remark-text {
   color: #595959;
+}
+
+/* AI 质检小结样式 */
+.ai-summary-box {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f0f5ff;
+  border-radius: 8px;
+  border: 1px solid #bae0ff;
+}
+
+.summary-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2329;
+  margin-bottom: 12px;
+}
+
+.summary-icon {
+  font-size: 18px;
+  color: #1677ff;
+}
+
+.summary-content {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #595959;
+  white-space: pre-wrap;
+}
+
+/* 人工质检总结输入框样式 */
+.manual-summary-input-box {
+  margin-top: 24px;
+  padding: 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+}
+
+.input-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2329;
+  margin-bottom: 12px;
+}
+
+.input-icon {
+  font-size: 18px;
+  color: #1677ff;
+}
+
+.summary-textarea {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .popover-header {

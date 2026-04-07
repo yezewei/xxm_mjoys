@@ -9,7 +9,7 @@
         </p>
       </div>
       <a-button type="primary" class="create-btn" @click="handleCreateModel">
-        新建质检模型
+        <PlusOutlined /> 新建质检模型
       </a-button>
     </div>
 
@@ -119,17 +119,75 @@
       <p>确定要删除质检模型 <strong>{{ deletingModel?.name }}</strong> 吗？</p>
       <p style="color: #ff4d4f;">删除后无法恢复，请谨慎操作！</p>
     </a-modal>
+
+    <!-- 新建/编辑模型弹窗 -->
+    <a-modal
+      v-model:open="modelModalVisible"
+      :title="isEditMode ? '编辑质检模型' : '新建质检模型'"
+      width="600px"
+      ok-text="确定"
+      cancel-text="取消"
+      :confirm-loading="modalConfirmLoading"
+      @ok="handleModalOk"
+    >
+      <a-form
+        ref="modelFormRef"
+        :model="modelForm"
+        :rules="formRules"
+        layout="vertical"
+      >
+        <a-form-item label="模型名称" name="name">
+          <a-input
+            v-model:value="modelForm.name"
+            placeholder="请输入模型名称"
+          />
+        </a-form-item>
+        <a-form-item label="模型说明" name="description">
+          <a-textarea
+            v-model:value="modelForm.description"
+            placeholder="请输入模型说明"
+            :rows="4"
+          />
+        </a-form-item>
+        <a-form-item label="模型分类" name="modelType">
+          <a-radio-group v-model:value="modelForm.modelType">
+            <a-radio value="AI">AI 质检模型</a-radio>
+            <a-radio value="MANUAL">人工质检模型</a-radio>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item
+          v-if="modelForm.modelType === 'AI'"
+          label="质检 API Key"
+          name="apiKey"
+        >
+          <a-select
+            v-model:value="modelForm.apiKey"
+            placeholder="请选择质检 API Key"
+            allow-clear
+          >
+            <a-select-option value="key1">默认 API Key 1</a-select-option>
+            <a-select-option value="key2">默认 API Key 2</a-select-option>
+            <a-select-option value="key3">默认 API Key 3</a-select-option>
+          </a-select>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
+import { useRouter } from 'vue-router'
+import type { FormInstance } from 'ant-design-vue'
 import {
   DownOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  PlusOutlined
 } from '@ant-design/icons-vue'
+
+const router = useRouter()
 
 // 质检模型类型定义
 interface QualityModel {
@@ -137,6 +195,7 @@ interface QualityModel {
   name: string
   description: string
   modelType: 'AI' | 'MANUAL'
+  apiKey?: string
 }
 
 // 模型列表数据
@@ -171,19 +230,106 @@ const modelList = ref<QualityModel[]>([
 const deleteModalVisible = ref(false)
 const deletingModel = ref<QualityModel | null>(null)
 
+// 新建/编辑模型弹窗状态
+const modelModalVisible = ref(false)
+const isEditMode = ref(false)
+const modalConfirmLoading = ref(false)
+const modelFormRef = ref<FormInstance>()
+const editingModelId = ref<number | null>(null)
+
+// 表单数据
+const modelForm = reactive({
+  name: '',
+  description: '',
+  modelType: 'AI' as 'AI' | 'MANUAL',
+  apiKey: undefined as string | undefined
+})
+
+// 表单验证规则
+const formRules = {
+  name: [
+    { required: true, message: '请输入模型名称', trigger: 'blur' }
+  ],
+  description: [
+    { required: true, message: '请输入模型说明', trigger: 'blur' }
+  ],
+  modelType: [
+    { required: true, message: '请选择模型分类', trigger: 'change' }
+  ],
+  apiKey: [
+    { required: true, message: '请选择质检 API Key', trigger: 'change' }
+  ]
+}
+
 // 新建模型
 const handleCreateModel = () => {
-  message.info('新建质检模型功能开发中...')
+  isEditMode.value = false
+  editingModelId.value = null
+  modelForm.name = ''
+  modelForm.description = ''
+  modelForm.modelType = 'AI'
+  modelForm.apiKey = undefined
+  modelModalVisible.value = true
+}
+
+// 弹窗确认
+const handleModalOk = async () => {
+  try {
+    await modelFormRef.value?.validate()
+    modalConfirmLoading.value = true
+
+    if (isEditMode.value && editingModelId.value !== null) {
+      // 编辑模式
+      const index = modelList.value.findIndex(m => m.id === editingModelId.value)
+      if (index !== -1) {
+        modelList.value[index] = {
+          ...modelList.value[index],
+          name: modelForm.name,
+          description: modelForm.description,
+          modelType: modelForm.modelType,
+          apiKey: modelForm.apiKey
+        }
+      }
+      message.success('编辑成功')
+    } else {
+      // 新增模式
+      const newId = Math.max(...modelList.value.map(m => m.id), 0) + 1
+      modelList.value.push({
+        id: newId,
+        name: modelForm.name,
+        description: modelForm.description,
+        modelType: modelForm.modelType,
+        apiKey: modelForm.apiKey
+      })
+      message.success('添加成功')
+    }
+
+    modelModalVisible.value = false
+  } catch (error) {
+    console.error('表单验证失败:', error)
+  } finally {
+    modalConfirmLoading.value = false
+  }
 }
 
 // 质检规则设置
 const handleRuleSettings = (model: QualityModel) => {
-  message.info(`正在设置"${model.name}"的质检规则...`)
+  // 跳转到质检规则页面，并传递质检模型 ID 作为参数
+  router.push({
+    path: '/quality-rule',
+    query: { modelId: model.id, modelName: model.name }
+  })
 }
 
 // 编辑模型
 const handleEditModel = (model: QualityModel) => {
-  message.info(`正在编辑"${model.name}"...`)
+  isEditMode.value = true
+  editingModelId.value = model.id
+  modelForm.name = model.name
+  modelForm.description = model.description
+  modelForm.modelType = model.modelType
+  modelForm.apiKey = model.apiKey
+  modelModalVisible.value = true
 }
 
 // 删除模型
@@ -246,15 +392,17 @@ const confirmDelete = () => {
 .create-btn {
   background-color: #1677ff;
   border-color: #1677ff;
-  height: 36px;
-  padding: 0 20px;
+  color: #fff;
+  padding: 4px 15px;
   font-size: 14px;
+  font-weight: 400;
   border-radius: 4px;
 }
 
 .create-btn:hover {
   background-color: #4096ff;
   border-color: #4096ff;
+  color: #fff;
 }
 
 /* 模型列表 */
@@ -276,7 +424,7 @@ const confirmDelete = () => {
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  width: 300px;
+  width: 280px;
 }
 
 .model-card:hover {

@@ -446,25 +446,13 @@
           </div>
 
           <!-- 分页 -->
-          <div class="pagination-section">
-            <a-pagination
-              v-model:current="currentPage"
-              v-model:page-size="pageSize"
-              :total="total"
-              show-size-changer
-              show-quick-jumper
-              :show-total="(total: number) => `共 ${total} 条`"
-              :page-size-options="['10', '20', '50']"
-              :show-less-items="false"
-              :locale="{
-                items_per_page: '条/页',
-                jump_to: '跳转至',
-                page: '页',
-              }"
-              @change="handlePageChange"
-              @show-size-change="handlePageSizeChange"
-            />
-          </div>
+          <Pagination
+            v-model:current="currentPage"
+            v-model:page-size="pageSize"
+            :total="total"
+            @change="handlePageChange"
+            @page-size-change="handlePageSizeChange"
+          />
         </div>
       </div>
     </div>
@@ -478,6 +466,7 @@ import type { FormInstance, Rule } from 'ant-design-vue/es/form';
 import { message } from 'ant-design-vue';
 import { PlusOutlined, DownOutlined, CheckOutlined, LoadingOutlined, CheckCircleFilled, ExclamationCircleOutlined } from '@ant-design/icons-vue';
 import type { Dayjs } from 'dayjs';
+import Pagination from '@/components/Pagination';
 
 interface TemplateItem {
   id: number;
@@ -1431,63 +1420,6 @@ const handlePageSizeChange = (current: number, size: number) => {
   align-items: center;
   justify-content: center;
   padding: 10px 0;
-}
-
-/* 分页 */
-.pagination-section {
-  padding: 16px 24px;
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  border-top: 1px solid #f0f0f0;
-}
-
-.pagination-section :deep(.ant-pagination) {
-  margin: 0;
-}
-
-.pagination-section :deep(.ant-pagination-item) {
-  border-color: #d9d9d9;
-}
-
-.pagination-section :deep(.ant-pagination-item-active) {
-  border-color: #1890ff;
-  background: #1890ff;
-}
-
-.pagination-section :deep(.ant-pagination-item-active a) {
-  color: #fff;
-}
-
-.pagination-section :deep(.ant-pagination-options-quick-jumper input) {
-  border-color: #d9d9d9;
-}
-
-.pagination-section :deep(.ant-pagination-options-quick-jumper) {
-  color: #666;
-}
-
-.pagination-section :deep(.ant-pagination-options-size-changer) {
-  color: #666;
-}
-
-/* 修改分页文本显示 */
-.pagination-section :deep(.ant-select-selector) {
-  border-color: #d9d9d9 !important;
-}
-
-/* 修改每页条数文本 */
-.pagination-section :deep(.ant-select-selection-item) {
-  font-size: 13px;
-}
-
-.pagination-section :deep(.ant-pagination-options-quick-jumper) {
-  margin-left: 16px;
-}
-
-.pagination-section :deep(.ant-pagination-options-quick-jumper input) {
-  width: 50px !important;
-  margin: 0 8px;
 }
 
 /* 新建场景弹窗 */

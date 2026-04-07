@@ -3,7 +3,20 @@
     <!-- 今日统计 -->
     <a-card class="statistics-card">
       <div class="section-header">
-        <BookOutlined class="section-icon" />
+        <span class="section-icon">
+          <!-- 统计图标：柱状图 -->
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <defs>
+              <linearGradient id="statsGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1677ff;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0958d9;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <rect x="3" y="10" width="4" height="11" rx="1" fill="url(#statsGradient)"/>
+            <rect x="10" y="6" width="4" height="15" rx="1" fill="url(#statsGradient)"/>
+            <rect x="17" y="3" width="4" height="18" rx="1" fill="url(#statsGradient)"/>
+          </svg>
+        </span>
         <span class="section-title">今日统计</span>
       </div>
       <div class="stats-list">
@@ -62,7 +75,22 @@
     <!-- 今日待办 -->
     <a-card class="todo-card">
       <div class="section-header">
-        <BookOutlined class="section-icon" />
+        <span class="section-icon">
+          <!-- 待办图标：清单列表 -->
+          <svg viewBox="0 0 24 24" width="22" height="22">
+            <defs>
+              <linearGradient id="todoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#1677ff;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0958d9;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <rect x="4" y="5" width="16" height="3" rx="1" fill="url(#todoGradient)"/>
+            <rect x="4" y="10.5" width="16" height="3" rx="1" fill="url(#todoGradient)"/>
+            <rect x="4" y="16" width="16" height="3" rx="1" fill="url(#todoGradient)"/>
+            <circle cx="18" cy="6.5" r="2.5" fill="url(#todoGradient)"/>
+            <path d="M17 6.5l0.8 0.8l1.7 -1.7" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
         <span class="section-title">今日待办</span>
       </div>
       <div class="todo-list">
@@ -75,7 +103,18 @@
             <div class="todo-header">
               <span class="todo-title">{{ task.name }}</span>
               <span class="todo-type">
-                <RobotOutlined class="type-icon" />
+                <span class="type-icon-svg">
+                  <svg viewBox="0 0 24 24" width="18" height="18">
+                    <defs>
+                      <linearGradient id="aiGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#1677ff;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0958d9;stop-opacity:1" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M12 2L4 7v10l8 5 8-5V7L12 2z" fill="url(#aiGradient3)"/>
+                    <text x="12" y="14" text-anchor="middle" fill="white" font-size="7" font-weight="600" font-family="Arial">AI</text>
+                  </svg>
+                </span>
                 {{ task.type }}
               </span>
               <a-tag :color="task.status === '已暂停' ? 'orange' : 'blue'" class="status-tag">
@@ -106,10 +145,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  BookOutlined,
-  RobotOutlined
-} from '@ant-design/icons-vue'
 
 const router = useRouter()
 
@@ -128,7 +163,7 @@ const stats = ref({
 const todoList = ref([
   {
     id: 27,
-    name: 'test2026.2.9__19:20',
+    name: '2026 年 2 月金融产品合规质检专项',
     type: 'AI 质检',
     status: '已暂停',
     pendingCount: 265,
@@ -170,8 +205,8 @@ const handleTask = (task: typeof todoList.value[0]) => {
 }
 
 .section-icon {
-  font-size: 18px;
-  color: #1677ff;
+  display: inline-flex;
+  align-items: center;
   margin-right: 8px;
 }
 
@@ -274,9 +309,13 @@ const handleTask = (task: typeof todoList.value[0]) => {
   color: #595959;
 }
 
-.type-icon {
-  font-size: 16px;
-  color: #1677ff;
+.type-icon-svg {
+  display: inline-flex;
+  align-items: center;
+}
+
+.type-icon-svg svg {
+  filter: drop-shadow(0 1px 2px rgba(22, 119, 255, 0.3));
 }
 
 .status-tag {

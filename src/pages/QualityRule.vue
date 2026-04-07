@@ -55,12 +55,11 @@
         <div class="table-toolbar-left">
           <span class="selection-info">共 {{ filteredTotal }} 条，已选 {{ selectedRowKeys.length }} 条</span>
           <a-button
-            v-show="selectedRowKeys.length > 0"
             type="primary"
             danger
-            size="small"
             @click="handleBatchDelete"
             style="margin-left: 12px"
+            :disabled="selectedRowKeys.length === 0"
           >
             <delete-outlined />
             批量删除 ({{ selectedRowKeys.length }})
@@ -634,6 +633,10 @@ const handleDelete = (record: QualityRuleItem) => {
  * 批量删除
  */
 const handleBatchDelete = () => {
+  if (selectedRowKeys.value.length === 0) {
+    message.warning('请先选择要删除的质检规则');
+    return;
+  }
   batchDeleteModalVisible.value = true;
 };
 
@@ -805,21 +808,53 @@ const handleRuleModalOk = async () => {
 
 /* 分页器样式 */
 .table-area :deep(.ant-pagination-item) {
-  border-color: #d9d9d9;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  min-width: 32px;
+  height: 32px;
+  line-height: 30px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.table-area :deep(.ant-pagination-item:hover) {
+  border-color: #1677ff;
+  color: #1677ff;
 }
 
 .table-area :deep(.ant-pagination-item-active) {
-  border-color: #1890ff;
-  border: 1px solid #1890ff;
-  background: #1890ff;
+  background: #1677ff;
+  border-color: #1677ff;
+  color: #fff;
 }
 
 .table-area :deep(.ant-pagination-item-active a) {
   color: #fff;
 }
 
+.table-area :deep(.ant-pagination-prev),
+.table-area :deep(.ant-pagination-next) {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  min-width: 32px;
+  height: 32px;
+  transition: all 0.3s;
+}
+
+.table-area :deep(.ant-pagination-prev:hover),
+.table-area :deep(.ant-pagination-next:hover) {
+  border-color: #1677ff;
+  color: #1677ff;
+}
+
 .table-area :deep(.ant-pagination-options-quick-jumper input) {
-  border-color: #d9d9d9;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  height: 32px;
+}
+
+.table-area :deep(.ant-pagination-options-size-changer) {
+  margin-right: 8px;
 }
 
 /* 规则编号样式 */

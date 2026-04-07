@@ -4,6 +4,11 @@
       <!-- 左侧任务列表区域 -->
       <a-col :span="6" class="left-panel" v-show="!leftPanelCollapsed">
         <div class="task-list-container">
+          <!-- 折叠按钮 -->
+          <div class="collapse-btn" @click="toggleLeftPanel" title="收起任务列表">
+            <LeftOutlined />
+          </div>
+          
           <!-- 搜索框 -->
           <div class="search-box">
             <a-input-search
@@ -95,8 +100,15 @@
         </div>
       </a-col>
 
+      <!-- 展开按钮（当左侧收起时显示） -->
+      <div v-show="leftPanelCollapsed" class="expand-btn-wrapper" @click="toggleLeftPanel" title="展开任务列表">
+        <div class="expand-btn">
+          <RightOutlined />
+        </div>
+      </div>
+
       <!-- 右侧详情区域 -->
-      <a-col :span="18" v-show="!leftPanelCollapsed" class="right-panel">
+      <a-col :span="18" class="right-panel" :class="{ 'right-panel-full': leftPanelCollapsed }">
         <!-- 任务信息卡片 -->
         <a-card class="task-info-card">
           <div class="card-header">
@@ -740,6 +752,7 @@ const onSelectChange = (selectedKeys: number[]) => {
 
 .main-container {
   height: calc(100vh - 32px);
+  position: relative;
 }
 
 /* 左侧面板样式 */
@@ -747,6 +760,35 @@ const onSelectChange = (selectedKeys: number[]) => {
   height: 100%;
   overflow: visible;
   position: relative;
+  transition: none;
+}
+
+/* 展开按钮 wrapper - 左侧收起时显示在工作台页面左侧 */
+.expand-btn-wrapper {
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+}
+
+/* 展开按钮 - 与折叠按钮样式保持一致 */
+.expand-btn {
+  width: 13px;
+  height: 36px;
+  background: #1677ff;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  transition: all 0.3s;
+}
+
+.expand-btn:hover {
+  background: #4096ff;
 }
 
 .task-list-container {
@@ -758,6 +800,30 @@ const onSelectChange = (selectedKeys: number[]) => {
   padding: 16px;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
   position: relative;
+}
+
+/* 折叠按钮 */
+.collapse-btn {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 36px;
+  background: #1677ff;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  z-index: 10;
+  transition: all 0.3s;
+}
+
+.collapse-btn:hover {
+  background: #4096ff;
 }
 
 .search-box {
@@ -895,6 +961,13 @@ const onSelectChange = (selectedKeys: number[]) => {
 .right-panel {
   height: 100%;
   overflow-y: auto;
+  transition: none;
+}
+
+.right-panel-full {
+  flex: 1;
+  max-width: 100%;
+  padding-left: 24px;
 }
 
 .task-info-card {
