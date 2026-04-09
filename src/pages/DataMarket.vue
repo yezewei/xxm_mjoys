@@ -6,10 +6,6 @@
         <div class="header-left">
           <h2 class="page-title">数据市场</h2>
         </div>
-        <a class="header-action" @click="handleSettings">
-          <setting-outlined />
-          数据市场设置
-        </a>
       </div>
     </div>
 
@@ -112,6 +108,7 @@
               row-key="id"
               :scroll="{ x: 1800 }"
               :bordered="true"
+              :key="subscriptionTableKey"
             >
               <!-- 订阅规则名称列自定义渲染 -->
               <template #bodyCell="{ column, record }">
@@ -127,14 +124,36 @@
                 <!-- 数据字段列 - Tag 样式 -->
                 <template v-else-if="column.key === 'dataFields'">
                   <div class="field-tags-container">
+                    <template v-for="(field, index) in record.dataFields" :key="index">
+                      <a-tag
+                        v-if="record.dataType === '免打扰名单' || index < 8 || record.expandedFields"
+                        class="field-tag"
+                      >
+                        {{ field }}
+                      </a-tag>
+                    </template>
                     <a-tag
-                      v-for="(field, index) in record.dataFields"
-                      :key="index"
-                      class="field-tag"
+                      v-if="record.dataType !== '免打扰名单' && record.dataFields.length > 8"
+                      class="expand-tag"
+                      @click.stop="toggleFieldExpand(record)"
                     >
-                      {{ field }}
+                      {{ record.expandedFields ? '收起' : `+${record.dataFields.length - 8} 更多` }}
                     </a-tag>
                   </div>
+                </template>
+
+                <!-- 字段分割符列 -->
+                <template v-else-if="column.key === 'delimiter'">
+                  <span class="delimiter-text">
+                    {{ getDelimiterLabel(record.delimiter, record.customDelimiter) }}
+                  </span>
+                </template>
+
+                <!-- 边界标识符列 -->
+                <template v-else-if="column.key === 'quoteChar'">
+                  <span class="quote-char-text">
+                    {{ getQuoteCharLabel(record.quoteChar) }}
+                  </span>
                 </template>
 
                 <!-- 订阅范围列 -->
@@ -264,6 +283,7 @@
               row-key="id"
               :scroll="{ x: 1800 }"
               :bordered="true"
+              :key="reissueTableKey"
             >
               <!-- 数据类型列自定义渲染 -->
               <template #bodyCell="{ column, record }">
@@ -274,12 +294,20 @@
                 <!-- 数据字段列 - Tag 样式 -->
                 <template v-else-if="column.key === 'dataFields'">
                   <div class="field-tags-container">
+                    <template v-for="(field, index) in record.dataFields" :key="index">
+                      <a-tag
+                        v-if="record.dataType === '免打扰名单' || index < 8 || record.expandedFields"
+                        class="field-tag"
+                      >
+                        {{ field }}
+                      </a-tag>
+                    </template>
                     <a-tag
-                      v-for="(field, index) in record.dataFields"
-                      :key="index"
-                      class="field-tag"
+                      v-if="record.dataType !== '免打扰名单' && record.dataFields.length > 8"
+                      class="expand-tag"
+                      @click.stop="toggleFieldExpand(record)"
                     >
-                      {{ field }}
+                      {{ record.expandedFields ? '收起' : `+${record.dataFields.length - 8} 更多` }}
                     </a-tag>
                   </div>
                 </template>
@@ -304,6 +332,8 @@
       @ok="handleCreateRuleConfirm"
       @cancel="handleCreateRuleCancel"
       width="700px"
+      ok-text="确定"
+      cancel-text="取消"
     >
       <a-form :model="createRuleForm" layout="vertical">
         <a-form-item
@@ -329,7 +359,7 @@
             <a-select-option value="AI 外呼记录">AI 外呼记录</a-select-option>
             <a-select-option value="人工外呼记录">人工外呼记录</a-select-option>
             <a-select-option value="人工跟进记录">人工跟进记录</a-select-option>
-            <a-select-option value="免打扰名单">免打扰名单</a-select-option>
+            <a-select-option value="短信发送记录">短信发送记录</a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="订阅数据范围" name="subscriptionRange">
@@ -341,8 +371,17 @@
                 :key="groupIndex"
                 class="condition-group"
               >
-                <div class="condition-group-header" v-if="groupIndex > 0">
-                  <span class="or-divider">或者</span>
+                <div class="condition-group-header">
+                  <span class="or-divider" v-if="groupIndex > 0">或者</span>
+                  <a-button
+                    v-if="createRuleForm.conditionGroups.length > 1"
+                    type="text"
+                    danger
+                    @click="removeGroup(groupIndex)"
+                    class="remove-group-btn"
+                  >
+                    <delete-outlined />
+                  </a-button>
                 </div>
                 <div class="condition-list">
                   <div
@@ -355,27 +394,79 @@
                       placeholder="选择字段"
                       class="condition-field"
                       :options="getCurrentFieldsOptions"
+                      @change="handleFieldChange(groupIndex, conditionIndex)"
                     />
                     <a-select
                       v-model:value="condition.operator"
-                      placeholder="运算符"
+                      placeholder="请选择运算符"
                       class="condition-operator"
+                      :disabled="!condition.field || getCurrentFieldOperators(condition.field).length === 0"
+                      :allow-clear="true"
                     >
-                      <a-select-option value="=">= 等于</a-select-option>
-                      <a-select-option value="!=">≠ 不等于</a-select-option>
-                      <a-select-option value="contains">包含</a-select-option>
-                      <a-select-option value="notContains">不包含</a-select-option>
-                      <a-select-option value=">">&gt; 大于</a-select-option>
-                      <a-select-option value=">=">&gt;= 大于等于</a-select-option>
-                      <a-select-option value="<">&lt; 小于</a-select-option>
-                      <a-select-option value="<=">&lt;= 小于等于</a-select-option>
+                      <a-select-option
+                        v-for="op in getCurrentFieldOperators(condition.field)"
+                        :key="op"
+                        :value="op"
+                      >
+                        {{ getOperatorLabel(op) }}
+                      </a-select-option>
                     </a-select>
-                    <a-input
+                    <!-- 下拉多选 -->
+                    <a-select
+                      v-if="getCurrentFieldValueType(condition.field) === 'multiSelect'"
                       v-model:value="condition.value"
-                      placeholder="输入值"
+                      mode="multiple"
+                      :placeholder="getValuePlaceholder(condition.field)"
+                      class="condition-value condition-multi-select"
+                      :disabled="!condition.operator"
+                      :maxTagCount="getMaxTagCount(condition.field)"
+                      :maxTagPlaceholder="getMaxTagPlaceholder"
+                    >
+                      <a-select-option
+                        v-for="opt in getCurrentFieldOptions(condition.field)"
+                        :key="opt"
+                        :value="opt"
+                      >
+                        {{ opt }}
+                      </a-select-option>
+                    </a-select>
+                    <!-- 机构树选择 (暂用普通下拉代替) -->
+                    <a-select
+                      v-else-if="getCurrentFieldValueType(condition.field) === 'tree'"
+                      v-model:value="condition.value"
+                      mode="multiple"
+                      :placeholder="getValuePlaceholder(condition.field)"
+                      class="condition-value condition-multi-select"
+                      :disabled="!condition.operator"
+                      :maxTagCount="getMaxTagCount(condition.field)"
+                      :maxTagPlaceholder="getMaxTagPlaceholder"
+                    >
+                      <a-select-option
+                        v-for="opt in getCurrentFieldOptions(condition.field)"
+                        :key="opt"
+                        :value="opt"
+                      >
+                        {{ opt }}
+                      </a-select-option>
+                    </a-select>
+                    <!-- 数值类型输入 -->
+                    <a-input-number
+                      v-else-if="getCurrentFieldValueType(condition.field) === 'number'"
+                      v-model:value="condition.value"
+                      placeholder="请输入数值"
                       class="condition-value"
+                      :disabled="!condition.operator"
+                    />
+                    <!-- 文本类型输入 -->
+                    <a-input
+                      v-else
+                      v-model:value="condition.value"
+                      :placeholder="getValuePlaceholder(condition.field)"
+                      class="condition-value"
+                      :disabled="!condition.operator"
                     />
                     <a-button
+                      v-if="group.conditions.length > 1"
                       type="text"
                       danger
                       @click="removeCondition(groupIndex, conditionIndex)"
@@ -393,15 +484,6 @@
                     </a>
                   </div>
                 </div>
-                <a-button
-                  type="text"
-                  danger
-                  @click="removeGroup(groupIndex)"
-                  class="remove-group-btn"
-                  v-if="createRuleForm.conditionGroups.length > 1"
-                >
-                  <delete-outlined />
-                </a-button>
               </div>
               <a class="add-or-condition-btn" @click="addOrCondition">
                 <plus-outlined />
@@ -410,6 +492,40 @@
             </div>
           </div>
         </a-form-item>
+        
+        <!-- 字段分割符配置 -->
+        <a-form-item
+          label="字段分割符配置"
+          name="delimiter"
+          :rules="[{ required: true, message: '请选择字段分割符' }]"
+        >
+          <a-radio-group v-model:value="createRuleForm.delimiter">
+            <a-radio value="tab">制表符</a-radio>
+            <a-radio value="comma">逗号</a-radio>
+            <a-radio value="semicolon">分号</a-radio>
+            <a-radio value="custom">自定义</a-radio>
+          </a-radio-group>
+          <a-input
+            v-if="createRuleForm.delimiter === 'custom'"
+            v-model:value="createRuleForm.customDelimiter"
+            placeholder="请输入自定义分割符"
+            style="width: 100px; margin-top: 8px;"
+            maxlength="1"
+          />
+        </a-form-item>
+        
+        <!-- 字段边界标识符 -->
+        <a-form-item
+          label="字段边界标识符"
+          name="quoteChar"
+          :rules="[{ required: true, message: '请选择字段边界标识符' }]"
+        >
+          <a-radio-group v-model:value="createRuleForm.quoteChar">
+            <a-radio value="double">英文双引号</a-radio>
+            <a-radio value="single">英文单引号</a-radio>
+          </a-radio-group>
+        </a-form-item>
+        
         <a-form-item
           label="文件生成时间"
           name="generateTime"
@@ -428,11 +544,212 @@
         </a-form-item>
       </a-form>
     </a-modal>
+
+    <!-- 数据补发对话框 -->
+    <a-modal
+      v-model:open="reissueModalVisible"
+      title="数据补发"
+      width="700px"
+      ok-text="生成文件"
+      cancel-text="取消"
+      @ok="handleReissueConfirm"
+      @cancel="handleReissueCancel"
+    >
+      <a-form :model="reissueForm" layout="vertical">
+        <div class="reissue-hint">
+          补发范围：若不设置条件，默认补发所选时间段内所有数据
+        </div>
+        <div class="condition-section">
+          <a class="add-condition-link" @click="addReissueOrCondition">
+            <plus-outlined />
+            添加条件
+          </a>
+          <div class="condition-groups">
+            <div
+              v-for="(group, groupIndex) in reissueForm.conditionGroups"
+              :key="groupIndex"
+              class="condition-group"
+            >
+              <div class="condition-group-header">
+                <span class="or-divider" v-if="groupIndex > 0">或者</span>
+                <a-button
+                  v-if="reissueForm.conditionGroups.length > 1"
+                  type="text"
+                  danger
+                  @click="removeReissueGroup(groupIndex)"
+                  class="remove-group-btn"
+                >
+                  <delete-outlined />
+                </a-button>
+              </div>
+              <div class="condition-list">
+                <div
+                  v-for="(condition, conditionIndex) in group.conditions"
+                  :key="conditionIndex"
+                  class="condition-item"
+                >
+                  <a-select
+                    v-model:value="condition.field"
+                    placeholder="选择字段"
+                    class="condition-field"
+                    :options="getReissueFieldsOptions"
+                    @change="handleReissueFieldChange(groupIndex, conditionIndex)"
+                  />
+                  <a-select
+                    v-model:value="condition.operator"
+                    placeholder="请选择运算符"
+                    class="condition-operator"
+                    :disabled="!condition.field || getReissueFieldOperators(condition.field).length === 0"
+                    :allow-clear="true"
+                  >
+                    <a-select-option
+                      v-for="op in getReissueFieldOperators(condition.field)"
+                      :key="op"
+                      :value="op"
+                    >
+                      {{ getOperatorLabel(op) }}
+                    </a-select-option>
+                  </a-select>
+                  <!-- 下拉多选 -->
+                  <a-select
+                    v-if="getReissueFieldValueType(condition.field) === 'multiSelect'"
+                    v-model:value="condition.value"
+                    mode="multiple"
+                    :placeholder="getReissueValuePlaceholder(condition.field)"
+                    class="condition-value condition-multi-select"
+                    :disabled="!condition.operator"
+                    :maxTagCount="getReissueMaxTagCount(condition.field)"
+                    :maxTagPlaceholder="getMaxTagPlaceholder"
+                  >
+                    <a-select-option
+                      v-for="opt in getReissueFieldOptions(condition.field)"
+                      :key="opt"
+                      :value="opt"
+                    >
+                      {{ opt }}
+                    </a-select-option>
+                  </a-select>
+                  <!-- 机构树选择 (暂用普通下拉代替) -->
+                  <a-select
+                    v-else-if="getReissueFieldValueType(condition.field) === 'tree'"
+                    v-model:value="condition.value"
+                    mode="multiple"
+                    :placeholder="getReissueValuePlaceholder(condition.field)"
+                    class="condition-value condition-multi-select"
+                    :disabled="!condition.operator"
+                    :maxTagCount="getReissueMaxTagCount(condition.field)"
+                    :maxTagPlaceholder="getMaxTagPlaceholder"
+                  >
+                    <a-select-option
+                      v-for="opt in getReissueFieldOptions(condition.field)"
+                      :key="opt"
+                      :value="opt"
+                    >
+                      {{ opt }}
+                    </a-select-option>
+                  </a-select>
+                  <!-- 数值类型输入 -->
+                  <a-input-number
+                    v-else-if="getReissueFieldValueType(condition.field) === 'number'"
+                    v-model:value="condition.value"
+                    placeholder="请输入数值"
+                    class="condition-value"
+                    :disabled="!condition.operator"
+                  />
+                  <!-- 文本类型输入 -->
+                  <a-input
+                    v-else
+                    v-model:value="condition.value"
+                    :placeholder="getReissueValuePlaceholder(condition.field)"
+                    class="condition-value"
+                    :disabled="!condition.operator"
+                  />
+                  <a-button
+                    v-if="group.conditions.length > 1 || groupIndex > 0"
+                    type="text"
+                    danger
+                    @click="removeReissueCondition(groupIndex, conditionIndex)"
+                    class="remove-condition"
+                  >
+                    <delete-outlined />
+                  </a-button>
+                  <a
+                    v-if="conditionIndex === group.conditions.length - 1"
+                    class="add-and-condition-btn"
+                    @click="addReissueAndCondition(groupIndex)"
+                  >
+                    <plus-outlined />
+                    且条件
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 字段分割符配置 -->
+        <a-form-item
+          label="字段分割符配置"
+          name="delimiter"
+          :rules="[{ required: true, message: '请选择字段分割符' }]"
+        >
+          <a-radio-group v-model:value="reissueForm.delimiter">
+            <a-radio value="tab">制表符</a-radio>
+            <a-radio value="comma">逗号</a-radio>
+            <a-radio value="semicolon">分号</a-radio>
+            <a-radio value="custom">自定义</a-radio>
+          </a-radio-group>
+          <a-input
+            v-if="reissueForm.delimiter === 'custom'"
+            v-model:value="reissueForm.customDelimiter"
+            placeholder="请输入自定义分割符"
+            style="width: 100px; margin-top: 8px;"
+            maxlength="1"
+          />
+        </a-form-item>
+
+        <!-- 字段边界标识符 -->
+        <a-form-item
+          label="字段边界标识符"
+          name="quoteChar"
+          :rules="[{ required: true, message: '请选择字段边界标识符' }]"
+        >
+          <a-radio-group v-model:value="reissueForm.quoteChar">
+            <a-radio value="double">英文双引号</a-radio>
+            <a-radio value="single">英文单引号</a-radio>
+          </a-radio-group>
+        </a-form-item>
+
+        <a-form-item
+          label="补发日期范围"
+          name="dateRange"
+        >
+          <a-range-picker
+            v-model:value="reissueForm.dateRange"
+            class="date-range-picker"
+            :format="'YYYY-MM-DD'"
+            placeholder="补发开始日期"
+          >
+            <template #separator>
+              <span>至</span>
+            </template>
+            <template #placeholder>
+              <div class="range-placeholder">
+                <span>补发开始日期</span>
+                <span class="separator">至</span>
+                <span>补发结束日期</span>
+              </div>
+            </template>
+          </a-range-picker>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
+import { Modal } from 'ant-design-vue';
 import {
   SettingOutlined,
   DatabaseOutlined,
@@ -450,6 +767,10 @@ import type { TableColumnsType } from 'ant-design-vue';
 
 // Tab 激活状态
 const activeTab = ref('subscription');
+
+// 表格刷新 key
+const subscriptionTableKey = ref(0);
+const reissueTableKey = ref(0);
 
 // 收起/展开状态，默认收起
 const isCollapsed = ref(true);
@@ -475,6 +796,12 @@ const isEditMode = ref(false);
 // 新建/编辑订阅规则对话框
 const createRuleModalVisible = ref(false);
 
+// 数据补发对话框
+const reissueModalVisible = ref(false);
+
+// 当前补发的数据类型
+const currentReissueDataType = ref('');
+
 // 条件组数据结构
 interface Condition {
   field: string;
@@ -486,44 +813,142 @@ interface ConditionGroup {
   conditions: Condition[];
 }
 
-// 数据类型字段定义
-const aiCallFields = [
-  'AI 外呼记录 ID', '场景 ID', '场景编号', '场景名称', '任务 ID', '数据批次名称',
-  '任务明细 ID', '批次 ID', '数据来源', '批次详情 ID', '主叫号码', '拨打号码',
-  '机构编号', '所属机构名称', '客户原始所属直营坐席工号', '客户原始所属直营坐席账号',
-  '客户原始所属直营坐席名称', '客户当前所属直营坐席工号', '客户当前所属直营坐席账号',
-  '客户当前所属直营坐席名称', '通话状态', '接通状态中文', '拨打时间', '接机时间',
-  '挂断时间', '通话时长', '振铃时长', '意向分类', '意向分类描述', '通话标签',
-  '通话轮次', '按键输入', '录音地址', '扩展信息', '任务完成状态', '执行日志',
-  '联系方式类型', '数据上传人员', '拨打次数', '通话类型', '转接状态', '实体标签',
-  'AI 通话时长', '转接等待时长', '人工通话时长', '跟进状态', '回流检测状态',
-  '下发状态', '备注', '被叫运营商', '被叫归属地', '企微账号', '加粉状态',
-  '验证信息', '对话标签', '模型分类',
+// 字段配置接口
+interface FieldConfig {
+  field: string;
+  operators?: string[]; // 判断符，为空表示不可选
+  valueType?: 'text' | 'number' | 'select' | 'tree' | 'multiSelect'; // 值类型
+  options?: string[]; // 下拉选项
+}
+
+// AI 通话记录字段配置 (根据图片)
+const aiCallFieldConfigs: FieldConfig[] = [
+  { field: '场景 ID', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['场景 ID1', '场景 ID2', '场景 ID3'] },
+  { field: '场景名称', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '任务名称', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '批次名称', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '所属机构名称', operators: ['=', '!=', 'contains'], valueType: 'tree' },
+  { field: '所属客户经理', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['客户经理 1', '客户经理 2', '客户经理 3'] },
+  { field: '拨打状态', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['已接通', '未知原因', '无人接听', '空号', '停机', '无法接通', '占线/拒接', '留言', '关机', '线路异常'] },
+  { field: '通话时长 S', operators: ['>', '<'], valueType: 'number' },
+  { field: '意向分类', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['有意向', '可能有意向', '无意向'] },
+  { field: '通话轮次', operators: ['>', '<'], valueType: 'number' },
+  { field: 'AI 拨打详情 ID', operators: [] },
+  { field: '场景编号', operators: [] },
+  { field: '任务 ID', operators: [] },
+  { field: '任务明细 ID', operators: [] },
+  { field: '批次 ID', operators: [] },
+  { field: '数据来源', operators: [] },
+  { field: '批次详情 id', operators: [] },
+  { field: '主叫号码', operators: [] },
+  { field: '拨打号码', operators: [] },
+  { field: '机构编号', operators: [] },
+  { field: '拨打时间', operators: [] },
+  { field: '接机时间', operators: [] },
+  { field: '挂断时间', operators: [] },
+  { field: '接通状态中文', operators: [] },
+  { field: '振铃时长', operators: [] },
+  { field: '意向分类描述', operators: [] },
+  { field: '通话标签', operators: [] },
+  { field: '按键输入', operators: [] },
+  { field: '录音地址', operators: [] },
+  { field: '是否加入黑名单', operators: [] },
+  { field: '扩展信息', operators: [] },
+  { field: '对话执行日志', operators: [] },
+  { field: '任务完成状态', operators: [] },
 ];
 
-const manualCallFields = [
-  '人工外呼记录 ID', 'AI 外呼记录 ID', '坐席跟进任务 ID', '场景 ID', '场景编号',
-  '场景名称', '任务 ID', '数据批次名称', '任务明细 ID', '批次 ID', '客户来源',
-  '数据来源', '拨打号码', '机构编号', '所属机构名称', '客户原始所属直营坐席工号',
-  '客户原始所属直营坐席账号', '客户原始所属直营坐席名称', '客户当前所属直营坐席工号',
-  '客户当前所属直营坐席账号', '客户当前所属直营坐席名称', '通话状态', '拨打时间',
-  '接机时间', '挂断时间', '客户振铃时长', '通话时长', '录音地址', '扩展信息',
-  '跟进结果',
+// 人工外呼记录字段配置 (根据图片)
+const manualCallFieldConfigs: FieldConfig[] = [
+  { field: '场景 ID', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['场景 ID1', '场景 ID2', '场景 ID3'] },
+  { field: '场景名称', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '坐席任务来源', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['未知', '平台上传', 'NFT 上传', 'API 上传'] },
+  { field: '客户来源', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['未知', '人工导入', 'AI 外呼', 'AI 外呼转人工', 'API 上传', 'AI 外呼主动介入'] },
+  { field: '客户所属机构名称', operators: ['=', '!=', 'contains'], valueType: 'tree' },
+  { field: '所属客户经理', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['客户经理 1', '客户经理 2', '客户经理 3'] },
+  { field: '拨打状态', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['未接通', '已接通'] },
+  { field: '通话时长 S', operators: ['>', '<'], valueType: 'number' },
+  { field: '人工拨打详情 ID', operators: [] },
+  { field: 'AI 拨打详情 ID', operators: [] },
+  { field: '坐席任务 ID', operators: [] },
+  { field: '场景编号', operators: [] },
+  { field: '任务 ID', operators: [] },
+  { field: '任务明细 ID', operators: [] },
+  { field: '拨打号码', operators: [] },
+  { field: '客户所属机构编号', operators: [] },
+  { field: '拨打时间', operators: [] },
+  { field: '接机时间', operators: [] },
+  { field: '挂断时间', operators: [] },
+  { field: '振铃时长', operators: [] },
+  { field: '录音地址', operators: [] },
+  { field: '扩展信息', operators: [] },
 ];
 
-const manualFollowUpFields = [
-  '坐席跟进任务记录 ID', '坐席跟进任务 ID', '人工外呼记录 ID', 'AI 外呼记录 ID',
-  '场景 ID', '场景编号', '场景名称', '任务 ID', '数据批次名称', '任务明细 ID',
-  '批次 ID', '客户来源', '数据来源', '拨打号码', '机构编号', '所属机构名称',
-  '跟进时间', '任务分配时间', '客户原始所属直营坐席工号', '客户原始所属直营坐席账号',
-  '客户原始所属直营坐席名称', '客户当前所属直营坐席工号', '客户当前所属直营坐席账号',
-  '客户当前所属直营坐席名称', '跟进结果', '跟进备注', '跟进标签', '扩展信息',
+// 人工跟进记录字段配置 (根据图片)
+const manualFollowUpFieldConfigs: FieldConfig[] = [
+  { field: '场景 ID', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['场景 ID1', '场景 ID2', '场景 ID3'] },
+  { field: '场景名称', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '坐席任务来源', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['未知', '平台上传', 'NFT 上传', 'API 上传'] },
+  { field: '客户所属机构名称', operators: ['=', '!=', 'contains'], valueType: 'tree' },
+  { field: '所属客户经理', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['客户经理 1', '客户经理 2', '客户经理 3'] },
+  { field: '跟进结果', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['待跟进', '持续跟进', '明确拒绝', '明确转化'] },
+  { field: '跟进坐席 (客户经理) 平台用户名', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['用户名 1', '用户名 2', '用户名 3'] },
+  { field: '坐席任务跟进记录 ID', operators: [] },
+  { field: '坐席任务 ID', operators: [] },
+  { field: '场景编号', operators: [] },
+  { field: '任务 ID', operators: [] },
+  { field: '任务名称', operators: [] },
+  { field: '任务明细 ID', operators: [] },
+  { field: '拨打号码', operators: [] },
+  { field: '客户所属机构编号', operators: [] },
+  { field: '扩展信息', operators: [] },
+  { field: '跟进备注', operators: [] },
+  { field: '跟进标签', operators: [] },
+  { field: '跟进坐席 (客户经理) 行方工号', operators: [] },
+  { field: 'AI 拨打详情 ID', operators: [] },
+  { field: '人工拨打详情 ID', operators: [] },
 ];
 
-// 免打扰名单字段
-const dncFields = [
-  '手机号', '用户 ID', '添加时间', '添加来源', '过期时间', '备注',
+// 免打扰名单字段配置
+const dncFieldConfigs: FieldConfig[] = [
+  { field: '联系方式', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '添加方式', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['手动添加', '自动添加'] },
+  { field: '来源', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['AI 外呼', '免打扰名单 - 批量导入', '免打扰名单 - 单个新增', '电话工作台', 'API'] },
+  { field: '添加原因', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['连续拒绝', '投诉骂人', '要求勿扰'] },
+  { field: '机构名称', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '拨打时间', operators: [] },
+  { field: '添加时间', operators: [] },
+  { field: '解除时间', operators: [] },
+  { field: '添加人', operators: [] },
+  { field: '备注', operators: [] },
 ];
+
+// 短信发送记录字段配置 (根据图片)
+const smsRecordFieldConfigs: FieldConfig[] = [
+  { field: '操作人', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['操作员 1', '操作员 2', '操作员 3'] },
+  { field: '模版名称', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['模版 1', '模版 2', '模版 3'] },
+  { field: '短信内容', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '手机号码', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '发送时间', operators: [] },
+  { field: '状态', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['发送成功', '发送失败'] },
+  { field: '失败原因', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['号码空号', '号码停机', '发送超时', '内容敏感', '其他原因'] },
+];
+
+// 获取字段名称列表 (用于下拉选择)
+const aiCallFields = aiCallFieldConfigs.map(c => c.field);
+const manualCallFields = manualCallFieldConfigs.map(c => c.field);
+const manualFollowUpFields = manualFollowUpFieldConfigs.map(c => c.field);
+const dncFields = dncFieldConfigs.map(c => c.field);
+const smsRecordFields = smsRecordFieldConfigs.map(c => c.field);
+
+// 数据类型与字段配置的映射
+const dataTypeFieldConfigsMap: Record<string, FieldConfig[]> = {
+  'AI 外呼记录': aiCallFieldConfigs,
+  '人工外呼记录': manualCallFieldConfigs,
+  '人工跟进记录': manualFollowUpFieldConfigs,
+  '免打扰名单': dncFieldConfigs,
+  '短信发送记录': smsRecordFieldConfigs,
+};
 
 // 数据类型与字段的映射
 const dataTypeFieldsMap: Record<string, string[]> = {
@@ -531,6 +956,31 @@ const dataTypeFieldsMap: Record<string, string[]> = {
   '人工外呼记录': manualCallFields,
   '人工跟进记录': manualFollowUpFields,
   '免打扰名单': dncFields,
+  '短信发送记录': smsRecordFields,
+};
+
+// 判断符映射表
+const operatorMap: Record<string, string> = {
+  '=': '等于',
+  '!=': '不等于',
+  'contains': '包含',
+  'notContains': '不包含',
+  '>': '大于',
+  '>=': '大于等于',
+  '<': '小于',
+  '<=': '小于等于',
+};
+
+// 反向判断符映射表
+const reverseOperatorMap: Record<string, string> = {
+  '等于': '=',
+  '不等于': '!=',
+  '包含': 'contains',
+  '不包含': 'notContains',
+  '大于': '>',
+  '大于等于': '>=',
+  '小于': '<',
+  '小于等于': '<=',
 };
 
 const createRuleForm = reactive({
@@ -539,7 +989,20 @@ const createRuleForm = reactive({
   dataType: '',
   subscriptionRange: '',
   generateTime: '',
+  delimiter: 'comma' as string, // 默认逗号
+  customDelimiter: '' as string,
+  quoteChar: 'single' as string, // 默认英文单引号
   conditionGroups: [] as ConditionGroup[],
+});
+
+// 数据补发表单
+const reissueForm = reactive({
+  dataType: '',
+  conditionGroups: [] as ConditionGroup[],
+  dateRange: [] as any[],
+  delimiter: 'comma' as string, // 默认逗号
+  customDelimiter: '' as string,
+  quoteChar: 'single' as string, // 默认英文单引号
 });
 
 // 初始化条件组
@@ -547,18 +1010,214 @@ const initConditionGroups = () => {
   createRuleForm.conditionGroups = [{ conditions: [{ field: '', operator: '=', value: '' }] }];
 };
 
+// 初始化补发条件组
+const initReissueConditionGroups = () => {
+  reissueForm.conditionGroups = [{ conditions: [] }];
+};
+
 // 获取当前数据类型的字段选项
 const getCurrentFieldsOptions = computed(() => {
-  const fields = dataTypeFieldsMap[createRuleForm.dataType] || [];
-  return fields.map(field => ({
-    label: field,
-    value: field,
-  }));
+  const fieldConfigs = getCurrentFieldConfigs.value;
+  // 只显示有判断符的字段（operators 数组不为空）
+  return fieldConfigs
+    .filter(config => config.operators && config.operators.length > 0) // 过滤掉没有判断符的字段
+    .map(config => ({
+      label: config.field,
+      value: config.field,
+    }));
 });
+
+// 获取补发字段选项
+const getReissueFieldsOptions = computed(() => {
+  const fieldConfigs = dataTypeFieldConfigsMap[currentReissueDataType.value] || [];
+  return fieldConfigs
+    .filter(config => config.operators && config.operators.length > 0)
+    .map(config => ({
+      label: config.field,
+      value: config.field,
+    }));
+});
+
+// 获取当前数据类型的字段配置
+const getCurrentFieldConfigs = computed(() => {
+  return dataTypeFieldConfigsMap[createRuleForm.dataType] || [];
+});
+
+// 根据字段名获取字段配置
+const getFieldConfig = (fieldName: string): FieldConfig | undefined => {
+  return getCurrentFieldConfigs.value.find(config => config.field === fieldName);
+};
+
+// 获取补发字段配置
+const getReissueFieldConfig = (fieldName: string): FieldConfig | undefined => {
+  const fieldConfigs = dataTypeFieldConfigsMap[currentReissueDataType.value] || [];
+  return fieldConfigs.find(config => config.field === fieldName);
+};
+
+// 获取当前字段可用的判断符
+const getCurrentFieldOperators = (fieldName: string): string[] => {
+  if (!fieldName || !createRuleForm.dataType) return [];
+  const config = getFieldConfig(fieldName);
+  return config?.operators || [];
+};
+
+// 获取分割符显示标签
+const getDelimiterLabel = (delimiter: string, customDelimiter?: string): string => {
+  const labelMap: Record<string, string> = {
+    'tab': '制表符',
+    'comma': '逗号',
+    'semicolon': '分号',
+    'custom': customDelimiter || '自定义',
+  };
+  return labelMap[delimiter] || delimiter;
+};
+
+// 获取边界标识符显示标签
+const getQuoteCharLabel = (quoteChar: string): string => {
+  const labelMap: Record<string, string> = {
+    'double': '英文双引号',
+    'single': '英文单引号',
+  };
+  return labelMap[quoteChar] || quoteChar;
+};
+
+// 获取补发字段判断符
+const getReissueFieldOperators = (fieldName: string): string[] => {
+  if (!fieldName || !currentReissueDataType.value) return [];
+  const config = getReissueFieldConfig(fieldName);
+  return config?.operators || [];
+};
+
+// 获取判断符显示标签
+const getOperatorLabel = (operator: string): string => {
+  const labelMap: Record<string, string> = {
+    '=': '等于',
+    '!=': '不等于',
+    'contains': '包含',
+    'notContains': '不包含',
+    '>': '大于',
+    '>=': '大于等于',
+    '<': '小于',
+    '<=': '小于等于',
+  };
+  return labelMap[operator] || operator;
+};
+
+// 获取当前字段的值类型
+const getCurrentFieldValueType = (fieldName: string): string => {
+  if (!fieldName || !createRuleForm.dataType) return 'text';
+  const config = getFieldConfig(fieldName);
+  return config?.valueType || 'text';
+};
+
+// 获取补发字段值类型
+const getReissueFieldValueType = (fieldName: string): string => {
+  if (!fieldName || !currentReissueDataType.value) return 'text';
+  const config = getReissueFieldConfig(fieldName);
+  return config?.valueType || 'text';
+};
+
+// 获取当前字段的选项
+const getCurrentFieldOptions = (fieldName: string): string[] => {
+  if (!fieldName || !createRuleForm.dataType) return [];
+  const config = getFieldConfig(fieldName);
+  return config?.options || [];
+};
+
+// 获取补发字段选项
+const getReissueFieldOptions = (fieldName: string): string[] => {
+  if (!fieldName || !currentReissueDataType.value) return [];
+  const config = getReissueFieldConfig(fieldName);
+  return config?.options || [];
+};
+
+// 获取值的占位符提示
+const getValuePlaceholder = (fieldName: string): string => {
+  const config = getFieldConfig(fieldName);
+  if (!config) return '输入值';
+
+  switch (config.valueType) {
+    case 'text':
+      return '文本输入，输入关键词';
+    case 'number':
+      return '数值输入';
+    case 'multiSelect':
+    case 'tree':
+      return '下拉多选，请选择';
+    default:
+      return '输入值';
+  }
+};
+
+// 获取补发值占位符
+const getReissueValuePlaceholder = (fieldName: string): string => {
+  const config = getReissueFieldConfig(fieldName);
+  if (!config) return '输入值';
+
+  switch (config.valueType) {
+    case 'text':
+      return '文本输入，输入关键词';
+    case 'number':
+      return '数值输入';
+    case 'multiSelect':
+    case 'tree':
+      return '下拉多选，请选择';
+    default:
+      return '输入值';
+  }
+};
+
+// 获取最大显示标签数量
+const getMaxTagCount = (fieldName: string): number => {
+  const options = getCurrentFieldOptions(fieldName);
+  // 根据选项数量动态设置，最多显示 2 个，其余用 +X 表示
+  if (options.length <= 2) {
+    return options.length;
+  }
+  return 2;
+};
+
+// 获取补发最大显示标签数量
+const getReissueMaxTagCount = (fieldName: string): number => {
+  const options = getReissueFieldOptions(fieldName);
+  if (options.length <= 2) {
+    return options.length;
+  }
+  return 2;
+};
+
+// 自定义超出显示数量的占位符
+const getMaxTagPlaceholder = (omittedValues: string[]) => {
+  return `+ ${omittedValues.length} ...`;
+};
+
+// 处理字段变化，清空运算符和值
+const handleFieldChange = (groupIndex: number, conditionIndex: number) => {
+  const condition = createRuleForm.conditionGroups[groupIndex].conditions[conditionIndex];
+  // 字段变化时，清空运算符和值
+  condition.operator = '';
+  condition.value = '';
+};
+
+// 处理补发字段变化
+const handleReissueFieldChange = (groupIndex: number, conditionIndex: number) => {
+  const condition = reissueForm.conditionGroups[groupIndex].conditions[conditionIndex];
+  condition.operator = '';
+  condition.value = '';
+};
 
 // 添加且条件
 const addAndCondition = (groupIndex: number) => {
   createRuleForm.conditionGroups[groupIndex].conditions.push({
+    field: '',
+    operator: '=',
+    value: '',
+  });
+};
+
+// 添加补发且条件
+const addReissueAndCondition = (groupIndex: number) => {
+  reissueForm.conditionGroups[groupIndex].conditions.push({
     field: '',
     operator: '=',
     value: '',
@@ -578,6 +1237,18 @@ const removeCondition = (groupIndex: number, conditionIndex: number) => {
   }
 };
 
+// 删除补发条件
+const removeReissueCondition = (groupIndex: number, conditionIndex: number) => {
+  const group = reissueForm.conditionGroups[groupIndex];
+  if (group.conditions.length > 1) {
+    group.conditions.splice(conditionIndex, 1);
+  } else {
+    if (reissueForm.conditionGroups.length > 1) {
+      reissueForm.conditionGroups.splice(groupIndex, 1);
+    }
+  }
+};
+
 // 添加或条件组
 const addOrCondition = () => {
   createRuleForm.conditionGroups.push({
@@ -585,10 +1256,37 @@ const addOrCondition = () => {
   });
 };
 
+// 添加补发或条件组
+const addReissueOrCondition = () => {
+  reissueForm.conditionGroups.push({
+    conditions: [{ field: '', operator: '=', value: '' }],
+  });
+};
+
+// 添加补发条件
+const addReissueCondition = () => {
+  if (reissueForm.conditionGroups.length === 0) {
+    reissueForm.conditionGroups = [{ conditions: [{ field: '', operator: '', value: '' }] }];
+  } else {
+    reissueForm.conditionGroups[0].conditions.push({
+      field: '',
+      operator: '',
+      value: '',
+    });
+  }
+};
+
 // 删除条件组
 const removeGroup = (groupIndex: number) => {
   if (createRuleForm.conditionGroups.length > 1) {
     createRuleForm.conditionGroups.splice(groupIndex, 1);
+  }
+};
+
+// 删除补发条件组
+const removeReissueGroup = (groupIndex: number) => {
+  if (reissueForm.conditionGroups.length > 1) {
+    reissueForm.conditionGroups.splice(groupIndex, 1);
   }
 };
 
@@ -687,8 +1385,20 @@ const columns: TableColumnsType = [
     title: '数据字段',
     dataIndex: 'dataFields',
     key: 'dataFields',
-    width: 800,
+    width: 600,
     ellipsis: true,
+  },
+  {
+    title: '字段分割符',
+    dataIndex: 'delimiter',
+    key: 'delimiter',
+    width: 120,
+  },
+  {
+    title: '边界标识符',
+    dataIndex: 'quoteChar',
+    key: 'quoteChar',
+    width: 120,
   },
   {
     title: '订阅范围',
@@ -716,8 +1426,8 @@ const columns: TableColumnsType = [
   },
 ];
 
-// 订阅表格数据
-const tableData = [
+// 订阅表格数据 - 使用 ref 包装以确保响应式
+const tableData = ref([
   {
     id: 1,
     ruleName: 'AI 外呼数据订阅',
@@ -725,7 +1435,10 @@ const tableData = [
     dataFields: aiCallFields,
     subscriptionRange: '',
     generateTime: '每 1 天',
+    delimiter: 'comma',
+    quoteChar: 'single',
     enabled: true,
+    expandedFields: false,
   },
   {
     id: 2,
@@ -734,7 +1447,10 @@ const tableData = [
     dataFields: manualCallFields,
     subscriptionRange: '',
     generateTime: '每 1 天',
+    delimiter: 'comma',
+    quoteChar: 'single',
     enabled: true,
+    expandedFields: false,
   },
   {
     id: 3,
@@ -743,9 +1459,24 @@ const tableData = [
     dataFields: manualFollowUpFields,
     subscriptionRange: '【跟进结果】包含"持续跟进"',
     generateTime: '每 1 天',
+    delimiter: 'comma',
+    quoteChar: 'single',
     enabled: false,
+    expandedFields: false,
   },
-];
+  {
+    id: 4,
+    ruleName: '短信发送记录订阅',
+    dataType: '短信发送记录',
+    dataFields: smsRecordFields,
+    subscriptionRange: '',
+    generateTime: '每 1 天',
+    delimiter: 'comma',
+    quoteChar: 'single',
+    enabled: true,
+    expandedFields: false,
+  },
+]);
 
 // 数据补发表格列定义
 const reissueColumns: TableColumnsType = [
@@ -771,27 +1502,42 @@ const reissueColumns: TableColumnsType = [
   },
 ];
 
-// 数据补发表格数据
-const reissueTableData = [
+// 数据补发表格数据 - 使用 ref 包装以确保响应式
+const reissueTableData = ref([
   {
     id: 1,
     dataType: 'AI 外呼记录',
     dataFields: aiCallFields,
+    expandedFields: false,
   },
   {
     id: 2,
     dataType: '人工外呼记录',
     dataFields: manualCallFields,
+    expandedFields: false,
   },
   {
     id: 3,
     dataType: '人工跟进记录',
     dataFields: manualFollowUpFields,
+    expandedFields: false,
   },
-];
+  {
+    id: 4,
+    dataType: '免打扰名单',
+    dataFields: dncFields,
+    expandedFields: false,
+  },
+  {
+    id: 5,
+    dataType: '短信发送记录',
+    dataFields: smsRecordFields,
+    expandedFields: false,
+  },
+]);
 
 // 自增 ID
-let nextId = 4;
+let nextId = 5;
 
 /**
  * 处理设置按钮点击
@@ -852,7 +1598,7 @@ const handleCreateRuleConfirm = () => {
 
   if (isEditMode.value && createRuleForm.id !== null) {
     // 编辑模式
-    const record = tableData.find(item => item.id === createRuleForm.id);
+    const record = tableData.value.find(item => item.id === createRuleForm.id);
     if (record) {
       record.ruleName = createRuleForm.ruleName;
       record.dataType = createRuleForm.dataType;
@@ -873,7 +1619,7 @@ const handleCreateRuleConfirm = () => {
       generateTime: createRuleForm.generateTime,
       enabled: true,
     };
-    tableData.push(newRule);
+    tableData.value.push(newRule);
     // TODO: 调用 API 创建
     console.log('创建订阅规则:', newRule);
   }
@@ -895,12 +1641,83 @@ const handleCreateRuleCancel = () => {
 };
 
 /**
+ * 切换字段展开/收起状态
+ */
+const toggleFieldExpand = (record: any) => {
+  // 先在订阅表格中查找
+  let index = tableData.value.findIndex(item => item.id === record.id);
+  if (index !== -1) {
+    tableData.value[index].expandedFields = !tableData.value[index].expandedFields;
+    // 强制刷新订阅表格
+    subscriptionTableKey.value++;
+  } else {
+    // 如果没找到，在补发表格中查找
+    index = reissueTableData.value.findIndex(item => item.id === record.id);
+    if (index !== -1) {
+      reissueTableData.value[index].expandedFields = !reissueTableData.value[index].expandedFields;
+      // 强制刷新补发表格
+      reissueTableKey.value++;
+    }
+  }
+};
+
+/**
  * 处理数据补发
  */
 const handleReissue = (record: any) => {
-  // TODO: 实现数据补发功能
-  console.log('数据补发:', record.dataType);
-  // 这里可以打开一个对话框，让用户选择数据范围和时间范围
+  // 设置当前补发的数据类型
+  currentReissueDataType.value = record.dataType;
+  // 初始化补发表单
+  reissueForm.dataType = record.dataType;
+  reissueForm.dateRange = [];
+  initReissueConditionGroups();
+  // 打开对话框
+  reissueModalVisible.value = true;
+};
+
+/**
+ * 确认数据补发
+ */
+const handleReissueConfirm = () => {
+  // 未填写补发日期范围时，弹出二次确认
+  if (!reissueForm.dateRange || reissueForm.dateRange.length !== 2) {
+    Modal.confirm({
+      title: '提示',
+      content: '不填写补发日期范围，默认将补发历史全量数据，确认继续？',
+      okText: '确认',
+      cancelText: '取消',
+      onOk: () => {
+        // TODO: 调用 API 生成文件
+        console.log('生成文件:', {
+          dataType: reissueForm.dataType,
+          dateRange: reissueForm.dateRange,
+          conditions: reissueForm.conditionGroups,
+        });
+        
+        reissueModalVisible.value = false;
+      },
+    });
+    return;
+  }
+  
+  // TODO: 调用 API 生成文件
+  console.log('生成文件:', {
+    dataType: reissueForm.dataType,
+    dateRange: reissueForm.dateRange,
+    conditions: reissueForm.conditionGroups,
+  });
+  
+  reissueModalVisible.value = false;
+};
+
+/**
+ * 取消数据补发
+ */
+const handleReissueCancel = () => {
+  reissueModalVisible.value = false;
+  reissueForm.dataType = '';
+  reissueForm.dateRange = [];
+  reissueForm.conditionGroups = [];
 };
 
 /**
@@ -944,9 +1761,9 @@ const handleToggleStatus = (record: any) => {
 const handleDelete = (record: any) => {
   // TODO: 调用 API 删除
   console.log('删除订阅规则:', record.ruleName);
-  const index = tableData.findIndex(item => item.id === record.id);
+  const index = tableData.value.findIndex(item => item.id === record.id);
   if (index > -1) {
-    tableData.splice(index, 1);
+    tableData.value.splice(index, 1);
   }
 };
 </script>
@@ -1307,6 +2124,23 @@ const handleDelete = (record: any) => {
   color: #0958d9;
 }
 
+/* 展开/收起标签 */
+.expand-tag {
+  margin: 0;
+  font-size: 12px;
+  background: #f5f5f5;
+  border-color: #d9d9d9;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.expand-tag:hover {
+  background: #e6f4ff;
+  border-color: #91caff;
+  color: #1890ff;
+}
+
 /* 订阅范围文本 */
 .subscription-range-text {
   color: #333;
@@ -1404,6 +2238,7 @@ const handleDelete = (record: any) => {
   align-items: center;
   justify-content: center;
   padding: 4px 8px;
+  margin-left: 4px;
 }
 
 .add-condition-btn {
@@ -1414,6 +2249,7 @@ const handleDelete = (record: any) => {
   font-size: 13px;
   cursor: pointer;
   padding: 8px 0;
+  margin-left: 8px;
 }
 
 .add-condition-btn:hover {
@@ -1435,6 +2271,9 @@ const handleDelete = (record: any) => {
 }
 
 .condition-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
 }
 
@@ -1449,10 +2288,8 @@ const handleDelete = (record: any) => {
 }
 
 .remove-group-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   color: #ff4d4f;
+  font-size: 16px;
 }
 
 .remove-group-btn:hover {
@@ -1500,6 +2337,50 @@ const handleDelete = (record: any) => {
 /* 下载任务中心图标样式 */
 .task-icon {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+/* 数据补发对话框样式 */
+.reissue-hint {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.condition-section {
+  margin-bottom: 20px;
+}
+
+.add-condition-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #1890ff;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 16px;
+}
+
+.add-condition-link:hover {
+  color: #40a9ff;
+}
+
+.date-range-picker {
+  width: 100%;
+}
+
+.range-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  color: #bfbfbf;
+}
+
+.range-placeholder .separator {
+  margin: 0 8px;
 }
 
 /* 响应式设计 */

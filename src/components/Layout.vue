@@ -9,7 +9,7 @@
       <div class="header-right">
         <a class="header-action">上传任务</a>
         <a class="header-action">下载任务</a>
-        <a-badge class="header-action" count="99+" size="small">
+        <a-badge class="header-action" count="9" size="small">
           <a class="message-link">消息中心</a>
         </a-badge>
         <a-button class="admin-btn" size="small">
@@ -20,7 +20,7 @@
           <a-avatar class="user-avatar" :size="60">
             <img src="/system_demo/头像.png" alt="avatar" />
           </a-avatar>
-          <span class="user-name">yezewei</span>
+          <span class="user-name">叶泽伟</span>
         </div>
       </div>
     </header>
