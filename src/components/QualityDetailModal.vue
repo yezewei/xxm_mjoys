@@ -649,16 +649,16 @@ const keywordResults = computed(() => {
   return Array.from(ruleMap.values())
 })
 
-// 人工审核结果（展示所有质检项，包括所有对话中触发的所有规则）
+// 人工审核结果（只展示人工标记的质检项，不展示关键词识别和 AI 识别）
 const manualResults = computed(() => {
   const results: any[] = []
 
   conversationList.value.forEach(msg => {
     if (msg.triggerRules && msg.triggerRules.length > 0) {
       msg.triggerRules.forEach((rule: any) => {
-        // 人工质检任务不显示 AI 识别的质检项
-        if (!isAiTask.value && rule.type === 'ai') return
-        
+        // 只展示人工标记的质检项
+        if (rule.type !== 'manual') return
+
         results.push({
           ruleCode: rule.code,
           ruleDesc: getRuleDescription(rule.code),

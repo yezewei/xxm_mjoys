@@ -200,7 +200,7 @@
                 <template v-else-if="column.key === 'action'">
                   <a-space>
                     <a-button type="link" size="small" @click="handleDetail(record)">
-                      质检详情
+                      详情
                     </a-button>
                     <a-button type="link" size="small" @click="handleEdit(record)">
                       编辑
@@ -1105,8 +1105,9 @@ const handleCreateConfirm = () => {
 }
 
 const handleDetail = (row: QualityTaskItem) => {
-  // 跳转到质检任务详情页面
-  router.push(`/quality-task-detail/${row.taskId}`)
+  // 跳转到质检任务详情页面，传递任务类型参数（ai 或 manual）
+  const taskType = activeTab.value === 'manual' ? 'manual' : 'ai'
+  router.push(`/quality-task-detail/${row.taskId}?taskType=${taskType}`)
 }
 
 const handleEdit = (row: QualityTaskItem) => {

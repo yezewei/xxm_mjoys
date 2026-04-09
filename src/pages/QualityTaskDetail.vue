@@ -4,8 +4,6 @@
       <!-- 任务信息卡片 -->
       <a-card class="task-info-card">
         <div class="card-header">
-          <robot-outlined v-if="activeTab === 'ai'" class="ai-icon-large" style="color: #1677ff;" />
-          <customer-service-outlined v-else class="ai-icon-large" style="color: #52c41a;" />
           <span class="card-title">{{ currentTask?.taskName || '请选择任务' }}</span>
           <a-tag :color="activeTab === 'ai' ? 'blue' : 'green'" class="task-type-tag">
             {{ activeTab === 'ai' ? 'AI 质检' : '人工质检' }}
@@ -251,9 +249,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
   SearchOutlined,
-  ReloadOutlined,
-  RobotOutlined,
-  CustomerServiceOutlined
+  ReloadOutlined
 } from '@ant-design/icons-vue'
 import Pagination from '@/components/Pagination'
 import QualityDetailModal from '@/components/QualityDetailModal.vue'
@@ -280,6 +276,11 @@ interface FilterForm {
 
 const router = useRouter()
 const route = useRoute()
+
+// 从 URL 参数获取任务类型，默认为 'ai'
+const taskTypeFromQuery = computed(() => {
+  return (route.query.taskType as string) || 'ai'
+})
 
 const activeTab = ref<'ai' | 'manual'>('ai')
 const currentPage = ref(1)
@@ -418,10 +419,6 @@ const mockTableData: TableDataItem[] = [
   },
 ]
 
-const tableData = computed(() => {
-  return mockTableData
-})
-
 const manualProgressPercent = computed(() => {
   if (!currentTask.value) return 0
   const total = currentTask.value.aiTotal || 0
@@ -429,22 +426,119 @@ const manualProgressPercent = computed(() => {
   return total > 0 ? Math.round((completed / total) * 100) : 0
 })
 
+// 人工质检任务的模拟数据（类似 QualityWorkbench 中的"2026 年 2 月新入职坐席合规质检（人工）"）
+const manualTaskMockData: TableDataItem[] = [
+  {
+    id: 1,
+    detailId: 3480,
+    callId: 2674,
+    aiStatus: '已失败',
+    manualStatus: '未开始',
+    triggerRule: '',
+    aiSummary: '',
+    isModified: '否',
+  },
+  {
+    id: 2,
+    detailId: 3483,
+    callId: 2679,
+    aiStatus: '已完成',
+    manualStatus: '未开始',
+    triggerRule: '服务态度，业务规范',
+    aiSummary: '客户通话过程中表现出较强的投诉倾向，坐席沟通态度良好，但业务解释不够清晰',
+    isModified: '是',
+  },
+  {
+    id: 3,
+    detailId: 3488,
+    callId: 2689,
+    aiStatus: '已完成',
+    manualStatus: '未开始',
+    triggerRule: '合规要求',
+    aiSummary: '坐席未按要求进行风险提示，需要补充合规话术',
+    isModified: '否',
+  },
+  {
+    id: 4,
+    detailId: 3482,
+    callId: 2678,
+    aiStatus: '已失败',
+    manualStatus: '未开始',
+    triggerRule: '',
+    aiSummary: '',
+    isModified: '否',
+  },
+  {
+    id: 5,
+    detailId: 3479,
+    callId: 2670,
+    aiStatus: '已完成',
+    manualStatus: '已完成',
+    triggerRule: '营销意向',
+    aiSummary: '客户表现出明确的购买意向，坐席成功引导客户完成产品介绍，建议后续跟进',
+    isModified: '是',
+  },
+  {
+    id: 6,
+    detailId: 3481,
+    callId: 2677,
+    aiStatus: '未开始',
+    manualStatus: '未开始',
+    triggerRule: '',
+    aiSummary: '',
+    isModified: '否',
+  },
+]
+
+const tableData = computed(() => {
+  // 根据任务类型返回不同的数据
+  if (activeTab.value === 'manual') {
+    return manualTaskMockData
+  }
+  return mockTableData
+})
+
 onMounted(() => {
   const taskId = Number(route.params.id)
+  // 从 URL 参数获取任务类型
+  const taskType = taskTypeFromQuery.value
+  
+  // 根据任务类型设置 activeTab 和加载不同的数据
+  activeTab.value = taskType === 'manual' ? 'manual' : 'ai'
+  
   // 模拟加载任务详情
-  currentTask.value = {
-    taskId: taskId,
-    taskName: '2026 年 2 月金融产品合规质检专项',
-    taskDescription: '2026 年 2 月金融产品外呼合规性检测专项任务',
-    qualityModel: '合规质检',
-    qualityObject: '人工外呼录音',
-    creator: 'hzy',
-    auditor: '张三',
-    aiProgressPercent: 25,
-    aiCompleted: 50,
-    aiTotal: 200,
-    manualCount: 20,
-    autoAppend: true,
+  if (taskType === 'manual') {
+    // 人工质检任务数据（类似 QualityWorkbench 中的"2026 年 2 月新入职坐席合规质检（人工）"）
+    currentTask.value = {
+      taskId: taskId,
+      taskName: '2026 年 2 月新入职坐席合规质检（人工）',
+      taskDescription: '新入职坐席服务规范与合规性人工专项质检',
+      qualityModel: '合规质检（人工）',
+      qualityObject: '人工外呼录音',
+      creator: 'hzy',
+      auditor: '赵六',
+      aiProgressPercent: 0,
+      aiCompleted: 0,
+      aiTotal: 150,
+      manualCount: 0,
+      autoAppend: true,
+    }
+  } else {
+    // AI 质检任务数据
+    currentTask.value = {
+      taskId: taskId,
+      taskName: '2026 年 2 月金融产品合规质检专项',
+      taskDescription: '2026 年 2 月金融产品外呼合规性检测专项任务',
+      qualityModel: '合规质检',
+      qualityObject: '人工外呼录音',
+      creator: 'hzy',
+      auditor: '张三',
+      aiProgressPercent: 25,
+      aiCompleted: 50,
+      aiTotal: 200,
+      manualCount: 20,
+      autoAppend: true,
+    }
   }
 })
 

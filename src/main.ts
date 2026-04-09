@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, provide } from 'vue'
 import App from './App.vue'
 import router from './router'
 
@@ -22,5 +22,11 @@ app.use(router)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+
+// 提供 Menu 上下文以解决 Vue 3.5+ 兼容性问题
+app.provide('MenuContext', {
+  prefixCls: 'ant-menu',
+  firstLevel: true
+})
 
 app.mount('#app')

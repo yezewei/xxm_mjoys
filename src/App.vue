@@ -1,5 +1,13 @@
 <template>
-  <Layout />
+  <a-config-provider :theme="{
+    components: {
+      Menu: {
+        subMenuItemBorderRadius: 4
+      }
+    }
+  }">
+    <Layout />
+  </a-config-provider>
 </template>
 
 <script setup lang="ts">
