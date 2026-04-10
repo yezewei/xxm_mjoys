@@ -8,8 +8,8 @@
         <a-tab-pane key="qa" data-tab-key="qa" tab="QA 库" />
         <a-tab-pane key="intent" data-tab-key="intent" tab="意图库" />
         <a-tab-pane key="fallback" data-tab-key="fallback" tab="流程兜底设置" />
-        <a-tab-pane key="script" data-tab-key="script" tab="话术管理" />
-        <a-tab-pane key="scene-voice" data-tab-key="scene-voice" tab="场景语音" />
+        <!-- <a-tab-pane key="script" data-tab-key="script" tab="话术管理" />
+        <a-tab-pane key="scene-voice" data-tab-key="scene-voice" tab="场景语音" /> -->
         <a-tab-pane key="user-classify" data-tab-key="user-classify" tab="用户分类" />
         <a-tab-pane key="system-settings" data-tab-key="system-settings" tab="场景系统设置" />
         <a-tab-pane key="sms" data-tab-key="sms" tab="场景短信" />
@@ -137,6 +137,16 @@
                       <message-outlined />
                       添加用户问法
                     </a-button>
+                    <a-button type="link" size="small" class="view-reply-btn" @click="toggleViewReply(qa)">
+                      <template v-if="expandedQaIds.has(qa.id)">
+                        <close-outlined />
+                        收起回复
+                      </template>
+                      <template v-else>
+                        <eye-outlined />
+                        查看回复
+                      </template>
+                    </a-button>
                     <a-button type="link" size="small" class="add-reply-btn" @click="handleAddReply(qa)">
                       <plus-outlined />
                       新增回复
@@ -156,8 +166,8 @@
                 </div>
               </div>
 
-              <!-- 回复列表表格 -->
-              <div class="reply-table-wrapper">
+              <!-- 回复列表表格（默认隐藏，点击"查看回复"后展开） -->
+              <div v-show="expandedQaIds.has(qa.id)" class="reply-table-wrapper">
                 <a-table
                   :columns="replyColumns"
                   :data-source="qa.replies"
@@ -1112,6 +1122,9 @@ const qaList = ref<QaItem[]>([
     ],
   },
 ]);
+
+// 展开的 QA ID 集合（用于控制回复列表的展开/收起）
+const expandedQaIds = ref<Set<number>>(new Set());
 
 // ==================== 流程图相关数据 ====================
 
@@ -2858,6 +2871,18 @@ const handleDeleteQa = (qa: QaItem) => {
     qaList.value.splice(qaIndex, 1);
   }
   message.success('删除 QA 成功');
+};
+
+// 切换查看回复（展开/收起）
+const toggleViewReply = (qa: QaItem) => {
+  const newSet = new Set(expandedQaIds.value);
+  if (newSet.has(qa.id)) {
+    newSet.delete(qa.id);
+  } else {
+    newSet.add(qa.id);
+  }
+  // 触发响应式更新
+  expandedQaIds.value = newSet;
 };
 
 // 初始化

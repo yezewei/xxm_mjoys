@@ -85,6 +85,16 @@
                   <message-outlined />
                   添加用户问法
                 </a-button>
+                <a-button type="link" size="small" class="view-reply-btn" @click="toggleViewReply(qa)">
+                  <template v-if="expandedQaIds.has(qa.id)">
+                    <close-outlined />
+                    收起回复
+                  </template>
+                  <template v-else>
+                    <eye-outlined />
+                    查看回复
+                  </template>
+                </a-button>
                 <a-button type="link" size="small" class="add-reply-btn" @click="handleAddReply(qa)">
                   <plus-outlined />
                   新增回复
@@ -104,8 +114,8 @@
             </div>
           </div>
 
-          <!-- 回复列表表格 -->
-          <div class="reply-table-wrapper">
+          <!-- 回复列表表格（默认隐藏，点击"查看回复"后展开） -->
+          <div v-show="expandedQaIds.has(qa.id)" class="reply-table-wrapper">
             <a-table
               :columns="replyColumns"
               :data-source="qa.replies"
@@ -599,6 +609,7 @@ import {
   MessageOutlined,
   ThunderboltOutlined,
   CloseOutlined,
+  EyeOutlined,
 } from '@ant-design/icons-vue';
 import type { TableColumnsType } from 'ant-design-vue';
 import type { FormInstance } from 'ant-design-vue';
@@ -795,6 +806,9 @@ const qaList = ref<QaItem[]>([
     ],
   },
 ]);
+
+// 展开的 QA ID 集合（用于控制回复列表的展开/收起）
+const expandedQaIds = ref<Set<number>>(new Set());
 
 // ==================== 模态框相关数据 ====================
 // 新建 QA 模态框
@@ -1196,6 +1210,16 @@ watch(() => qaGuideVisible.value, (newVal) => {
     console.log('QA 引导已显示');
   }
 });
+
+// ==================== 查看回复相关 ====================
+// 切换查看回复状态
+const toggleViewReply = (qa: QaItem) => {
+  if (expandedQaIds.value.has(qa.id)) {
+    expandedQaIds.value.delete(qa.id);
+  } else {
+    expandedQaIds.value.add(qa.id);
+  }
+};
 
 // ==================== 添加用户问法相关 ====================
 // 添加用户问法
