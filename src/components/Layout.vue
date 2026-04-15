@@ -124,6 +124,18 @@
             </a-menu-item>
           </a-sub-menu>
 
+          <a-sub-menu key="customer">
+            <template #title>
+              <span>客户中心</span>
+            </template>
+            <a-menu-item key="customer-management">
+              <span>客户管理</span>
+            </a-menu-item>
+            <a-menu-item key="customer-group-management">
+              <span>客群管理</span>
+            </a-menu-item>
+          </a-sub-menu>
+
           <a-menu-item key="data-lake">
             <span>数据湖</span>
           </a-menu-item>
@@ -248,6 +260,8 @@ const menuRouteMap: Record<string, string> = {
   'knowledge-intent': '/knowledge-intent',
   'knowledge-qa': '/knowledge-qa',
   'knowledge-scene': '/knowledge-scene',
+  'customer-management': '/customer-management',
+  'customer-group-management': '/customer-group-management',
   'data-lake': '/data-lake',
   'global-service': '/global-service',
   'system-security': '/system-security',
@@ -290,6 +304,9 @@ const menuTitleMap: Record<string, string> = {
   'knowledge-intent': '内置意图',
   'knowledge-qa': '内置 QA',
   'knowledge-scene': '场景知识库',
+  customer: '客户中心',
+  'customer-management': '客户管理',
+  'customer-group-management': '客群管理',
   'data-lake': '数据湖',
   'data-board': '数据看板',
   exception: '异常看板',
@@ -354,6 +371,8 @@ watch(
       '/knowledge-intent': 'knowledge-intent',
       '/knowledge-qa': 'knowledge-qa',
       '/knowledge-scene': 'knowledge-scene',
+      '/customer-management': 'customer-management',
+      '/customer-group-management': 'customer-group-management',
       '/data-lake': 'data-lake',
       '/data-board': 'data-board',
       '/global-service': 'global-service',

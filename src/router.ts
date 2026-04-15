@@ -132,6 +132,16 @@ const routes = [
     component: () => import("./pages/KnowledgeScene.vue"),
   },
   {
+    path: "/customer-management",
+    name: "CustomerManagement",
+    component: () => import("./pages/CustomerManagement.vue"),
+  },
+  {
+    path: "/customer-group-management",
+    name: "CustomerGroupManagement",
+    component: () => import("./pages/CustomerGroupManagement.vue"),
+  },
+  {
     path: "/data-lake",
     name: "DataLake",
     component: () => import("./pages/DataLake.vue"),
