@@ -299,20 +299,20 @@ const filterForm = reactive<FilterForm>({
 })
 
 const columns = computed(() => {
-  const baseColumns = [
+  const baseColumns: any[] = [
     {
       title: '质检任务明细 ID',
       dataIndex: 'detailId',
       key: 'detailId',
       width: 150,
-      ellipsis: true
+      ellipsis: true as any
     },
     {
       title: '通话记录 ID',
       dataIndex: 'callId',
       key: 'callId',
       width: 150,
-      ellipsis: true
+      ellipsis: true as any
     }
   ]
 
@@ -324,35 +324,35 @@ const columns = computed(() => {
         dataIndex: 'aiStatus',
         key: 'aiStatus',
         width: 120,
-        ellipsis: true
+        ellipsis: true as any
       },
       {
         title: '人工质检状态',
         dataIndex: 'manualStatus',
         key: 'manualStatus',
         width: 120,
-        ellipsis: true
+        ellipsis: true as any
       },
       {
         title: '是否人工修改',
         dataIndex: 'isModified',
         key: 'isModified',
         width: 120,
-        ellipsis: true
+        ellipsis: true as any
       },
       {
         title: '触发质检规则',
         dataIndex: 'triggerRule',
         key: 'triggerRule',
         width: 150,
-        ellipsis: true
+        ellipsis: true as any
       },
       {
         title: '质检总结',
         dataIndex: 'aiSummary',
         key: 'aiSummary',
         width: 200,
-        ellipsis: true
+        ellipsis: true as any
       }
     )
   } else {
@@ -363,14 +363,14 @@ const columns = computed(() => {
         dataIndex: 'manualStatus',
         key: 'manualStatus',
         width: 120,
-        ellipsis: true
+        ellipsis: true as any
       },
       {
         title: '触发质检规则',
         dataIndex: 'triggerRule',
         key: 'triggerRule',
         width: 150,
-        ellipsis: true
+        ellipsis: true as any
       }
     )
   }
@@ -379,8 +379,8 @@ const columns = computed(() => {
     title: '操作',
     key: 'action',
     width: activeTab.value === 'ai' ? 150 : 100,
-    fixed: 'right',
-    ellipsis: true
+    fixed: ('right' as any),
+    ellipsis: true as any
   })
 
   return baseColumns
@@ -588,8 +588,8 @@ const handleReset = () => {
   message.success('已重置搜索条件')
 }
 
-const onSelectChange = (selectedRowKeys: (string | number)[]) => {
-  selectedRowKeys.value = selectedRowKeys as number[]
+const onSelectChange = (keys: (string | number)[]) => {
+  selectedRowKeys.value = keys as number[]
 }
 </script>
 

@@ -55,7 +55,7 @@
               <div v-if="msg.role === 'agent'" class="message-time">{{ msg.time }}</div>
               <div
                 class="message-bubble"
-                :ref="(el: HTMLElement) => setMessageBubbleRef(el, index)"
+                :ref="(el) => setMessageBubbleRef(el as HTMLElement, index)"
                 :class="{ 'highlighted': msg.highlighted }"
                 @click="(e) => selectMessage(msg, e, index)"
               >
@@ -321,7 +321,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, defineExpose, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import {
   PlayCircleOutlined,
   SoundOutlined,
@@ -479,8 +479,18 @@ const highlightKeywordText = (text: string, ruleCode: string): string => {
   return text.replace(regex, '<span class="highlight-keyword">$1</span>')
 }
 
+// 对话列表数据类型
+interface ConversationItem {
+  role: string;
+  time: string;
+  content: string;
+  highlighted: boolean;
+  triggerRules: { code: string; type: string }[];
+  remark?: string;
+}
+
 // 对话列表数据
-const conversationList = ref([
+const conversationList = ref<ConversationItem[]>([
   {
     role: 'agent',
     time: '2025-12-01 14:23:30',
@@ -628,7 +638,6 @@ const aiResults = ref([
 
 // 关键词识别结果（从对话数据中提取 type 为'keyword'的规则）
 const keywordResults = computed(() => {
-  const results: any[] = []
   const ruleMap = new Map<string, any>()
 
   conversationList.value.forEach(msg => {
@@ -738,25 +747,23 @@ const selectMessage = (msg: any, event?: MouseEvent, index?: number) => {
   // 选中该消息所有已有的质检项（包括 AI、关键词、人工的所有来源）
   selectedRules.value = msg.triggerRules?.map((r: any) => r.code) || []
   editRemark.value = msg.remark || ''
-  
+
   // 计算浮窗位置 - 基于气泡框位置
   setTimeout(() => {
     const bubbleEl = index !== undefined ? messageBubbleRefs.value[index] : null
     if (!bubbleEl) return
-    
+
     const popoverHeight = 280 // 浮窗预估高度
-    const popoverWidth = 400 // 浮窗宽度
     const bubbleRect = bubbleEl.getBoundingClientRect()
     const windowHeight = window.innerHeight
-    const windowWidth = window.innerWidth
-    
+
     // 计算垂直位置
     if (bubbleRect.bottom + popoverHeight > windowHeight - 100) {
       popoverTop.value = bubbleRect.top - popoverHeight - 10
     } else {
       popoverTop.value = bubbleRect.bottom + 10
     }
-    
+
     // 计算水平位置 - 根据对话角色决定对齐方式
     if (msg.role === 'customer') {
       // 客户对话（左侧）：浮窗左边缘与对话气泡左边缘对齐

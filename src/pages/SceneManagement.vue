@@ -2373,7 +2373,7 @@ interface QaItem {
   question: string;
   qaType: '场景 QA' | '行业 QA' | '通用 QA';
   followProcess: string;
-  intentType: '正向' | '负向';
+  intentType: '正向' | '负向' | '中性';
   replies: ReplyItem[];
 }
 

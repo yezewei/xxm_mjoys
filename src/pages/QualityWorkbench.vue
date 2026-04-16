@@ -303,7 +303,7 @@
               pageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total) => `共 ${total} 条`,
+              showTotal: (total: number) => `共 ${total} 条`,
               locale: {
                 items_per_page: '条/页',
                 jump_to: '前往',
@@ -385,6 +385,9 @@ interface TaskItem {
   auditor?: string
   description?: string
 }
+
+// 允许 TaskItem 为 null 的类型
+type TaskItemNullable = TaskItem | null;
 
 interface TableDataItem {
   id: number
@@ -518,7 +521,7 @@ const filterForm = reactive<FilterForm>({
 
 // ============ 表格列定义 ============
 const columns = computed(() => {
-  const baseColumns = [
+  const baseColumns: any[] = [
     {
       title: '质检任务明细 ID',
       dataIndex: 'detailId',
@@ -565,7 +568,7 @@ const columns = computed(() => {
         dataIndex: 'aiSummary',
         key: 'aiSummary',
         width: 200,
-        ellipsis: true
+        ellipsis: true as any
       }
     )
   } else {
@@ -590,7 +593,7 @@ const columns = computed(() => {
     title: '操作',
     key: 'action',
     width: currentTask.value && getTaskType(currentTask.value) === 'ai' ? 150 : 100,
-    fixed: 'right'
+    fixed: ('right' as any)
   })
 
   return baseColumns
@@ -674,7 +677,8 @@ const qualityDetailRef = ref()
 
 // ============ 方法 ============
 // 获取任务类型
-const getTaskType = (task: TaskItem): 'ai' | 'manual' => {
+const getTaskType = (task: TaskItemNullable): 'ai' | 'manual' => {
+  if (!task) return 'ai';
   if (task.model.includes('（人工）')) {
     return 'manual'
   }

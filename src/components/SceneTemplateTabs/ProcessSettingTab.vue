@@ -281,7 +281,7 @@
                 v-for="intent in intentList"
                 :key="intent.id"
                 :checked="isIntentSelected(intent.id)"
-                @change="(e) => handleIntentCheckboxChange(e, intent)"
+                @change="(e: Event) => handleIntentCheckboxChange(e, intent)"
               >
                 <a-tag :color="getIntentTypeColor(intent.intentType)">
                   {{ intent.intentName }}
@@ -459,6 +459,14 @@ const nodeEditRules: Record<string, Rule[]> = {
 const connectionEditModalVisible = ref(false);
 const connectionEditFormRef = ref<FormInstance>();
 const connectionEditForm = reactive({ selectedIntents: [] as IntentItem[] });
+
+// QA 相关表单和状态（用于未实现的功能）
+const searchKeyword = ref('');
+const createQaModalVisible = ref(false);
+const createQaFormRef = ref<FormInstance>();
+const createQaForm = reactive({ question: '', replies: [] as any[] });
+const editReplyForm = reactive({ replyText: '' });
+const addReplyForm = reactive({ replyText: '' });
 
 // 拖拽连线状态
 const isDrawingConnection = ref(false);
@@ -778,7 +786,7 @@ const handleConnectionDragUp = (event: MouseEvent) => {
     // 查找目标节点
     const targetNode = processNodes.value.find(node => {
       const nodeWidth = 200;
-      const nodeHeight = node.type === 'condition' ? 120 : 80;
+      const nodeHeight = 80;
       return (
         mouseX >= node.x &&
         mouseX <= node.x + nodeWidth &&

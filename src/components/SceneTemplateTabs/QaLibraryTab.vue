@@ -670,6 +670,7 @@ interface SemanticSlotItem {
   id: number;
   slotName: string;
   slotValue: string;
+  color?: string;
 }
 
 // ==================== Props 和 Emits ====================

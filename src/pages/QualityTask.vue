@@ -624,42 +624,42 @@ interface ConditionItem {
 
 // ============ 表格列定义 ============
 const columns = computed(() => {
-  const baseColumns = [
-    { title: '质检任务 ID', dataIndex: 'taskId', key: 'taskId', width: 110, ellipsis: true },
-    { title: '质检任务名称', dataIndex: 'taskName', key: 'taskName', width: 200, ellipsis: true },
-    { title: '任务说明', dataIndex: 'taskDescription', key: 'taskDescription', width: 220, ellipsis: true },
-    { title: '质检模型', dataIndex: 'qualityModel', key: 'qualityModel', width: 150, ellipsis: true },
-    { title: '质检对象', dataIndex: 'qualityObject', key: 'qualityObject', width: 130, ellipsis: true },
-    { title: '任务状态', dataIndex: 'status', key: 'status', width: 110, ellipsis: true },
+  const baseColumns: any[] = [
+    { title: '质检任务 ID', dataIndex: 'taskId', key: 'taskId', width: 110, ellipsis: true as any },
+    { title: '质检任务名称', dataIndex: 'taskName', key: 'taskName', width: 200, ellipsis: true as any },
+    { title: '任务说明', dataIndex: 'taskDescription', key: 'taskDescription', width: 220, ellipsis: true as any },
+    { title: '质检模型', dataIndex: 'qualityModel', key: 'qualityModel', width: 150, ellipsis: true as any },
+    { title: '质检对象', dataIndex: 'qualityObject', key: 'qualityObject', width: 130, ellipsis: true as any },
+    { title: '任务状态', dataIndex: 'status', key: 'status', width: 110, ellipsis: true as any },
   ]
 
   // AI 质检任务列
   if (activeTab.value === 'ai') {
     baseColumns.push(
-      { title: 'AI 质检进度', dataIndex: 'aiProgress', key: 'aiProgress', width: 220, ellipsis: true },
-      { title: '人工审核状态', dataIndex: 'auditStatus', key: 'auditStatus', width: 110, ellipsis: true },
-      { title: '审核员', dataIndex: 'auditor', key: 'auditor', width: 110, ellipsis: true },
-      { title: '创建人', dataIndex: 'creator', key: 'creator', width: 110, ellipsis: true },
-      { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 170, ellipsis: true },
-      { title: '完成时间', dataIndex: 'completedAt', key: 'completedAt', width: 170, ellipsis: true }
+      { title: 'AI 质检进度', dataIndex: 'aiProgress', key: 'aiProgress', width: 220, ellipsis: true as any },
+      { title: '人工审核状态', dataIndex: 'auditStatus', key: 'auditStatus', width: 110, ellipsis: true as any },
+      { title: '审核员', dataIndex: 'auditor', key: 'auditor', width: 110, ellipsis: true as any },
+      { title: '创建人', dataIndex: 'creator', key: 'creator', width: 110, ellipsis: true as any },
+      { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 170, ellipsis: true as any },
+      { title: '完成时间', dataIndex: 'completedAt', key: 'completedAt', width: 170, ellipsis: true as any }
     )
   } else {
     // 人工质检任务列
     baseColumns.push(
-      { title: '人工质检进度', dataIndex: 'aiProgress', key: 'aiProgress', width: 220, ellipsis: true },
-      { title: '人工质检状态', dataIndex: 'auditStatus', key: 'auditStatus', width: 110, ellipsis: true },
-      { title: '质检员', dataIndex: 'auditor', key: 'auditor', width: 110, ellipsis: true },
-      { title: '创建人', dataIndex: 'creator', key: 'creator', width: 110, ellipsis: true },
-      { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 170, ellipsis: true }
+      { title: '人工质检进度', dataIndex: 'aiProgress', key: 'aiProgress', width: 220, ellipsis: true as any },
+      { title: '人工质检状态', dataIndex: 'auditStatus', key: 'auditStatus', width: 110, ellipsis: true as any },
+      { title: '质检员', dataIndex: 'auditor', key: 'auditor', width: 110, ellipsis: true as any },
+      { title: '创建人', dataIndex: 'creator', key: 'creator', width: 110, ellipsis: true as any },
+      { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 170, ellipsis: true as any }
     )
   }
 
   baseColumns.push({
     title: '操作',
     key: 'action',
-    fixed: 'right',
+    fixed: ('right' as any),
     width: activeTab.value === 'ai' ? 240 : 200,
-    ellipsis: true
+    ellipsis: true as any
   })
 
   return baseColumns

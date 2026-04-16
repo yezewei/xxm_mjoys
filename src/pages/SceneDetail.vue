@@ -538,7 +538,7 @@ const calculateGuidePosition = () => {
         if (tabText) {
           const tabs = document.querySelectorAll('.ant-tabs-tab');
           for (let i = 0; i < tabs.length; i++) {
-            const tab = tabs[i];
+            const tab = tabs[i] as HTMLElement;
             if (tab.textContent?.includes(tabText)) {
               targetElement = tab;
               break;

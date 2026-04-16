@@ -278,9 +278,9 @@
     <!-- 主流程设置内容区域 -->
     <div v-else-if="activeTabKey === 'process'" class="process-content">
       <ProcessSettingTab
-        v-model:nodes="processNodes"
-        v-model:connections="connections"
-        v-model:intent-list="intentList"
+        v-model:nodes="processNodes as any"
+        v-model:connections="connections as any"
+        v-model:intent-list="intentList as any"
         @save="handleProcessSave"
       />
     </div>
@@ -925,7 +925,7 @@ interface QaItem {
 // ==================== 流程图相关接口 ====================
 
 // 节点类型
-type NodeType = 'start' | 'script' | 'success_end' | 'fail_end' | 'transfer' | 'verify';
+type NodeType = 'start' | 'script' | 'condition' | 'success_end' | 'fail_end' | 'transfer' | 'verify';
 
 // 意图项接口
 interface IntentItem {
@@ -1488,7 +1488,7 @@ const calculateGuidePosition = () => {
         if (tabText) {
           const tabs = document.querySelectorAll('.ant-tabs-tab');
           for (let i = 0; i < tabs.length; i++) {
-            const tab = tabs[i];
+            const tab = tabs[i] as HTMLElement;
             if (tab.textContent?.includes(tabText)) {
               targetElement = tab;
               break;
@@ -1727,6 +1727,7 @@ const getNodeIcon = (type: NodeType) => {
   const iconMap: Record<NodeType, any> = {
     start: PlayCircleOutlined,
     script: MessageOutlined,
+    condition: EditOutlined,
     success_end: CheckCircleOutlined,
     fail_end: CloseCircleOutlined,
     transfer: CustomerServiceOutlined,
@@ -1861,6 +1862,7 @@ const getNodeDefaultName = (type: NodeType) => {
   const nameMap: Record<NodeType, string> = {
     start: '开始',
     script: '通用节点',
+    condition: '条件判断',
     success_end: '成功结束',
     fail_end: '失败结束',
     transfer: '转人工坐席',
@@ -2105,6 +2107,7 @@ const getNodeEditModalTitle = (type: NodeType | undefined) => {
   const titleMap: Record<NodeType, string> = {
     start: '开始节点设置',
     script: '通用节点设置',
+    condition: '条件判断设置',
     success_end: '成功结束设置',
     fail_end: '失败结束设置',
     transfer: '转人工坐席设置',
@@ -2118,6 +2121,7 @@ const getNodeEditPlaceholder = (type: NodeType | undefined) => {
   const placeholderMap: Record<NodeType, string> = {
     start: '请输入话术内容',
     script: '请输入话术回复内容',
+    condition: '请输入条件判断内容',
     success_end: '请输入成功结束时的话术',
     fail_end: '请输入失败结束时的话术',
     transfer: '请输入转人工坐席的话术',

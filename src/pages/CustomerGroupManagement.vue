@@ -529,7 +529,7 @@ const total = ref(0);
 const loading = ref(false);
 
 // 选中的行
-const selectedRowKeys = ref<reactive[]>([]);
+const selectedRowKeys = ref<number[]>([]);
 
 // 分页
 const pagination = reactive({
@@ -881,8 +881,8 @@ const handleTableChange = (pag: any) => {
 };
 
 // 选择行变化
-const onSelectChange = (selectedRowKeys: any[]) => {
-  selectedRowKeys.value = selectedRowKeys;
+const onSelectChange = (keys: any[]) => {
+  selectedRowKeys.value = keys;
 };
 
 // 新增

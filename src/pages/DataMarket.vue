@@ -993,6 +993,7 @@ const createRuleForm = reactive({
   customDelimiter: '' as string,
   quoteChar: 'single' as string, // 默认英文单引号
   conditionGroups: [] as ConditionGroup[],
+  conditions: [] as any[], // 用于兼容旧代码
 });
 
 // 数据补发表单
@@ -1610,13 +1611,16 @@ const handleCreateRuleConfirm = () => {
     console.log('更新订阅规则:', record);
   } else {
     // 新建模式
-    const newRule = {
+    const newRule: any = {
       id: nextId++,
       ruleName: createRuleForm.ruleName,
       dataType: createRuleForm.dataType,
       dataFields: dataTypeFieldsMap[createRuleForm.dataType] || [],
       subscriptionRange: subscriptionRange,
       generateTime: createRuleForm.generateTime,
+      delimiter: createRuleForm.delimiter,
+      quoteChar: createRuleForm.quoteChar,
+      expandedFields: false,
       enabled: true,
     };
     tableData.value.push(newRule);
