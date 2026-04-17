@@ -17,11 +17,7 @@
                 <span>语音识别资源（ASR）</span>
               </div>
               <div class="setting-control">
-                <a-radio-group v-model:value="voiceForm.asrResource">
-                  <a-radio value="aliyun">阿里公有云</a-radio>
-                  <a-radio value="sibichi">思必驰</a-radio>
-                  <a-radio value="moxiang">摸象</a-radio>
-                </a-radio-group>
+                <span class="display-text">{{ getAsrResourceText(voiceForm.asrResource) }}</span>
               </div>
             </div>
 
@@ -31,11 +27,7 @@
                 <span>语音合成资源（TTS）</span>
               </div>
               <div class="setting-control">
-                <a-radio-group v-model:value="voiceForm.ttsResource">
-                  <a-radio value="aliyun">阿里公有云</a-radio>
-                  <a-radio value="sibichi">思必驰</a-radio>
-                  <a-radio value="moxiang">摸象</a-radio>
-                </a-radio-group>
+                <span class="display-text">{{ getTtsResourceText(voiceForm.ttsResource) }}</span>
               </div>
             </div>
 
@@ -281,8 +273,8 @@ const emit = defineEmits<{
 // 语音设置表单数据
 const voiceForm = reactive({
   // 语音服务设置
-  asrResource: 'sibichi', // 语音识别资源：aliyun-阿里公有云，sibichi-思必驰，moxiang-摸象
-  ttsResource: 'sibichi', // 语音合成资源：aliyun-阿里公有云，sibichi-思必驰，moxiang-摸象
+  asrResource: 'moxiang', // 语音识别资源：aliyun-阿里公有云，sibichi-思必驰，moxiang-摸象
+  ttsResource: 'moxiang', // 语音合成资源：aliyun-阿里公有云，sibichi-思必驰，moxiang-摸象
 
   // 语音生成方式
   voiceGenerateType: 'human', // 语音生成方式：human-真人录音，tts-语音合成
@@ -349,10 +341,30 @@ const filteredVoiceList = computed(() => {
 });
 
 // ==================== 方法 ====================
+// 获取 ASR 资源文本
+const getAsrResourceText = (value: string) => {
+  const map: Record<string, string> = {
+    aliyun: '阿里公有云',
+    sibichi: '思必驰',
+    moxiang: '摸象',
+  };
+  return map[value] || value;
+};
+
+// 获取 TTS 资源文本
+const getTtsResourceText = (value: string) => {
+  const map: Record<string, string> = {
+    aliyun: '阿里公有云',
+    sibichi: '思必驰',
+    moxiang: '摸象',
+  };
+  return map[value] || value;
+};
+
 // 重置
 const handleReset = () => {
-  voiceForm.asrResource = 'sibichi';
-  voiceForm.ttsResource = 'sibichi';
+  voiceForm.asrResource = 'moxiang';
+  voiceForm.ttsResource = 'moxiang';
   voiceForm.voiceGenerateType = 'human';
   voiceForm.playbackRule = 'default';
   voiceForm.ttsVoiceName = '';
@@ -514,6 +526,14 @@ const handleVoicePageSizeChange = (current: number, size: number) => {
   font-size: 14px;
   color: #595959;
   font-family: monospace;
+}
+
+/* 只读文本显示 */
+.display-text {
+  display: inline-block;
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.5;
 }
 
 /* 表单底部按钮 */

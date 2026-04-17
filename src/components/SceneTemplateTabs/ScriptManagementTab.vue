@@ -4,7 +4,7 @@
       <!-- 话术管理子标签页 -->
       <div class="script-sub-tabs">
         <a-tabs v-model:activeKey="scriptSubTabKey" @change="handleScriptSubTabChange">
-          <a-tab-pane key="compliance" data-tab-key="compliance" tab="话术消保" />
+          <!-- <a-tab-pane key="compliance" data-tab-key="compliance" tab="话术消保" /> -->
           <a-tab-pane key="audio" data-tab-key="audio" tab="话术录音" />
           <a-tab-pane key="variable" data-tab-key="variable" tab="话术变量" />
         </a-tabs>

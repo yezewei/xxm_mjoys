@@ -1,18 +1,17 @@
 <template>
   <div class="qa-content">
     <div class="qa-scroll-wrapper">
-      <!-- 顶部操作区 -->
-      <div class="toolbar-section qa-toolbar">
-        <div class="toolbar-left">
+      <!-- 搜索区 -->
+      <div class="toolbar-section qa-search-section">
+        <div class="search-bar">
           <a-space>
             <a-select
               v-model:value="qaTypeFilter"
-              placeholder="全部"
+              placeholder="QA 类型"
               style="width: 150px"
               allow-clear
               @change="handleQaTypeChange"
             >
-              <a-select-option value="all">全部</a-select-option>
               <a-select-option value="scene">场景 QA</a-select-option>
               <a-select-option value="industry">行业 QA</a-select-option>
               <a-select-option value="common">通用 QA</a-select-option>
@@ -29,10 +28,28 @@
             </a-input>
             <a-button type="primary" @click="handleSearch">搜索</a-button>
             <a-button @click="handleReset">重置</a-button>
+            <a-checkbox v-model:checked="showNoReplyQa" @change="handleShowNoReplyQaChange">
+              显示无回复 QA
+            </a-checkbox>
           </a-space>
         </div>
-        <div class="toolbar-right">
+      </div>
+
+      <!-- 操作区 -->
+      <div class="toolbar-section qa-action-section">
+        <div class="action-bar">
           <a-space>
+            <a-button @click="handleToggleExpandAll">
+              <template v-if="isAllExpanded">
+                <minus-outlined />
+                收起全部
+              </template>
+              <template v-else>
+                <plus-outlined />
+                展开全部
+              </template>
+            </a-button>
+            <a-divider type="vertical" />
             <a-button type="primary" class="create-scene-qa-btn" @click="handleCreateQa">
               <plus-outlined />
               新建场景 QA
@@ -40,7 +57,7 @@
             <a-dropdown trigger="click">
               <a-button class="reference-qa-btn" @click="handleReferenceQa">
                 <link-outlined />
-                引用通用/行业 QA
+                引用 QA
               </a-button>
             </a-dropdown>
             <a-button @click="handleExceptionCheck">
@@ -58,34 +75,41 @@
       <!-- QA 卡片列表 -->
       <div class="qa-list">
         <div
-          v-for="qa in qaList"
+          v-for="qa in filteredQaList"
           :key="qa.id"
           class="qa-card"
         >
           <!-- 卡片头部 -->
-          <div class="qa-card-header">
+          <div class="qa-card-header" @click="toggleViewReply(qa)">
             <div class="header-left">
               <span class="qa-id">ID: {{ qa.id }}</span>
               <span class="qa-question">{{ qa.question }}</span>
               <a-tag :color="getQaTypeColor(qa.qaType)">{{ qa.qaType }}</a-tag>
+              <a-tag v-if="qa.isCommon" color="orange" class="common-tag">
+                <template #icon><star-outlined /></template>
+                常用
+              </a-tag>
               <span class="qa-process">后续流程：{{ qa.followProcess }}</span>
               <a-tag :color="qa.intentType === '正向' ? 'green' : 'red'">
                 {{ qa.intentType }}
               </a-tag>
+              <span v-if="qa.referenceCount" class="reference-count" :title="`被引用 ${qa.referenceCount} 次`">
+                <link-outlined />
+                {{ qa.referenceCount }}
+              </span>
             </div>
             <div class="header-right">
               <a-space>
                 <a-button
-                  v-if="qa.qaType === '场景 QA'"
                   type="link"
                   size="small"
                   class="add-user-question-btn"
-                  @click="handleAddUserQuestion(qa)"
+                  @click.stop="handleAddUserQuestion(qa)"
                 >
                   <message-outlined />
                   添加用户问法
                 </a-button>
-                <a-button type="link" size="small" class="view-reply-btn" @click="toggleViewReply(qa)">
+                <a-button type="link" size="small" class="view-reply-btn" @click.stop="toggleViewReply(qa)">
                   <template v-if="expandedQaIds.has(qa.id)">
                     <close-outlined />
                     收起回复
@@ -95,7 +119,7 @@
                     查看回复
                   </template>
                 </a-button>
-                <a-button type="link" size="small" class="add-reply-btn" @click="handleAddReply(qa)">
+                <a-button type="link" size="small" class="add-reply-btn" @click.stop="handleAddReply(qa)">
                   <plus-outlined />
                   新增回复
                 </a-button>
@@ -341,7 +365,7 @@
     <!-- 引用 QA 弹窗 -->
     <a-modal
       v-model:open="referenceQaModalVisible"
-      title="引用通用/行业 QA"
+      title="引用 QA"
       width="900px"
       :footer="null"
       @cancel="handleReferenceQaCancel"
@@ -349,10 +373,16 @@
       <div class="reference-qa-content">
         <div class="reference-toolbar">
           <a-space>
-            <a-select v-model:value="referenceQaType" placeholder="全部" style="width: 150px">
-              <a-select-option value="all">全部</a-select-option>
-              <a-select-option value="common">通用 QA</a-select-option>
+            <a-select v-model:value="referenceQaTypeFilter" placeholder="QA 类型" style="width: 140px" allow-clear>
+              <a-select-option value="scene">场景 QA</a-select-option>
               <a-select-option value="industry">行业 QA</a-select-option>
+              <a-select-option value="common">通用 QA</a-select-option>
+              <a-select-option value="other">其他</a-select-option>
+            </a-select>
+            <a-select v-model:value="referenceSceneFilter" placeholder="回复来源场景" style="width: 150px" allow-clear @change="handleReferenceSceneFilterChange">
+              <a-select-option v-for="scene in referenceSceneOptions" :key="scene" :value="scene">
+                {{ scene }}
+              </a-select-option>
             </a-select>
             <a-input
               v-model:value="referenceSearchKeyword"
@@ -371,19 +401,74 @@
         <div class="reference-selected-info">
           <span class="selected-count">已选择 {{ selectedReferenceRowKeys.length }} 条 QA</span>
         </div>
-        <div class="reference-table-wrapper">
-          <a-table
-            :columns="referenceColumns"
-            :data-source="referenceQaList"
-            :pagination="false"
-            row-key="id"
-            size="middle"
-            :row-selection="{
-              selectedRowKeys: selectedReferenceRowKeys,
-              onChange: onReferenceSelectionChange,
-            }"
+
+        <!-- QA 卡片列表（所有类型统一使用卡片样式） -->
+        <div class="reference-card-list">
+          <div
+            v-for="qa in filteredReferenceQaList"
+            :key="qa.id"
+            class="reference-qa-card"
           >
-          </a-table>
+            <!-- 卡片头部 -->
+            <div class="reference-card-header" @click="toggleReferenceQaReply(qa)">
+              <div class="header-left">
+                <a-checkbox
+                  :checked="selectedReferenceRowKeys.includes(qa.id)"
+                  @click.stop="onReferenceQaSelect(qa.id)"
+                />
+                <span class="qa-id">ID: {{ qa.id }}</span>
+                <span class="qa-question">{{ qa.question || qa.qaName }}</span>
+                <a-tag :color="getQaTypeColor(qa.qaType || 'default')">{{ qa.qaType || '其他' }}</a-tag>
+                <a-tag v-if="qa.isCommon" color="orange" class="common-tag">
+                  <template #icon><star-outlined /></template>
+                  常用
+                </a-tag>
+                <span class="qa-process">后续流程：{{ qa.followProcess }}</span>
+                <a-tag :color="qa.intentType === '正向' ? 'green' : 'red'">
+                  {{ qa.intentType }}
+                </a-tag>
+                <span v-if="qa.referenceCount" class="reference-count" :title="`被引用 ${qa.referenceCount} 次`">
+                  <link-outlined />
+                  {{ qa.referenceCount }}
+                </span>
+              </div>
+              <div class="header-right">
+                <a-space>
+                  <span class="expand-indicator">
+                    <down-outlined v-if="!referenceExpandedQaIds.has(qa.id)" />
+                    <up-outlined v-else />
+                  </span>
+                </a-space>
+              </div>
+            </div>
+
+            <!-- 回复列表 -->
+            <div v-show="referenceExpandedQaIds.has(qa.id)" class="reference-reply-table-wrapper">
+              <a-table
+                v-if="qa.replies && qa.replies.length > 0"
+                :columns="referenceReplyColumns"
+                :data-source="getReferenceFilteredReplies(qa)"
+                :pagination="false"
+                row-key="id"
+                size="small"
+                :scroll="{ x: 800 }"
+                :row-selection="{
+                  selectedRowKeys: getSelectedReplyKeys(qa),
+                  onChange: (selectedRowKeys: number[]) => onReferenceReplySelect(qa, selectedRowKeys),
+                }"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.key === 'replyText'">
+                    <span class="reply-text">{{ record.replyText }}</span>
+                  </template>
+                  <template v-if="column.key === 'scene'">
+                    <span class="scene-text">{{ record.scene }}</span>
+                  </template>
+                </template>
+              </a-table>
+              <div v-else class="no-replies-tip">暂无回复数据</div>
+            </div>
+          </div>
         </div>
         <div class="reference-pagination">
           <a-checkbox v-model:checked="referenceSelectAll" @change="onReferenceSelectAll">全选</a-checkbox>
@@ -610,6 +695,8 @@ import {
   ThunderboltOutlined,
   CloseOutlined,
   EyeOutlined,
+  StarOutlined,
+  MinusOutlined,
 } from '@ant-design/icons-vue';
 import type { TableColumnsType } from 'ant-design-vue';
 import type { FormInstance } from 'ant-design-vue';
@@ -630,6 +717,8 @@ interface QaItem {
   intentType: '正向' | '负向';
   description: string;
   replies: ReplyItem[];
+  isCommon?: boolean; // 是否常用标签
+  referenceCount?: number; // 被引用次数
 }
 
 // 新建 QA 表单接口
@@ -657,6 +746,15 @@ interface ReferenceQaItem {
   id: number;
   qaName: string;
   similarCount: number;
+  // 场景 QA 专用字段
+  question?: string;
+  description?: string;
+  qaType?: '场景 QA' | '行业 QA' | '通用 QA';
+  followProcess?: string;
+  intentType?: '正向' | '负向';
+  isCommon?: boolean;
+  referenceCount?: number;
+  replies?: ReplyItem[];
 }
 
 // 用户问法语料接口
@@ -684,7 +782,23 @@ const emit = defineEmits<{
 
 // ==================== 响应式数据 ====================
 // 筛选相关
-const qaTypeFilter = ref('all');
+const qaTypeFilter = ref<string | undefined>(undefined);
+const showNoReplyQa = ref(false); // 是否显示无回复的 QA
+
+// 过滤后的 QA 列表（根据是否显示无回复 QA 进行过滤）
+const filteredQaList = computed(() => {
+  if (showNoReplyQa.value) {
+    return qaList.value;
+  }
+  // 只显示有回复的 QA
+  return qaList.value.filter((qa) => qa.replies.length > 0);
+});
+
+// 是否全部展开
+const isAllExpanded = computed(() => {
+  if (filteredQaList.value.length === 0) return false;
+  return filteredQaList.value.every((qa) => expandedQaIds.value.has(qa.id));
+});
 
 // 搜索相关
 const searchKeyword = ref('');
@@ -703,6 +817,8 @@ const qaList = ref<QaItem[]>([
     followProcess: '信用卡激活流程',
     intentType: '正向',
     description: '用户咨询信用卡激活的具体操作步骤',
+    isCommon: true,
+    referenceCount: 18,
     replies: [
       {
         id: 1,
@@ -738,6 +854,8 @@ const qaList = ref<QaItem[]>([
     followProcess: '存款续存流程',
     intentType: '正向',
     description: '存款到期后的续存操作指引',
+    isCommon: true,
+    referenceCount: 10,
     replies: [
       {
         id: 4,
@@ -758,6 +876,8 @@ const qaList = ref<QaItem[]>([
     followProcess: '个人贷款申请流程',
     intentType: '正向',
     description: '用户咨询个人信用贷款申请条件和流程',
+    isCommon: true,
+    referenceCount: 25,
     replies: [
       {
         id: 6,
@@ -778,6 +898,8 @@ const qaList = ref<QaItem[]>([
     followProcess: '手机银行绑卡流程',
     intentType: '正向',
     description: '用户咨询手机银行绑定银行卡的操作方法',
+    isCommon: true,
+    referenceCount: 32,
     replies: [
       {
         id: 8,
@@ -793,6 +915,8 @@ const qaList = ref<QaItem[]>([
     followProcess: '余额查询流程',
     intentType: '正向',
     description: '用户查询账户余额的多种方式',
+    isCommon: true,
+    referenceCount: 45,
     replies: [
       {
         id: 9,
@@ -842,26 +966,250 @@ const currentAddQa = ref<QaItem | null>(null);
 
 // 引用 QA 模态框
 const referenceQaModalVisible = ref(false);
-const referenceQaType = ref('all');
+const referenceQaTypeFilter = ref<string | undefined>(undefined);
+const referenceSceneFilter = ref<string | undefined>(undefined);
 const referenceSearchKeyword = ref('');
 const referenceSelectAll = ref(false);
 const selectedReferenceRowKeys = ref<number[]>([]);
 const referenceCurrent = ref(1);
 const referencePageSize = ref(10);
-const referenceTotal = ref(88);
+const referenceTotal = ref(0);
+
+// 引用 QA 弹窗中场景 QA 的展开/收起
+const referenceExpandedQaIds = ref<Set<number>>(new Set());
+
+// 引用 QA 弹窗中已选择的回复 ID（按 QA ID 分组）
+const selectedReferenceReplyMap = ref<Map<number, number[]>>(new Map());
+
+// 引用 QA 场景选项（从回复数据中提取）
+const referenceSceneOptions = computed(() => {
+  const scenes = new Set<string>();
+  referenceQaList.value.forEach((qa) => {
+    if (qa.replies) {
+      qa.replies.forEach((reply) => {
+        if (reply.scene) {
+          scenes.add(reply.scene);
+        }
+      });
+    }
+  });
+  return Array.from(scenes);
+});
+
+// 监听场景筛选变化，自动展开匹配的 QA
+const handleReferenceSceneFilterChange = (value: string | undefined) => {
+  console.log('选择回复来源场景:', value);
+  // 如果选择了场景，自动展开所有包含该场景回复的 QA
+  if (value) {
+    const newExpandedIds = new Set<number>();
+    referenceQaList.value.forEach((qa) => {
+      // 只要有一条回复匹配该场景，就展开该 QA
+      if (qa.replies && qa.replies.some((reply) => reply.scene === value)) {
+        newExpandedIds.add(qa.id);
+      }
+    });
+    referenceExpandedQaIds.value = newExpandedIds;
+  } else {
+    // 清空筛选时，收起所有展开的 QA
+    referenceExpandedQaIds.value = new Set();
+  }
+};
+
+// 根据场景筛选条件过滤回复
+const getReferenceFilteredReplies = (qa: ReferenceQaItem) => {
+  if (!referenceSceneFilter.value || !qa.replies) {
+    return qa.replies || [];
+  }
+  return qa.replies.filter((reply) => reply.scene === referenceSceneFilter.value);
+};
+
+// 过滤和排序后的引用 QA 列表
+const filteredReferenceQaList = computed(() => {
+  let result = [...referenceQaList.value];
+  
+  // QA 类型筛选
+  if (referenceQaTypeFilter.value) {
+    if (referenceQaTypeFilter.value === 'other') {
+      result = result.filter((qa) => !qa.qaType);
+    } else {
+      const typeMap: Record<string, string> = {
+        scene: '场景 QA',
+        industry: '行业 QA',
+        common: '通用 QA',
+      };
+      const targetType = typeMap[referenceQaTypeFilter.value];
+      result = result.filter((qa) => qa.qaType === targetType);
+    }
+  }
+  
+  // 回复来源场景筛选
+  if (referenceSceneFilter.value) {
+    result = result.filter((qa) => {
+      if (!qa.replies || qa.replies.length === 0) return false;
+      return qa.replies.some((reply) => reply.scene === referenceSceneFilter.value);
+    });
+  }
+  
+  // 关键词搜索
+  if (referenceSearchKeyword.value) {
+    const keyword = referenceSearchKeyword.value.toLowerCase();
+    result = result.filter((qa) => {
+      const name = qa.question || qa.qaName || '';
+      return name.toLowerCase().includes(keyword);
+    });
+  }
+  
+  // 按 ID 升序排序（小的在前）
+  result.sort((a, b) => a.id - b.id);
+  
+  return result;
+});
 
 // 引用 QA 列表数据
 const referenceQaList = ref<ReferenceQaItem[]>([
-  { id: 118337, qaName: 'com.是骗子吗', similarCount: 150 },
-  { id: 118338, qaName: 'com.是正规的吗', similarCount: 150 },
-  { id: 118341, qaName: 'com.为什么不是官方电话', similarCount: 150 },
-  { id: 118342, qaName: 'yh.叫什么名字', similarCount: 150 },
-  { id: 118343, qaName: 'com.在忙', similarCount: 150 },
-  { id: 118344, qaName: 'yh.银行地址', similarCount: 150 },
-  { id: 118345, qaName: 'yh.你加我微信吧', similarCount: 150 },
-  { id: 118346, qaName: 'yh.你发个短信给我', similarCount: 150 },
-  { id: 118347, qaName: 'yh.是机器人吗', similarCount: 150 },
-  { id: 118348, qaName: 'com.打很多次了', similarCount: 150 },
+  { id: 118337, qaName: 'com.是骗子吗', qaType: '通用 QA', similarCount: 150 },
+  { id: 118338, qaName: 'com.是正规的吗', qaType: '通用 QA', similarCount: 150 },
+  { id: 118341, qaName: 'com.为什么不是官方电话', qaType: '通用 QA', similarCount: 150 },
+  { id: 118342, qaName: 'yh.叫什么名字', qaType: '行业 QA', similarCount: 150 },
+  { id: 118343, qaName: 'com.在忙', qaType: '通用 QA', similarCount: 150 },
+  { id: 118344, qaName: 'yh.银行地址', qaType: '行业 QA', similarCount: 150 },
+  { id: 118345, qaName: 'yh.你加我微信吧', qaType: '行业 QA', similarCount: 150 },
+  { id: 118346, qaName: 'yh.你发个短信给我', qaType: '行业 QA', similarCount: 150 },
+  { id: 118347, qaName: 'yh.是机器人吗', qaType: '行业 QA', similarCount: 150 },
+  { id: 118348, qaName: 'com.打很多次了', qaType: '通用 QA', similarCount: 150 },
+  // 场景 QA 数据（与 SceneTemplateDetail.vue 保持一致）
+  {
+    id: 1001,
+    question: '如何办理信用卡激活？',
+    qaName: '如何办理信用卡激活？',
+    qaType: '场景 QA',
+    followProcess: '信用卡激活流程',
+    intentType: '正向',
+    description: '用户咨询信用卡激活的具体操作步骤',
+    isCommon: true,
+    referenceCount: 18,
+    similarCount: 150,
+    replies: [
+      {
+        id: 1,
+        replyText: '您好，办理信用卡激活非常简单。您可以通过以下几种方式进行激活：1. 拨打信用卡背面的客服热线，按照语音提示操作；2. 登录手机银行 APP，在信用卡页面点击激活；3. 前往就近的银行网点，由工作人员协助激活。请问您想选择哪种方式呢？',
+        scene: '当前模板新增',
+      },
+      {
+        id: 2,
+        replyText: '激活信用卡需要您提供以下信息：身份证号码、信用卡卡号、预留手机号码。请确保您提供的信息与办卡时填写的信息一致。',
+        scene: '信用卡激活',
+      },
+    ],
+  },
+  {
+    id: 1002,
+    question: '账户被冻结了怎么办？',
+    qaName: '账户被冻结了怎么办？',
+    qaType: '场景 QA',
+    followProcess: '账户解冻流程',
+    intentType: '负向',
+    description: '用户账户被冻结后的处理流程',
+    similarCount: 120,
+    replies: [
+      {
+        id: 3,
+        replyText: '您好，账户被冻结可能是由于以下原因：1. 多次输入错误密码；2. 账户存在异常交易；3. 长时间未使用。请您先不要着急，我们可以帮您核实具体原因并指导您进行解冻操作。',
+        scene: '账户回访',
+      },
+    ],
+  },
+  {
+    id: 1003,
+    question: '存款到期后如何续存？',
+    qaName: '存款到期后如何续存？',
+    qaType: '行业 QA',
+    followProcess: '存款续存流程',
+    intentType: '正向',
+    description: '存款到期后的续存操作指引',
+    isCommon: true,
+    referenceCount: 10,
+    similarCount: 80,
+    replies: [
+      {
+        id: 4,
+        replyText: '您的存款即将到期，我们提供多种续存方式供您选择：1. 自动转存：到期后自动按原期限和当日挂牌利率转存；2. 手动续存：您可前往网点或通过手机银行选择新的存款产品。建议您提前联系我们，我们可以为您推荐更优惠的续存方案。',
+        scene: '存款到期续存',
+      },
+      {
+        id: 5,
+        replyText: '目前我行推出的大额存单产品利率较基准上浮 45%，期限灵活，起点金额 20 万元。如果您有续存需求，我可以为您详细介绍。',
+        scene: '当前模板新增',
+      },
+    ],
+  },
+  {
+    id: 1004,
+    question: '如何申请个人贷款？',
+    qaName: '如何申请个人贷款？',
+    qaType: '场景 QA',
+    followProcess: '个人贷款申请流程',
+    intentType: '正向',
+    description: '用户咨询个人信用贷款申请条件和流程',
+    isCommon: true,
+    referenceCount: 25,
+    similarCount: 100,
+    replies: [
+      {
+        id: 6,
+        replyText: '您好，申请个人贷款需要满足以下条件：1. 年满 18 周岁，具有完全民事行为能力；2. 有稳定的工作和收入来源；3. 信用记录良好。您可以携带身份证、收入证明等材料前往网点办理，也可以通过手机银行在线申请。',
+        scene: '个人信用贷款',
+      },
+      {
+        id: 7,
+        replyText: '目前我行个人信用贷款年化利率最低 3.85%，最高可贷 30 万元，期限最长 3 年。审批通过后，资金实时到账，支持随借随还，按日计息。',
+        scene: '当前模板新增',
+      },
+    ],
+  },
+  {
+    id: 1005,
+    question: '手机银行如何绑定银行卡？',
+    qaName: '手机银行如何绑定银行卡？',
+    qaType: '通用 QA',
+    followProcess: '手机银行绑卡流程',
+    intentType: '正向',
+    description: '用户咨询手机银行绑定银行卡的操作方法',
+    isCommon: true,
+    referenceCount: 32,
+    similarCount: 180,
+    replies: [
+      {
+        id: 8,
+        replyText: '您好，绑定银行卡的步骤如下：1. 登录手机银行 APP；2. 点击"我的"页面；3. 选择"银行卡管理"；4. 点击"添加银行卡"；5. 输入卡号、预留手机号等信息完成验证。整个过程大约需要 2-3 分钟。',
+        scene: '手机银行开通',
+      },
+    ],
+  },
+  {
+    id: 1006,
+    question: '如何查询账户余额？',
+    qaName: '如何查询账户余额？',
+    qaType: '通用 QA',
+    followProcess: '余额查询流程',
+    intentType: '正向',
+    description: '用户查询账户余额的多种方式',
+    isCommon: true,
+    referenceCount: 45,
+    similarCount: 200,
+    replies: [
+      {
+        id: 9,
+        replyText: '您可以通过以下方式查询余额：1. 手机银行：登录后点击"账户管理"即可查看；2. 网上银行：登录个人网银查询；3. 电话银行：拨打客服热线按语音提示操作；4. 网点查询：携带身份证前往就近网点。',
+        scene: '当前模板新增',
+      },
+      {
+        id: 10,
+        replyText: '建议您开通手机银行余额变动提醒服务，账户资金变动会实时推送短信通知，方便您随时掌握账户动态。',
+        scene: '手机银行促活',
+      },
+    ],
+  },
 ]);
 
 // 添加用户问法模态框
@@ -955,6 +1303,22 @@ const referenceColumns = computed<TableColumnsType>(() => [
     dataIndex: 'similarCount',
     key: 'similarCount',
     width: 120,
+  },
+]);
+
+// 引用 QA 回复表格列配置
+const referenceReplyColumns = computed<TableColumnsType>(() => [
+  {
+    title: '回复内容',
+    dataIndex: 'replyText',
+    key: 'replyText',
+    width: 500,
+  },
+  {
+    title: '来源场景',
+    dataIndex: 'scene',
+    key: 'scene',
+    width: 200,
   },
 ]);
 
@@ -1055,8 +1419,27 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   searchKeyword.value = '';
-  qaTypeFilter.value = 'all';
+  qaTypeFilter.value = undefined;
   message.success('已重置搜索条件');
+};
+
+// 展开全部/收起全部
+const handleToggleExpandAll = () => {
+  if (isAllExpanded.value) {
+    // 全部收起
+    expandedQaIds.value.clear();
+  } else {
+    // 全部展开
+    filteredQaList.value.forEach((qa) => {
+      expandedQaIds.value.add(qa.id);
+    });
+  }
+};
+
+// 显示无回复 QA 变化
+const handleShowNoReplyQaChange = (e: Event) => {
+  console.log('显示无回复 QA:', (e.target as HTMLInputElement).checked);
+  // 过滤逻辑已在 computed 中处理
 };
 
 // ==================== 新建 QA 相关 ====================
@@ -1124,11 +1507,61 @@ const handleCreateQaSubmit = async () => {
 const handleReferenceQa = () => {
   referenceQaModalVisible.value = true;
   selectedReferenceRowKeys.value = [];
+  referenceExpandedQaIds.value = new Set();
+  selectedReferenceReplyMap.value = new Map();
 };
 
 const handleReferenceQaCancel = () => {
   referenceQaModalVisible.value = false;
   selectedReferenceRowKeys.value = [];
+  referenceExpandedQaIds.value = new Set();
+  selectedReferenceReplyMap.value = new Map();
+};
+
+// 切换场景 QA 回复的展开/收起
+const toggleReferenceQaReply = (qa: ReferenceQaItem) => {
+  const newSet = new Set(referenceExpandedQaIds.value);
+  if (newSet.has(qa.id)) {
+    newSet.delete(qa.id);
+  } else {
+    newSet.add(qa.id);
+  }
+  referenceExpandedQaIds.value = newSet;
+};
+
+// 选择/取消选择 QA
+const onReferenceQaSelect = (qaId: number) => {
+  const index = selectedReferenceRowKeys.value.indexOf(qaId);
+  if (index > -1) {
+    selectedReferenceRowKeys.value.splice(index, 1);
+  } else {
+    selectedReferenceRowKeys.value.push(qaId);
+  }
+};
+
+// 获取已选择的回复 ID
+const getSelectedReplyKeys = (qa: ReferenceQaItem) => {
+  return selectedReferenceReplyMap.value.get(qa.id) || [];
+};
+
+// 选择/取消选择回复
+const onReferenceReplySelect = (qa: ReferenceQaItem, selectedRowKeys: number[]) => {
+  const newMap = new Map(selectedReferenceReplyMap.value);
+  newMap.set(qa.id, selectedRowKeys);
+  selectedReferenceReplyMap.value = newMap;
+  
+  // 如果选择了回复，自动把对应的 QA 也选上
+  if (selectedRowKeys.length > 0 && !selectedReferenceRowKeys.value.includes(qa.id)) {
+    selectedReferenceRowKeys.value.push(qa.id);
+  }
+  
+  // 如果取消所有回复，且 QA 被选中，则取消 QA 的选择
+  if (selectedRowKeys.length === 0) {
+    const index = selectedReferenceRowKeys.value.indexOf(qa.id);
+    if (index > -1) {
+      selectedReferenceRowKeys.value.splice(index, 1);
+    }
+  }
 };
 
 const handleReferenceSearch = () => {
@@ -1138,6 +1571,8 @@ const handleReferenceSearch = () => {
 
 const handleReferenceSearchReset = () => {
   referenceSearchKeyword.value = '';
+  referenceQaTypeFilter.value = undefined;
+  referenceSceneFilter.value = undefined;
   message.success('已重置搜索条件');
 };
 
@@ -1585,7 +2020,46 @@ onMounted(() => {
   min-height: 0;
 }
 
-/* 顶部操作区 */
+/* 搜索区 */
+.qa-search-section {
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.qa-search-section .search-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* 操作区 */
+.qa-action-section {
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  margin-bottom: 16px;
+  display: flex !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0;
+}
+
+.qa-action-section .action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.qa-action-section :deep(.ant-divider-vertical) {
+  height: 16px;
+  margin: 0 12px;
+}
+
+/* 顶部操作区（旧样式，保留兼容） */
 .toolbar-section {
   background: #fff;
   padding: 16px 24px;
@@ -1646,6 +2120,12 @@ onMounted(() => {
   padding: 16px 20px;
   border-bottom: 1px solid #f0f0f0;
   background: #fafafa;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.qa-card-header:hover {
+  background: #f5f5f5;
 }
 
 .header-left {
@@ -1669,6 +2149,39 @@ onMounted(() => {
 .qa-process {
   font-size: 14px;
   color: #595959;
+}
+
+/* 常用标签 */
+.common-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+.common-tag .anticon {
+  font-size: 12px;
+}
+
+/* 引用次数徽章 */
+.reference-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #595959;
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: default;
+  transition: all 0.2s ease;
+}
+
+.reference-count:hover {
+  background: #e8e8e8;
+  color: #1890ff;
+}
+
+.reference-count .anticon {
+  font-size: 12px;
 }
 
 /* 回复表格区域 */
@@ -1906,6 +2419,119 @@ onMounted(() => {
 
 .selected-count {
   font-size: 14px;
+  color: #595959;
+}
+
+.reference-table-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* 场景 QA 卡片列表 */
+.reference-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.reference-qa-card {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.reference-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reference-card-header:hover {
+  background: #f5f5f5;
+}
+
+.reference-card-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.reference-card-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-indicator {
+  display: inline-flex;
+  align-items: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.qa-id {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.qa-question {
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+}
+
+.qa-process {
+  font-size: 14px;
+  color: #595959;
+}
+
+.common-tag {
+  font-size: 12px;
+}
+
+.reference-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #8c8c8c;
+  cursor: help;
+  padding: 2px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.reference-count:hover {
+  background: #e8e8e8;
+}
+
+.reference-reply-table-wrapper {
+  padding: 16px 20px;
+}
+
+.no-replies-tip {
+  padding: 20px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.reply-text {
+  color: #262626;
+  line-height: 1.6;
+}
+
+.scene-text {
   color: #595959;
 }
 
