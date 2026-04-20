@@ -252,63 +252,12 @@
         </a-form-item>
       </a-form>
     </a-modal>
-
-    <!-- 查看详情弹窗 -->
-    <a-modal
-      v-model:open="viewModalVisible"
-      title="客户详情"
-      width="700px"
-      :footer="null"
-    >
-      <a-descriptions bordered :column="2">
-        <a-descriptions-item label="客户号">
-          {{ viewData.customerNo }}
-        </a-descriptions-item>
-        <a-descriptions-item label="客户名称">
-          {{ viewData.customerName }}
-        </a-descriptions-item>
-        <a-descriptions-item label="性别">
-          {{ viewData.gender }}
-        </a-descriptions-item>
-        <a-descriptions-item label="联系方式">
-          {{ viewData.phone }}
-        </a-descriptions-item>
-        <a-descriptions-item label="银行机构号">
-          {{ viewData.bankOrgCode }}
-        </a-descriptions-item>
-        <a-descriptions-item label="机构名称">
-          {{ viewData.orgName }}
-        </a-descriptions-item>
-        <a-descriptions-item label="直营坐席工号">
-          {{ viewData.seatNo }}
-        </a-descriptions-item>
-        <a-descriptions-item label="标签">
-          <div class="tags-container">
-            <a-tag
-              v-for="(tag, index) in viewData.tagsArray"
-              :key="index"
-              color="processing"
-            >
-              {{ tag }}
-            </a-tag>
-          </div>
-        </a-descriptions-item>
-        <a-descriptions-item label="备注" :span="2">
-          {{ viewData.remark || '-' }}
-        </a-descriptions-item>
-        <a-descriptions-item label="创建时间" :span="2">
-          {{ viewData.createTime }}
-        </a-descriptions-item>
-        <a-descriptions-item label="更新时间" :span="2">
-          {{ viewData.updateTime }}
-        </a-descriptions-item>
-      </a-descriptions>
-    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   SearchOutlined,
   PlusOutlined,
@@ -317,6 +266,8 @@ import {
 } from '@ant-design/icons-vue';
 import type { TableColumnType } from 'ant-design-vue';
 import { message, Modal } from 'ant-design-vue';
+
+const router = useRouter();
 
 // 搜索表单
 const searchForm = reactive({
@@ -421,7 +372,6 @@ const columns: TableColumnType[] = [
 
 // 弹窗控制
 const modalVisible = ref(false);
-const viewModalVisible = ref(false);
 const isEditMode = ref(false);
 const modalConfirmLoading = ref(false);
 
@@ -438,9 +388,6 @@ const formData = ref<any>({
   tags: [],
   remark: '',
 });
-
-// 查看详情数据
-const viewData = ref<any>({});
 
 // 表单引用
 const formRef = ref<any>();
@@ -553,8 +500,7 @@ const handleEdit = (record: any) => {
 
 // 查看
 const handleView = (record: any) => {
-  viewData.value = { ...record };
-  viewModalVisible.value = true;
+  router.push(`/customer-detail/${record.id}`);
 };
 
 // 删除

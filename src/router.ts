@@ -137,6 +137,11 @@ const routes = [
     component: () => import("./pages/CustomerManagement.vue"),
   },
   {
+    path: "/customer-detail/:id",
+    name: "CustomerDetail",
+    component: () => import("./pages/CustomerDetail.vue"),
+  },
+  {
     path: "/customer-group-management",
     name: "CustomerGroupManagement",
     component: () => import("./pages/CustomerGroupManagement.vue"),
