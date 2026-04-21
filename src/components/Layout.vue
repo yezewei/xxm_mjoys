@@ -131,6 +131,9 @@
             <a-menu-item key="customer-management">
               <span>客户管理</span>
             </a-menu-item>
+            <a-menu-item key="customer-tag-management">
+              <span>客户标签管理</span>
+            </a-menu-item>
             <a-menu-item key="customer-group-management">
               <span>客群管理</span>
             </a-menu-item>
@@ -261,6 +264,7 @@ const menuRouteMap: Record<string, string> = {
   'knowledge-qa': '/knowledge-qa',
   'knowledge-scene': '/knowledge-scene',
   'customer-management': '/customer-management',
+  'customer-tag-management': '/customer-tag-management',
   'customer-group-management': '/customer-group-management',
   'data-lake': '/data-lake',
   'global-service': '/global-service',
@@ -306,6 +310,7 @@ const menuTitleMap: Record<string, string> = {
   'knowledge-scene': '场景知识库',
   customer: '客户中心',
   'customer-management': '客户管理',
+  'customer-tag-management': '客户标签管理',
   'customer-group-management': '客群管理',
   'data-lake': '数据湖',
   'data-board': '数据看板',
@@ -372,6 +377,7 @@ watch(
       '/knowledge-qa': 'knowledge-qa',
       '/knowledge-scene': 'knowledge-scene',
       '/customer-management': 'customer-management',
+      '/customer-tag-management': 'customer-tag-management',
       '/customer-group-management': 'customer-group-management',
       '/data-lake': 'data-lake',
       '/data-board': 'data-board',

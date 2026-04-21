@@ -12,64 +12,6 @@
             <span class="customer-no">{{ customerDetail.customerNo }}</span>
           </div>
         </div>
-        <div class="customer-tags-section">
-          <!-- 银行标签 -->
-          <div class="tag-group-mini">
-            <span class="tag-group-label bank-label">银行标签</span>
-            <div class="tag-list-mini">
-              <a-tag
-                v-for="(tag, index) in customerDetail.tags?.bankTags?.slice(0, 5)"
-                :key="index"
-                color="blue"
-              >
-                {{ tag.tagName }}
-              </a-tag>
-              <a-tag v-if="customerDetail.tags?.bankTags?.length > 5" color="blue">+{{ customerDetail.tags.bankTags.length - 5 }}</a-tag>
-            </div>
-          </div>
-          <!-- AI 外呼标签 -->
-          <div class="tag-group-mini">
-            <span class="tag-group-label ai-label">AI 外呼</span>
-            <div class="tag-list-mini">
-              <a-tag
-                v-for="(tag, index) in customerDetail.tags?.aiCallTags?.slice(0, 3)"
-                :key="index"
-                color="cyan"
-              >
-                {{ tag.tagName }}
-              </a-tag>
-              <a-tag v-if="customerDetail.tags?.aiCallTags?.length > 3" color="cyan">+{{ customerDetail.tags.aiCallTags.length - 3 }}</a-tag>
-            </div>
-          </div>
-          <!-- 人工外呼标签 -->
-          <div class="tag-group-mini">
-            <span class="tag-group-label manual-label">人工外呼</span>
-            <div class="tag-list-mini">
-              <a-tag
-                v-for="(tag, index) in customerDetail.tags?.manualCallTags?.slice(0, 3)"
-                :key="index"
-                color="green"
-              >
-                {{ tag.tagName }}
-              </a-tag>
-              <a-tag v-if="customerDetail.tags?.manualCallTags?.length > 3" color="green">+{{ customerDetail.tags.manualCallTags.length - 3 }}</a-tag>
-            </div>
-          </div>
-          <!-- 自定义标签 -->
-          <div class="tag-group-mini">
-            <span class="tag-group-label custom-label">自定义标签</span>
-            <div class="tag-list-mini">
-              <a-tag
-                v-for="(tag, index) in customerDetail.tags?.customTags?.slice(0, 3)"
-                :key="index"
-                color="orange"
-              >
-                {{ tag.tagName }}
-              </a-tag>
-              <a-tag v-if="customerDetail.tags?.customTags?.length > 3" color="orange">+{{ customerDetail.tags.customTags.length - 3 }}</a-tag>
-            </div>
-          </div>
-        </div>
         <div class="header-actions">
           <a-button @click="handleBack">
             <arrow-left-outlined />
@@ -78,10 +20,6 @@
           <a-button type="primary" @click="handleEdit">
             <edit-outlined />
             编辑
-          </a-button>
-          <a-button @click="handleAssign">
-            <user-add-outlined />
-            分配
           </a-button>
         </div>
       </div>
@@ -115,6 +53,104 @@
               <span class="info-value remark">{{ customerDetail.remark || '-' }}</span>
             </a-descriptions-item>
           </a-descriptions>
+        </a-card>
+
+        <!-- 客户标签 -->
+        <a-card :bordered="false" class="content-card" style="margin-top: 16px" title="客户标签">
+          <template #extra>
+            <a-button type="link" size="small" @click="handleEditTags">
+              <edit-outlined />
+              编辑标签
+            </a-button>
+          </template>
+          
+          <!-- 银行标签 -->
+          <div class="tag-category">
+            <div class="tag-category-header">
+              <div class="tag-category-title">
+                <bank-outlined class="category-icon bank-icon" />
+                <span>银行标签</span>
+              </div>
+              <span class="tag-count">{{ customerDetail.tags?.bankTags?.length || 0 }} 个</span>
+            </div>
+            <div class="tag-list">
+              <a-tag
+                v-for="(tag, index) in customerDetail.tags?.bankTags"
+                :key="index"
+                color="blue"
+                class="tag-item"
+              >
+                {{ tag.tagName }}
+              </a-tag>
+              <a-empty v-if="customerDetail.tags?.bankTags?.length === 0" description="暂无银行标签" :image="false" style="margin-left: 0;" />
+            </div>
+          </div>
+
+          <!-- AI 外呼标签 -->
+          <div class="tag-category">
+            <div class="tag-category-header">
+              <div class="tag-category-title">
+                <robot-outlined class="category-icon ai-icon" />
+                <span>AI 外呼标签</span>
+              </div>
+              <span class="tag-count">{{ customerDetail.tags?.aiCallTags?.length || 0 }} 个</span>
+            </div>
+            <div class="tag-list">
+              <a-tag
+                v-for="(tag, index) in customerDetail.tags?.aiCallTags"
+                :key="index"
+                color="cyan"
+                class="tag-item"
+              >
+                {{ tag.tagName }}
+              </a-tag>
+              <a-empty v-if="customerDetail.tags?.aiCallTags?.length === 0" description="暂无 AI 外呼标签" :image="false" style="margin-left: 0;" />
+            </div>
+          </div>
+
+          <!-- 人工外呼标签 -->
+          <div class="tag-category">
+            <div class="tag-category-header">
+              <div class="tag-category-title">
+                <phone-outlined class="category-icon manual-icon" />
+                <span>人工外呼标签</span>
+              </div>
+              <span class="tag-count">{{ customerDetail.tags?.manualCallTags?.length || 0 }} 个</span>
+            </div>
+            <div class="tag-list">
+              <a-tag
+                v-for="(tag, index) in customerDetail.tags?.manualCallTags"
+                :key="index"
+                color="green"
+                class="tag-item"
+              >
+                {{ tag.tagName }}
+              </a-tag>
+              <a-empty v-if="customerDetail.tags?.manualCallTags?.length === 0" description="暂无人工外呼标签" :image="false" style="margin-left: 0;" />
+            </div>
+          </div>
+
+          <!-- 自定义标签 -->
+          <div class="tag-category">
+            <div class="tag-category-header">
+              <div class="tag-category-title">
+                <tags-outlined class="category-icon custom-icon" />
+                <span>自定义标签</span>
+              </div>
+              <span class="tag-count">{{ customerDetail.tags?.customTags?.length || 0 }} 个</span>
+            </div>
+            <div class="tag-list">
+              <a-tag
+                v-for="(tag, index) in customerDetail.tags?.customTags"
+                :key="index"
+                color="orange"
+                class="tag-item"
+              >
+                {{ tag.tagName }}
+              </a-tag>
+              <a-empty v-if="customerDetail.tags?.customTags?.length === 0" description="暂无自定义标签" :image="false" style="margin-left: 0;" />
+            </div>
+          </div>
         </a-card>
 
         <!-- 统计数据 -->
@@ -207,7 +243,6 @@
                 <a-radio-button value="all">全部</a-radio-button>
                 <a-radio-button value="follow">跟进</a-radio-button>
                 <a-radio-button value="call">拨打</a-radio-button>
-                <a-radio-button value="assign">分配</a-radio-button>
               </a-radio-group>
             </div>
           </template>
@@ -253,22 +288,6 @@
                       </a-descriptions-item>
                       <a-descriptions-item label="场景名称" :span="2">
                         {{ item.callDetail.sceneName }}
-                      </a-descriptions-item>
-                    </a-descriptions>
-                  </div>
-                  <!-- 分配记录详情 -->
-                  <div v-if="item.type === 'assign' && item.assignDetail" class="timeline-detail-card">
-                    <a-descriptions size="small" :column="2">
-                      <a-descriptions-item label="原坐席">
-                        {{ item.assignDetail.fromSeat }}
-                      </a-descriptions-item>
-                      <a-descriptions-item label="新坐席">
-                        {{ item.assignDetail.toSeat }}
-                      </a-descriptions-item>
-                      <a-descriptions-item label="分配类型" :span="2">
-                        <a-tag :color="item.assignDetail.assignType === '转移' ? 'orange' : 'blue'">
-                          {{ item.assignDetail.assignType }}
-                        </a-tag>
                       </a-descriptions-item>
                     </a-descriptions>
                   </div>
@@ -347,35 +366,6 @@
         </a-form-item>
       </a-form>
     </a-modal>
-
-    <!-- 分配客户弹窗 -->
-    <a-modal
-      v-model:open="assignModalVisible"
-      title="分配客户"
-      width="500px"
-      @ok="handleConfirmAssign"
-    >
-      <a-form layout="vertical">
-        <a-form-item label="选择坐席" required>
-          <a-select
-            v-model:value="assignForm.seatNo"
-            placeholder="请选择坐席"
-          >
-            <a-select-option value="001">001 - 张三</a-select-option>
-            <a-select-option value="002">002 - 李四</a-select-option>
-            <a-select-option value="003">003 - 王五</a-select-option>
-            <a-select-option value="004">004 - 赵六</a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="分配说明">
-          <a-textarea
-            v-model:value="assignForm.remark"
-            placeholder="请输入分配说明"
-            :rows="3"
-          />
-        </a-form-item>
-      </a-form>
-    </a-modal>
   </div>
 </template>
 
@@ -388,7 +378,6 @@ import {
   UserAddOutlined,
   PhoneOutlined,
   MessageOutlined,
-  UserSwitchOutlined,
   FileTextOutlined,
   UserOutlined,
   ClockCircleOutlined,
@@ -446,13 +435,6 @@ const editTags = ref({
 const timelineFilter = ref('all');
 const timelineList = ref<any[]>([]);
 
-// 分配相关
-const assignModalVisible = ref(false);
-const assignForm = ref({
-  seatNo: '',
-  remark: '',
-});
-
 // 加载客户详情
 const loadCustomerDetail = () => {
   const customerId = route.params.id as string;
@@ -472,16 +454,30 @@ const loadCustomerDetail = () => {
       bankTags: [
         { tagCode: 'vip', tagName: 'VIP 客户', tagColor: 'blue' },
         { tagCode: 'high_value', tagName: '高价值客户', tagColor: 'red' },
+        { tagCode: 'private_bank', tagName: '私人银行客户', tagColor: 'purple' },
+        { tagCode: 'credit_card', tagName: '信用卡客户', tagColor: 'magenta' },
+        { tagCode: 'loan', tagName: '贷款客户', tagColor: 'blue' },
+        { tagCode: 'wealth_mgmt', tagName: '理财客户', tagColor: 'cyan' },
       ],
       aiCallTags: [
         { tagCode: 'ai_answered', tagName: 'AI 已接通', tagColor: 'cyan' },
         { tagCode: 'ai_interest', tagName: 'AI 有意向', tagColor: 'cyan' },
+        { tagCode: 'ai_not_interested', tagName: 'AI 无意向', tagColor: 'gray' },
+        { tagCode: 'ai_callback', tagName: 'AI 需回拨', tagColor: 'orange' },
+        { tagCode: 'ai_refused', tagName: 'AI 拒接', tagColor: 'red' },
       ],
       manualCallTags: [
         { tagCode: 'manual_followup', tagName: '人工需跟进', tagColor: 'green' },
+        { tagCode: 'manual_callback', tagName: '人工回拨', tagColor: 'green' },
+        { tagCode: 'manual_success', tagName: '人工成功', tagColor: 'lime' },
+        { tagCode: 'manual_commitment', tagName: '人工承诺', tagColor: 'blue' },
       ],
       customTags: [
         { tagCode: 'potential', tagName: '潜力客户', tagColor: 'orange' },
+        { tagCode: 'new', tagName: '新客户', tagColor: 'green' },
+        { tagCode: 'important', tagName: '重要客户', tagColor: 'red' },
+        { tagCode: 'sensitive', tagName: '敏感客户', tagColor: 'orange' },
+        { tagCode: 'loss_risk', tagName: '流失风险', tagColor: 'red' },
       ],
     },
     statistics: {
@@ -532,18 +528,6 @@ const loadCustomerTimeline = () => {
       },
     },
     {
-      type: 'assign',
-      title: '客户分配',
-      description: '客户从 002 号坐席转移至 001 号坐席',
-      time: '2026-04-19 09:00:00',
-      operator: '管理员',
-      assignDetail: {
-        fromSeat: '002 - 王五',
-        toSeat: '001 - 李四',
-        assignType: '转移',
-      },
-    },
-    {
       type: 'follow',
       title: '跟进记录',
       description: '首次联系客户，了解客户基本信息和需求',
@@ -569,7 +553,6 @@ const loadCustomerTimeline = () => {
     const typeMap: Record<string, string> = {
       follow: 'follow',
       call: 'call',
-      assign: 'assign',
       other: 'other',
     };
     timelineList.value = timelineList.value.filter(
@@ -583,7 +566,6 @@ const getTimelineColor = (type: string) => {
   const colorMap: Record<string, string> = {
     follow: 'blue',
     call: 'green',
-    assign: 'orange',
     other: 'gray',
   };
   return colorMap[type] || 'gray';
@@ -594,7 +576,6 @@ const getTimelineIcon = (type: string) => {
   const iconMap: Record<string, any> = {
     follow: MessageOutlined,
     call: PhoneOutlined,
-    assign: UserSwitchOutlined,
     other: FileTextOutlined,
   };
   return iconMap[type] || FileTextOutlined;
@@ -646,27 +627,6 @@ const handleSaveTags = () => {
   // TODO: 调用 API 保存标签
   message.success('保存标签成功');
   editTagModalVisible.value = false;
-  loadCustomerDetail();
-};
-
-// 分配客户
-const handleAssign = () => {
-  assignForm.value = {
-    seatNo: '',
-    remark: '',
-  };
-  assignModalVisible.value = true;
-};
-
-// 确认分配
-const handleConfirmAssign = () => {
-  if (!assignForm.value.seatNo) {
-    message.error('请选择坐席');
-    return;
-  }
-  // TODO: 调用 API 分配客户
-  message.success('分配客户成功');
-  assignModalVisible.value = false;
   loadCustomerDetail();
 };
 
@@ -724,54 +684,6 @@ onMounted(() => {
 .customer-no {
   color: #999;
   font-size: 13px;
-}
-
-.customer-tags-section {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  flex: 1;
-  max-width: 600px;
-}
-
-.tag-group-mini {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 120px;
-}
-
-.tag-group-label {
-  font-size: 12px;
-  color: #999;
-  font-weight: 500;
-}
-
-.bank-label {
-  color: #1890ff;
-}
-
-.ai-label {
-  color: #13c2c2;
-}
-
-.manual-label {
-  color: #52c41a;
-}
-
-.custom-label {
-  color: #fa8c16;
-}
-
-.tag-list-mini {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.tag-list-mini .ant-tag {
-  margin: 0;
-  font-size: 12px;
 }
 
 .header-actions {
@@ -883,6 +795,72 @@ onMounted(() => {
 
 .empty-timeline {
   padding: 40px 0;
+}
+
+/* 标签分类样式 */
+.tag-category {
+  margin-bottom: 20px;
+}
+
+.tag-category:last-child {
+  margin-bottom: 0;
+}
+
+.tag-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tag-category-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.category-icon {
+  font-size: 16px;
+}
+
+.bank-icon {
+  color: #1890ff;
+}
+
+.ai-icon {
+  color: #13c2c2;
+}
+
+.manual-icon {
+  color: #52c41a;
+}
+
+.custom-icon {
+  color: #fa8c16;
+}
+
+.tag-count {
+  color: #999;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.tag-item {
+  margin: 0;
+  font-size: 13px;
+  padding: 4px 12px;
 }
 
 /* 统计卡片样式 */
