@@ -143,9 +143,20 @@
             <span>数据湖</span>
           </a-menu-item>
 
-          <a-menu-item key="data-board">
-            <span>数据看板</span>
-          </a-menu-item>
+          <a-sub-menu key="data-board-group">
+            <template #title>
+              <span>数据看板</span>
+            </template>
+            <a-menu-item key="data-board">
+              <span>数据看板</span>
+            </a-menu-item>
+            <a-menu-item key="ai-call-report">
+              <span>AI 外呼报表</span>
+            </a-menu-item>
+            <a-menu-item key="manual-call-report">
+              <span>人工通信接口外呼记录</span>
+            </a-menu-item>
+          </a-sub-menu>
 
           <a-menu-item key="exception">
             <span>异常看板</span>
@@ -244,6 +255,7 @@ const menuRouteMap: Record<string, string> = {
   'role-management': '/role-management',
   'ai-call-report': '/ai-call-report',
   'data-board': '/data-board',
+  'manual-call-report': '/manual-call-report',
   'operation-log': '/operation-log',
   'scene-template': '/scene-template',
   'scene-management': '/scene-management',
@@ -314,6 +326,9 @@ const menuTitleMap: Record<string, string> = {
   'customer-group-management': '客群管理',
   'data-lake': '数据湖',
   'data-board': '数据看板',
+  'data-board-group': '数据看板',
+  'ai-call-report': 'AI 外呼报表',
+  'manual-call-report': '人工通信接口外呼记录',
   exception: '异常看板',
   engineering: '工程管理',
   'global-service': '全局服务配置',
@@ -381,6 +396,8 @@ watch(
       '/customer-group-management': 'customer-group-management',
       '/data-lake': 'data-lake',
       '/data-board': 'data-board',
+      '/ai-call-report': 'ai-call-report',
+      '/manual-call-report': 'manual-call-report',
       '/global-service': 'global-service',
       '/system-security': 'system-security',
       '/device-management': 'device-management',
@@ -397,6 +414,24 @@ watch(
     };
     const key = pathToKeyMap[path] || 'home';
     selectedKeys.value = [key];
+    // 自动展开父级子菜单
+    const subMenuChildren: Record<string, string[]> = {
+      'data-board-group': ['data-board', 'ai-call-report', 'manual-call-report'],
+      business: ['scene-management', 'scene-template', 'org-management', 'workbench-settings'],
+      'phone-work': ['phone-work-home', 'phone-work-workbench'],
+      'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule'],
+      seat: ['seat-config', 'seat-monitor', 'skill-group'],
+      knowledge: ['knowledge-word', 'knowledge-intent', 'knowledge-qa', 'knowledge-scene'],
+      customer: ['customer-management', 'customer-tag-management', 'customer-group-management'],
+      engineering: ['global-service', 'system-security', 'device-management', 'system-monitor', 'route-settings'],
+      'data-engine': ['app-management', 'task-management', 'write-off', 'schedule-log', 'external-integration', 'data-market'],
+      platform: ['role-management', 'bank-account', 'platform-account', 'operation-log', 'menu-management'],
+    };
+    for (const [parentKey, children] of Object.entries(subMenuChildren)) {
+      if (children.includes(key) && !openKeys.value.includes(parentKey)) {
+        openKeys.value.push(parentKey);
+      }
+    }
   },
   { immediate: true }
 );

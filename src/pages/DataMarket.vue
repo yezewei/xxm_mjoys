@@ -358,6 +358,7 @@
           >
             <a-select-option value="AI 外呼记录">AI 外呼记录</a-select-option>
             <a-select-option value="人工外呼记录">人工外呼记录</a-select-option>
+            <a-select-option value="人工通信接口外呼记录">人工通信接口外呼记录</a-select-option>
             <a-select-option value="人工跟进记录">人工跟进记录</a-select-option>
             <a-select-option value="短信发送记录">短信发送记录</a-select-option>
           </a-select>
@@ -934,17 +935,39 @@ const smsRecordFieldConfigs: FieldConfig[] = [
   { field: '失败原因', operators: ['=', '!=', 'contains'], valueType: 'multiSelect', options: ['号码空号', '号码停机', '发送超时', '内容敏感', '其他原因'] },
 ];
 
+
+// 人工通信接口外呼记录字段配置
+const manualCommCallFieldConfigs: FieldConfig[] = [
+  { field: '外呼发起方式', operators: ['=', '!='], valueType: 'multiSelect', options: ['坐席分机', '坐席手机'] },
+  { field: '主叫号码', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '坐席分机号', operators: ['=', '!=', 'contains'], valueType: 'text' },
+  { field: '通话状态', operators: ['=', '!='], valueType: 'multiSelect', options: ['已接通', '未接通'] },
+  { field: '通话时长', operators: ['>', '<', '>=', '<='], valueType: 'number' },
+  { field: '挂断方', operators: ['=', '!='], valueType: 'multiSelect', options: ['坐席挂断', '客户挂断'] },
+  { field: '通话ID', operators: [] },
+  { field: '被叫号码', operators: [] },
+  { field: '被叫归属地', operators: [] },
+  { field: '坐席手机号', operators: [] },
+  { field: '拨打时间', operators: [] },
+  { field: '坐席接听时间', operators: [] },
+  { field: '客户接听时间', operators: [] },
+  { field: '挂断时间', operators: [] },
+  { field: '拨号内容', operators: [] },
+];
+
 // 获取字段名称列表 (用于下拉选择)
 const aiCallFields = aiCallFieldConfigs.map(c => c.field);
 const manualCallFields = manualCallFieldConfigs.map(c => c.field);
 const manualFollowUpFields = manualFollowUpFieldConfigs.map(c => c.field);
 const dncFields = dncFieldConfigs.map(c => c.field);
 const smsRecordFields = smsRecordFieldConfigs.map(c => c.field);
+const manualCommCallFields = manualCommCallFieldConfigs.map(c => c.field);
 
 // 数据类型与字段配置的映射
 const dataTypeFieldConfigsMap: Record<string, FieldConfig[]> = {
   'AI 外呼记录': aiCallFieldConfigs,
   '人工外呼记录': manualCallFieldConfigs,
+  '人工通信接口外呼记录': manualCommCallFieldConfigs,
   '人工跟进记录': manualFollowUpFieldConfigs,
   '免打扰名单': dncFieldConfigs,
   '短信发送记录': smsRecordFieldConfigs,
@@ -954,6 +977,7 @@ const dataTypeFieldConfigsMap: Record<string, FieldConfig[]> = {
 const dataTypeFieldsMap: Record<string, string[]> = {
   'AI 外呼记录': aiCallFields,
   '人工外呼记录': manualCallFields,
+  '人工通信接口外呼记录': manualCommCallFields,
   '人工跟进记录': manualFollowUpFields,
   '免打扰名单': dncFields,
   '短信发送记录': smsRecordFields,
@@ -1477,6 +1501,18 @@ const tableData = ref([
     enabled: true,
     expandedFields: false,
   },
+  {
+    id: 5,
+    ruleName: '人工通信接口外呼记录订阅',
+    dataType: '人工通信接口外呼记录',
+    dataFields: manualCommCallFields,
+    subscriptionRange: '',
+    generateTime: '每 1 天',
+    delimiter: 'comma',
+    quoteChar: 'single',
+    enabled: true,
+    expandedFields: false,
+  },
 ]);
 
 // 数据补发表格列定义
@@ -1533,6 +1569,12 @@ const reissueTableData = ref([
     id: 5,
     dataType: '短信发送记录',
     dataFields: smsRecordFields,
+    expandedFields: false,
+  },
+  {
+    id: 6,
+    dataType: '人工通信接口外呼记录',
+    dataFields: manualCommCallFields,
     expandedFields: false,
   },
 ]);
