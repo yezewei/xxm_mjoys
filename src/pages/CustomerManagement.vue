@@ -400,7 +400,6 @@
             <div>4. 支持文件格式：.xlsx, .xls, .csv</div>
           </template>
         </a-alert>
-
         <a-form-item label="选择文件">
           <input
             ref="fileInputRef"
@@ -521,21 +520,24 @@
 
         <a-divider v-if="groupFormData.groupOperationType" />
 
-        <!-- 已选客户信息 -->
-        <a-form-item label="已选客户">
-          <a-textarea
-            :value="selectedCustomersText"
-            readonly
-            :rows="3"
-          />
-        </a-form-item>
+        <!-- 已选客户数量 -->
+        <template v-if="groupFormData.groupOperationType === 'create'">
+        <a-alert
+          type="info"
+          show-icon
+        >
+          <template #message>
+            已选择 <strong>{{ selectedRowKeys.length }}</strong> 位客户
+          </template>
+        </a-alert>
+        </template>
       </a-form>
     </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   SearchOutlined,
@@ -570,14 +572,6 @@ const loading = ref(false);
 
 // 选中的行
 const selectedRowKeys = ref<number[]>([]);
-
-// 已选客户文本（计算属性）
-const selectedCustomersText = computed(() => {
-  const selectedCustomers = dataSource.value.filter((item: any) =>
-    selectedRowKeys.value.includes(item.id)
-  );
-  return selectedCustomers.map((item: any) => `${item.customerName}（${item.customerNo}）`).join('、') || '暂无选择';
-});
 
 // 分页
 const pagination = reactive({

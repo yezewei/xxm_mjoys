@@ -156,6 +156,9 @@
             <a-menu-item key="manual-call-report">
               <span>人工通信接口外呼记录</span>
             </a-menu-item>
+            <a-menu-item key="call-funnel">
+              <span>外呼漏斗图</span>
+            </a-menu-item>
           </a-sub-menu>
 
           <a-menu-item key="exception">
@@ -256,6 +259,7 @@ const menuRouteMap: Record<string, string> = {
   'ai-call-report': '/ai-call-report',
   'data-board': '/data-board',
   'manual-call-report': '/manual-call-report',
+  'call-funnel': '/call-funnel',
   'operation-log': '/operation-log',
   'scene-template': '/scene-template',
   'scene-management': '/scene-management',
@@ -329,6 +333,7 @@ const menuTitleMap: Record<string, string> = {
   'data-board-group': '数据看板',
   'ai-call-report': 'AI 外呼报表',
   'manual-call-report': '人工通信接口外呼记录',
+  'call-funnel': '外呼漏斗图',
   exception: '异常看板',
   engineering: '工程管理',
   'global-service': '全局服务配置',
@@ -371,7 +376,6 @@ watch(
       '/': 'home',
       '/exception': 'exception',
       '/role-management': 'role-management',
-      '/ai-call-report': 'ai-call-report',
       '/operation-log': 'operation-log',
       '/scene-template': 'scene-template',
       '/scene-management': 'scene-management',
@@ -398,6 +402,7 @@ watch(
       '/data-board': 'data-board',
       '/ai-call-report': 'ai-call-report',
       '/manual-call-report': 'manual-call-report',
+      '/call-funnel': 'call-funnel',
       '/global-service': 'global-service',
       '/system-security': 'system-security',
       '/device-management': 'device-management',
@@ -416,7 +421,7 @@ watch(
     selectedKeys.value = [key];
     // 自动展开父级子菜单
     const subMenuChildren: Record<string, string[]> = {
-      'data-board-group': ['data-board', 'ai-call-report', 'manual-call-report'],
+      'data-board-group': ['data-board', 'ai-call-report', 'manual-call-report', 'call-funnel'],
       business: ['scene-management', 'scene-template', 'org-management', 'workbench-settings'],
       'phone-work': ['phone-work-home', 'phone-work-workbench'],
       'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule'],

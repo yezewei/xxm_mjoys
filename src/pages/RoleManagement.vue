@@ -334,7 +334,44 @@ const permissionTreeData: PermissionTreeNode[] = [
       },
       { key: 'data-lake', title: '数据湖' },
       { key: 'data-board', title: '数据看板' },
-      { key: 'exception', title: '异常看板' },
+      {
+        key: 'customer-center',
+        title: '客户中心',
+        children: [
+          {
+            key: 'customer-management',
+            title: '客户管理',
+            children: [
+              { key: 'customer-list', title: '查看客户列表' },
+              { key: 'customer-detail', title: '查看客户详情' },
+              { key: 'customer-create', title: '新建客户' },
+              { key: 'customer-edit', title: '编辑客户' },
+              { key: 'customer-delete', title: '删除客户' },
+              { key: 'customer-import', title: '导入客户' },
+            ],
+          },
+          {
+            key: 'customer-tag',
+            title: '客户标签',
+            children: [
+              { key: 'tag-list', title: '查看客户标签列表' },
+              { key: 'tag-create', title: '新建客户标签' },
+              { key: 'tag-edit', title: '编辑客户标签' },
+              { key: 'tag-delete', title: '删除客户标签' },
+            ],
+          },
+          {
+            key: 'customer-group',
+            title: '客群管理',
+            children: [
+              { key: 'group-list', title: '查看客群列表' },
+              { key: 'group-create', title: '新建客群' },
+              { key: 'group-edit', title: '编辑客群' },
+              { key: 'group-delete', title: '删除客群' },
+            ],
+          },
+        ],
+      },      { key: 'exception', title: '异常看板' },
       {
         key: 'engineering',
         title: '工程管理',

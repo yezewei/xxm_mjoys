@@ -80,7 +80,7 @@
                 color="blue"
                 class="tag-item"
               >
-                {{ tag.tagName }}
+                {{ tag.tagValue ? `${tag.tagName}:${tag.tagValue}` : tag.tagName }}
               </a-tag>
               <a-empty v-if="customerDetail.tags?.bankTags?.length === 0" description="暂无银行标签" :image="false" style="margin-left: 0;" />
             </div>
@@ -102,7 +102,7 @@
                 color="cyan"
                 class="tag-item"
               >
-                {{ tag.tagName }}
+                {{ tag.tagValue ? `${tag.tagName}:${tag.tagValue}` : tag.tagName }}
               </a-tag>
               <a-empty v-if="customerDetail.tags?.aiCallTags?.length === 0" description="暂无 AI 外呼标签" :image="false" style="margin-left: 0;" />
             </div>
@@ -124,7 +124,7 @@
                 color="green"
                 class="tag-item"
               >
-                {{ tag.tagName }}
+                {{ tag.tagValue ? `${tag.tagName}:${tag.tagValue}` : tag.tagName }}
               </a-tag>
               <a-empty v-if="customerDetail.tags?.manualCallTags?.length === 0" description="暂无人工外呼标签" :image="false" style="margin-left: 0;" />
             </div>
@@ -146,7 +146,7 @@
                 color="orange"
                 class="tag-item"
               >
-                {{ tag.tagName }}
+                {{ tag.tagValue ? `${tag.tagName}:${tag.tagValue}` : tag.tagName }}
               </a-tag>
               <a-empty v-if="customerDetail.tags?.customTags?.length === 0" description="暂无自定义标签" :image="false" style="margin-left: 0;" />
             </div>
@@ -452,32 +452,32 @@ const loadCustomerDetail = () => {
     remark: '重要客户，需重点维护',
     tags: {
       bankTags: [
-        { tagCode: 'vip', tagName: 'VIP 客户', tagColor: 'blue' },
-        { tagCode: 'high_value', tagName: '高价值客户', tagColor: 'red' },
+        { tagCode: 'vip', tagName: 'VIP 客户', tagColor: 'blue', tagValue: '是' },
+        { tagCode: 'high_value', tagName: '高价值客户', tagColor: 'red', tagValue: '是' },
         { tagCode: 'private_bank', tagName: '私人银行客户', tagColor: 'purple' },
         { tagCode: 'credit_card', tagName: '信用卡客户', tagColor: 'magenta' },
-        { tagCode: 'loan', tagName: '贷款客户', tagColor: 'blue' },
+        { tagCode: 'loan', tagName: '贷款客户', tagColor: 'blue', tagValue: '住房贷款' },
         { tagCode: 'wealth_mgmt', tagName: '理财客户', tagColor: 'cyan' },
       ],
       aiCallTags: [
         { tagCode: 'ai_answered', tagName: 'AI 已接通', tagColor: 'cyan' },
-        { tagCode: 'ai_interest', tagName: 'AI 有意向', tagColor: 'cyan' },
+        { tagCode: 'ai_interest', tagName: 'AI 有意向', tagColor: 'cyan', tagValue: '高' },
         { tagCode: 'ai_not_interested', tagName: 'AI 无意向', tagColor: 'gray' },
         { tagCode: 'ai_callback', tagName: 'AI 需回拨', tagColor: 'orange' },
         { tagCode: 'ai_refused', tagName: 'AI 拒接', tagColor: 'red' },
       ],
       manualCallTags: [
-        { tagCode: 'manual_followup', tagName: '人工需跟进', tagColor: 'green' },
+        { tagCode: 'manual_followup', tagName: '人工需跟进', tagColor: 'green', tagValue: '3次' },
         { tagCode: 'manual_callback', tagName: '人工回拨', tagColor: 'green' },
         { tagCode: 'manual_success', tagName: '人工成功', tagColor: 'lime' },
         { tagCode: 'manual_commitment', tagName: '人工承诺', tagColor: 'blue' },
       ],
       customTags: [
-        { tagCode: 'potential', tagName: '潜力客户', tagColor: 'orange' },
+        { tagCode: 'potential', tagName: '潜力客户', tagColor: 'orange', tagValue: '高' },
         { tagCode: 'new', tagName: '新客户', tagColor: 'green' },
         { tagCode: 'important', tagName: '重要客户', tagColor: 'red' },
         { tagCode: 'sensitive', tagName: '敏感客户', tagColor: 'orange' },
-        { tagCode: 'loss_risk', tagName: '流失风险', tagColor: 'red' },
+        { tagCode: 'loss_risk', tagName: '流失风险', tagColor: 'red', tagValue: '中' },
       ],
     },
     statistics: {
