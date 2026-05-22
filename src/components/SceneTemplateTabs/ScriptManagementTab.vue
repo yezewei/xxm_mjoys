@@ -4,157 +4,13 @@
       <!-- 话术管理子标签页 -->
       <div class="script-sub-tabs">
         <a-tabs v-model:activeKey="scriptSubTabKey" @change="handleScriptSubTabChange">
-          <!-- <a-tab-pane key="compliance" data-tab-key="compliance" tab="话术消保" /> -->
           <a-tab-pane key="audio" data-tab-key="audio" tab="话术录音" />
           <a-tab-pane key="variable" data-tab-key="variable" tab="话术变量" />
         </a-tabs>
       </div>
 
-      <!-- 话术消保内容 -->
-      <div v-if="scriptSubTabKey === 'compliance'" class="script-sub-content">
-        <!-- 顶部操作区 -->
-        <div class="script-toolbar-section">
-          <div class="script-toolbar-left">
-            <a-space>
-              <a-input
-                v-model:value="scriptSearchKeyword"
-                placeholder="请输入话术文本搜索"
-                style="width: 200px"
-                @press-enter="handleScriptSearch"
-              >
-                <template #prefix>
-                  <search-outlined />
-                </template>
-              </a-input>
-              <a-button type="primary" @click="handleScriptSearch">
-                <search-outlined />
-                搜索
-              </a-button>
-              <a-button @click="handleScriptReset">
-                <reload-outlined />
-                重置
-              </a-button>
-            </a-space>
-          </div>
-          <div class="script-toolbar-right">
-            <a-space>
-              <a-dropdown trigger="click">
-                <a-button>
-                  批量删除 <down-outlined />
-                </a-button>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item key="delete-selected" @click="handleBatchDeleteSelected">
-                      删除所选
-                    </a-menu-item>
-                    <a-menu-item key="delete-all" @click="handleBatchDeleteAll">
-                      删除全部
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
-              <a-dropdown trigger="click">
-                <a-button>
-                  批量导出 <down-outlined />
-                </a-button>
-                <template #overlay>
-                  <a-menu>
-                    <a-menu-item key="export-selected" @click="handleBatchExportSelected">
-                      导出所选
-                    </a-menu-item>
-                    <a-menu-item key="export-all" @click="handleBatchExportAll">
-                      导出全部
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
-            </a-space>
-          </div>
-        </div>
-
-        <!-- 数据表格 -->
-        <div class="script-list">
-          <div class="script-table-wrapper">
-            <a-table
-              :columns="scriptColumns"
-              :data-source="scriptList"
-              :pagination="false"
-              row-key="id"
-              size="middle"
-              :row-selection="{ selectedRowKeys: selectedScriptRowKeys, onChange: onScriptSelectChange }"
-              @change="handleScriptTableChange"
-              :scroll="{ x: 1000 }"
-            >
-              <template #bodyCell="{ column, record }">
-                <template v-if="column.key === 'uid'">
-                  <span>{{ record.uid }}</span>
-                </template>
-                <template v-if="column.key === 'replyText'">
-                  <span class="script-reply-text">{{ record.replyText }}</span>
-                </template>
-                <template v-if="column.key === 'variableValue'">
-                  <span>{{ record.variableValue || '-' }}</span>
-                </template>
-                <template v-if="column.key === 'complianceStatus'">
-                  <a-tag :color="getComplianceStatusColor(record.complianceStatus)">
-                    {{ record.complianceStatus || '未消保' }}
-                  </a-tag>
-                </template>
-                <template v-if="column.key === 'action'">
-                  <a-space :size="8">
-                    <a-button type="link" size="small" @click="handleEditScript(record)">
-                      <edit-outlined />
-                      编辑
-                    </a-button>
-                    <template v-if="record.complianceStatus === '未消保'">
-                      <a-dropdown trigger="click">
-                        <a-button type="link" size="small">
-                          话术消保 <down-outlined />
-                        </a-button>
-                        <template #overlay>
-                          <a-menu>
-                            <a-menu-item key="pass" @click="handleCompliancePass(record)" class="compliance-pass">
-                              <check-circle-outlined />
-                              <span class="pass-text">消保通过</span>
-                            </a-menu-item>
-                            <a-menu-item key="reject" @click="handleComplianceReject(record)" class="compliance-reject">
-                              <close-circle-outlined />
-                              <span class="reject-text">消保不通过</span>
-                            </a-menu-item>
-                          </a-menu>
-                        </template>
-                      </a-dropdown>
-                    </template>
-                  </a-space>
-                </template>
-              </template>
-            </a-table>
-          </div>
-          <!-- 分页 -->
-          <div class="script-pagination">
-            <span class="selected-count">共 {{ scriptTotal }} 条，已选择 {{ selectedScriptRowKeys.length }} 条</span>
-            <a-pagination
-              v-model:current="scriptPagination.current"
-              v-model:page-size="scriptPagination.pageSize"
-              :total="scriptPagination.total"
-              show-size-changer
-              show-quick-jumper
-              :show-total="(total: number) => `共 ${total} 条`"
-              :page-size-options="['10', '20', '50']"
-              :locale="{
-                items_per_page: '条/页',
-                jump_to: '跳转至',
-                page: '页',
-              }"
-              @change="handleScriptPageChange"
-              @show-size-change="handleScriptPageSizeChange"
-            />
-          </div>
-        </div>
-      </div>
-
       <!-- 话术录音内容 -->
-      <div v-else-if="scriptSubTabKey === 'audio'" class="script-sub-content">
+      <div v-if="scriptSubTabKey === 'audio'" class="script-sub-content">
         <!-- 录音包列表页面 -->
         <div v-if="!showAudioDetail" class="audio-package-list">
           <!-- 顶部操作区 -->
@@ -601,8 +457,6 @@ import {
   DownOutlined,
   EditOutlined,
   ReloadOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   UploadOutlined,
   LeftOutlined,
   DownloadOutlined,
@@ -617,7 +471,6 @@ interface ScriptItem {
   variableValue?: string;
   recordFileName: string;
   audioUrl: string;
-  complianceStatus?: '消保通过' | '消保不通过' | '未消保';
   audioUploadStatus?: '已上传' | '未上传';
   source?: string;
 }
@@ -651,13 +504,7 @@ const emit = defineEmits<{
 
 // ==================== 响应式数据 ====================
 // 话术管理子 tab
-const scriptSubTabKey = ref('compliance');
-
-// 话术搜索关键词
-const scriptSearchKeyword = ref('');
-
-// 选中的话术行
-const selectedScriptRowKeys = ref<number[]>([]);
+const scriptSubTabKey = ref('audio');
 
 // 话术列表数据（模拟数据）
 const scriptList = ref<ScriptItem[]>([
@@ -668,7 +515,6 @@ const scriptList = ref<ScriptItem[]>([
     variableValue: '',
     recordFileName: 'nlg_2',
     audioUrl: '',
-    complianceStatus: '未消保',
     audioUploadStatus: '未上传',
     source: '主流程',
   },
@@ -679,7 +525,6 @@ const scriptList = ref<ScriptItem[]>([
     variableValue: '{customerName: 张先生}',
     recordFileName: 'nlg_3',
     audioUrl: '/audio/nlg_3.mp3',
-    complianceStatus: '消保通过',
     audioUploadStatus: '已上传',
     source: 'QA.你是哪个银行',
   },
@@ -690,7 +535,6 @@ const scriptList = ref<ScriptItem[]>([
     variableValue: '{cardNo: ****1234}',
     recordFileName: 'nlg_4',
     audioUrl: '/audio/nlg_4.mp3',
-    complianceStatus: '消保不通过',
     audioUploadStatus: '已上传',
     source: 'QA.信用卡逾期怎么办',
   },
@@ -701,7 +545,6 @@ const scriptList = ref<ScriptItem[]>([
     variableValue: '{loanAmount: 50 万}',
     recordFileName: 'nlg_5',
     audioUrl: '',
-    complianceStatus: '消保通过',
     audioUploadStatus: '未上传',
     source: '主流程',
   },
@@ -712,30 +555,10 @@ const scriptList = ref<ScriptItem[]>([
     variableValue: '{points: 10000}',
     recordFileName: 'nlg_6',
     audioUrl: '/audio/nlg_6.mp3',
-    complianceStatus: '未消保',
     audioUploadStatus: '已上传',
     source: 'QA.积分兑换',
   },
 ]);
-
-// 话术分页
-const scriptPagination = reactive<TablePaginationConfig>({
-  current: 1,
-  pageSize: 10,
-  total: 5,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => `共 ${total} 条`,
-  pageSizeOptions: ['10', '20', '50'],
-  locale: {
-    items_per_page: '条/页',
-    jump_to: '跳转至',
-    page: '页',
-  },
-});
-
-// 话术总数
-const scriptTotal = ref(5);
 
 // 录音包列表数据（模拟数据）
 const audioPackageList = ref<AudioPackageItem[]>([
@@ -828,12 +651,6 @@ const scriptColumns: TableColumnsType = [
     title: '变量值',
     dataIndex: 'variableValue',
     key: 'variableValue',
-    width: 100,
-  },
-  {
-    title: '消保状态',
-    dataIndex: 'complianceStatus',
-    key: 'complianceStatus',
     width: 100,
   },
   {
@@ -942,16 +759,6 @@ const variableColumns: TableColumnsType = [
 ];
 
 // ==================== 方法 ====================
-// 获取消保状态颜色
-const getComplianceStatusColor = (status?: string): string => {
-  const colorMap: Record<string, string> = {
-    '消保通过': 'green',
-    '消保不通过': 'red',
-    '未消保': 'default',
-  };
-  return colorMap[status || '未消保'] || 'default';
-};
-
 // 话术子 tab 变化
 const handleScriptSubTabChange = (key: string) => {
   console.log('切换话术子 tab:', key);
@@ -978,59 +785,6 @@ const handleScriptReset = () => {
   message.success('已重置搜索条件');
 };
 
-// 批量删除 - 删除所选
-const handleBatchDeleteSelected = () => {
-  if (selectedScriptRowKeys.value.length === 0) {
-    message.warning('请先选择要删除的话术');
-    return;
-  }
-  Modal.confirm({
-    title: '删除选中',
-    content: `删除后对应话术来源配置的话术文本将被清空，确定要删除选中的 ${selectedScriptRowKeys.value.length} 条话术吗？此操作不可恢复！`,
-    okText: '确定',
-    cancelText: '取消',
-    onOk: () => {
-      scriptList.value = scriptList.value.filter(item => !selectedScriptRowKeys.value.includes(item.id));
-      selectedScriptRowKeys.value = [];
-      scriptTotal.value = scriptList.value.length;
-      message.success('删除选中话术成功');
-    },
-  });
-};
-
-// 批量删除 - 删除全部
-const handleBatchDeleteAll = () => {
-  Modal.confirm({
-    title: '删除全部',
-    content: '删除后对应话术来源配置的话术文本将被清空，确定要删除全部话术吗？此操作不可恢复！',
-    okText: '确定',
-    cancelText: '取消',
-    onOk: () => {
-      scriptList.value = [];
-      selectedScriptRowKeys.value = [];
-      scriptTotal.value = 0;
-      message.success('删除全部话术成功');
-    },
-  });
-};
-
-// 批量导出 - 导出所选
-const handleBatchExportSelected = () => {
-  if (selectedScriptRowKeys.value.length === 0) {
-    message.warning('请先选择要导出的话术');
-    return;
-  }
-  const selectedScripts = scriptList.value.filter(item => selectedScriptRowKeys.value.includes(item.id));
-  console.log('导出选中话术:', selectedScripts);
-  message.success(`已导出 ${selectedScripts.length} 条话术`);
-};
-
-// 批量导出 - 导出全部
-const handleBatchExportAll = () => {
-  console.log('导出全部话术:', scriptList.value);
-  message.success(`已导出 ${scriptList.value.length} 条话术`);
-};
-
 // 编辑话术
 const handleEditScript = (record: ScriptItem) => {
   console.log('编辑话术:', record);
@@ -1055,9 +809,7 @@ const handleEditScriptSubmit = async () => {
       // 仅当话术内容发生变化时才更新
       if (record.replyText !== editScriptForm.replyText) {
         record.replyText = editScriptForm.replyText;
-        // 话术发生变化时重置消保状态为未消保
-        record.complianceStatus = '未消保';
-        message.success('保存话术成功，内容已更新，消保状态已重置为未消保');
+        message.success('保存话术成功，内容已更新');
       } else {
         message.info('话术内容未发生变化');
       }
@@ -1067,44 +819,6 @@ const handleEditScriptSubmit = async () => {
   } catch (error) {
     console.error('表单验证失败:', error);
   }
-};
-
-// 消保通过
-const handleCompliancePass = (record: ScriptItem) => {
-  record.complianceStatus = '消保通过';
-  message.success('已设置为消保通过');
-};
-
-// 消保不通过
-const handleComplianceReject = (record: ScriptItem) => {
-  record.complianceStatus = '消保不通过';
-  message.success('已设置为消保不通过');
-};
-
-// 话术表格行选择变化
-const onScriptSelectChange = (selectedRowKeys: (string | number)[]) => {
-  selectedScriptRowKeys.value = selectedRowKeys as number[];
-};
-
-// 话术表格变化
-const handleScriptTableChange = (pagination: TablePaginationConfig) => {
-  scriptPagination.current = pagination.current;
-  scriptPagination.pageSize = pagination.pageSize;
-  scriptPagination.total = pagination.total;
-  console.log('话术表格变化:', pagination);
-};
-
-// 话术分页变化
-const handleScriptPageChange = (page: number, pageSize: number) => {
-  scriptPagination.current = page;
-  console.log('话术分页变化:', page, pageSize);
-};
-
-// 话术每页条数变化
-const handleScriptPageSizeChange = (current: number, size: number) => {
-  scriptPagination.pageSize = size;
-  scriptPagination.current = 1;
-  console.log('话术每页条数变化:', current, size);
 };
 
 // 新建录音包
@@ -1543,23 +1257,6 @@ const handleEditAudioPackageSubmit = async () => {
 .script-pagination .selected-count {
   color: #666;
   font-size: 13px;
-}
-
-/* 消保下拉菜单样式 */
-.compliance-pass {
-  color: #52c41a !important;
-}
-
-.compliance-pass .pass-text {
-  color: #52c41a;
-}
-
-.compliance-reject {
-  color: #ff4d4f !important;
-}
-
-.compliance-reject .reject-text {
-  color: #ff4d4f;
 }
 
 /* 话术管理滚动条样式 */

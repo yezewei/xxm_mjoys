@@ -2,8 +2,31 @@
   "permissions": {
     "allow": [
       "Bash(npm run *)",
-      "Bash(npx *)"
+      "Bash(npx *)",
+      "Bash(pip3 install *)",
+      "Bash(python3)",
+      "Bash(import *)",
+      "Bash(from *)",
+      "Bash(url *)",
+      "Bash('/users/yezewei/desktop/11.png')",
+      "Bash(source *)",
+      "Bash(url, *)",
+      "Bash(cg_image *)",
+      "Bash(source, *)",
+      "Bash(print)",
+      "Bash(exit)",
+      "Bash(request *)",
+      "Bash(request.setrecognitionlanguages_)",
+      "Bash(request.setrecognitionlevel_)",
+      "Bash(handler *)",
+      "Bash(cg_image, *)",
+      "Bash(success, *)",
+      "Bash(results *)",
+      "Bash(text *)",
+      "Bash(1)",
+      "Bash(.string)",
+      "Bash(pyeof)"
     ]
   },
-  "$version": 3
+  "$version": 4
 }
