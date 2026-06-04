@@ -115,6 +115,13 @@
               </a-tag>
             </div>
           </template>
+          <!-- 评分列 -->
+          <template v-else-if="column.key === 'score'">
+            <a-tag v-if="record.scoreType && record.scoreValue != null" :color="record.scoreType === 'add' ? 'green' : 'red'">
+              {{ record.scoreType === 'add' ? '+' : '-' }}{{ record.scoreValue }}分
+            </a-tag>
+            <span v-else style="color: #bbb;">未设置</span>
+          </template>
           <!-- 操作列 -->
           <template v-else-if="column.key === 'action'">
             <a-space>
@@ -192,6 +199,26 @@
             :rows="4"
           />
         </a-form-item>
+        <a-form-item label="评分设置" name="scoreType" required>
+          <a-space align="center">
+            <a-radio-group v-model:value="ruleForm.scoreType">
+              <a-radio-button value="add">得分</a-radio-button>
+              <a-radio-button value="deduct">扣分</a-radio-button>
+            </a-radio-group>
+            <a-form-item name="scoreValue" no-style>
+              <a-input-number
+                v-model:value="ruleForm.scoreValue"
+                :min="0"
+                :max="100"
+                :precision="0"
+                placeholder="请输入分值"
+                style="width: 140px"
+              >
+                <template #addonAfter>分</template>
+              </a-input-number>
+            </a-form-item>
+          </a-space>
+        </a-form-item>
       </a-form>
     </a-modal>
 
@@ -233,6 +260,8 @@ interface QualityRuleItem {
   tags: string;
   tagsArray: string[];
   keywordRules?: string;
+  scoreType?: 'add' | 'deduct';
+  scoreValue?: number;
 }
 
 interface QualityModelOption {
@@ -278,6 +307,8 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检',
     tags: '',
     tagsArray: [],
+    scoreType: 'deduct',
+    scoreValue: 10,
     keywordRules: `利率
 收益率
 年化
@@ -305,6 +336,8 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检',
     tags: '',
     tagsArray: [],
+    scoreType: 'deduct',
+    scoreValue: 5,
     keywordRules: `风险提示
 风险等级
 本金损失
@@ -331,6 +364,8 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检',
     tags: '',
     tagsArray: [],
+    scoreType: 'deduct',
+    scoreValue: 5,
     keywordRules: `这个我不清楚
 需要查询
 稍后回复
@@ -357,6 +392,8 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检（人工）',
     tags: '',
     tagsArray: [],
+    scoreType: 'deduct',
+    scoreValue: 10,
     keywordRules: `请问您是
 本人吗
 确认一下身份
@@ -384,6 +421,8 @@ const dataSource = ref<QualityRuleItem[]>([
     qualityModelName: '合规质检（人工）',
     tags: '',
     tagsArray: [],
+    scoreType: 'deduct',
+    scoreValue: 15,
     keywordRules: `身份证号码
 身份证号
 电话号码
@@ -438,6 +477,8 @@ const ruleForm = reactive({
   qualityModelId: undefined as number | undefined,
   tagsArray: [] as string[],
   keywordRules: '',
+  scoreType: 'add' as 'add' | 'deduct',
+  scoreValue: undefined as number | undefined,
 });
 
 // 表单验证规则
@@ -453,6 +494,12 @@ const formRules = {
   ],
   qualityModelId: [
     { required: true, message: '请选择质检模型', trigger: 'change' },
+  ],
+  scoreType: [
+    { required: true, message: '请选择评分类型', trigger: 'change' },
+  ],
+  scoreValue: [
+    { required: true, message: '请输入分值', trigger: 'blur' },
   ],
 };
 
@@ -518,6 +565,11 @@ const visibleColumns = computed(() => [
     key: 'keywordRules',
     width: 200,
     ellipsis: true,
+  },
+  {
+    title: '评分',
+    key: 'score',
+    width: 120,
   },
   {
     title: '标签',
@@ -595,6 +647,8 @@ const handleAddRule = () => {
   ruleForm.qualityModelId = undefined;
   ruleForm.tagsArray = [];
   ruleForm.keywordRules = '';
+  ruleForm.scoreType = 'add';
+  ruleForm.scoreValue = undefined;
   ruleModalVisible.value = true;
 };
 
@@ -610,6 +664,8 @@ const handleEdit = (record: QualityRuleItem) => {
   ruleForm.qualityModelId = record.qualityModelId;
   ruleForm.tagsArray = [...record.tagsArray];
   ruleForm.keywordRules = record.keywordRules || '';
+  ruleForm.scoreType = record.scoreType || 'add';
+  ruleForm.scoreValue = record.scoreValue;
   ruleModalVisible.value = true;
 };
 
@@ -685,6 +741,8 @@ const handleRuleModalOk = async () => {
           tagsArray: [...ruleForm.tagsArray],
           tags: ruleForm.tagsArray.join(','),
           keywordRules: ruleForm.keywordRules,
+          scoreType: ruleForm.scoreType,
+          scoreValue: ruleForm.scoreValue,
         };
       }
       message.success('编辑成功');
@@ -702,6 +760,8 @@ const handleRuleModalOk = async () => {
         tagsArray: [...ruleForm.tagsArray],
         tags: ruleForm.tagsArray.join(','),
         keywordRules: ruleForm.keywordRules,
+        scoreType: ruleForm.scoreType,
+        scoreValue: ruleForm.scoreValue,
       };
       dataSource.value.push(newRule);
       message.success('添加成功');

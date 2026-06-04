@@ -179,7 +179,7 @@
 
         <!-- 筛选区域 -->
         <div class="filter-card">
-          <div class="intent-toolbar" v-if="getTaskType(currentTask) === 'ai'">
+          <div class="intent-toolbar">
             <div class="toolbar-left">
               <a-space>
                 <a-input
@@ -195,84 +195,13 @@
                   allow-clear
                 />
                 <a-select
-                  v-model:value="filterForm.aiStatus"
-                  placeholder="请选择 AI 质检状态"
+                  v-model:value="filterForm.asrStatus"
+                  placeholder="请选择 ASR 识别状态"
                   allow-clear
                   style="width: 180px"
                 >
-                  <a-select-option value="pending">未开始</a-select-option>
-                  <a-select-option value="completed">已完成</a-select-option>
-                  <a-select-option value="failed">已失败</a-select-option>
-                </a-select>
-                <a-select
-                  v-model:value="filterForm.manualStatus"
-                  placeholder="请选择人工质检状态"
-                  allow-clear
-                  style="width: 180px"
-                >
-                  <a-select-option value="pending">未开始</a-select-option>
-                  <a-select-option value="completed">已完成</a-select-option>
-                </a-select>
-              </a-space>
-            </div>
-          </div>
-          <div class="intent-toolbar" v-else>
-            <div class="toolbar-left">
-              <a-space>
-                <a-input
-                  v-model:value="filterForm.detailId"
-                  placeholder="请输入质检任务明细 ID"
-                  style="width: 180px"
-                  allow-clear
-                />
-                <a-input
-                  v-model:value="filterForm.callId"
-                  placeholder="请输入通话记录 ID"
-                  style="width: 180px"
-                  allow-clear
-                />
-                <a-select
-                  v-model:value="filterForm.manualStatus"
-                  placeholder="请选择人工质检状态"
-                  allow-clear
-                  style="width: 180px"
-                >
-                  <a-select-option value="pending">未开始</a-select-option>
-                  <a-select-option value="completed">已完成</a-select-option>
-                </a-select>
-                <a-select
-                  v-model:value="filterForm.isModified"
-                  placeholder="请选择是否人工修改"
-                  allow-clear
-                  style="width: 180px"
-                >
-                  <a-select-option value="yes">是</a-select-option>
-                  <a-select-option value="no">否</a-select-option>
-                </a-select>
-              </a-space>
-            </div>
-          </div>
-          <div class="intent-toolbar" style="margin-top: 12px;">
-            <div class="toolbar-left">
-              <a-space>
-                <a-select
-                  v-model:value="filterForm.isModified"
-                  placeholder="请选择是否人工修改"
-                  allow-clear
-                  style="width: 180px"
-                >
-                  <a-select-option value="yes">是</a-select-option>
-                  <a-select-option value="no">否</a-select-option>
-                </a-select>
-                <a-select
-                  v-model:value="filterForm.triggerItem"
-                  placeholder="请选择触发质检项"
-                  allow-clear
-                  style="width: 180px"
-                >
-                  <a-select-option value="item1">服务态度</a-select-option>
-                  <a-select-option value="item2">业务规范</a-select-option>
-                  <a-select-option value="item3">合规要求</a-select-option>
+                  <a-select-option value="未完成">未完成</a-select-option>
+                  <a-select-option value="已完成">已完成</a-select-option>
                 </a-select>
                 <a-button type="primary" @click="handleFilterSearch">
                   <SearchOutlined />
@@ -282,10 +211,189 @@
                   <ReloadOutlined />
                   重置
                 </a-button>
+                <a-button @click="drawerVisible = true">
+                  <SearchOutlined />
+                  高级搜索
+                </a-button>
               </a-space>
             </div>
           </div>
         </div>
+
+        <!-- 高级搜索抽屉 -->
+        <a-drawer
+          title="高级搜索"
+          :open="drawerVisible"
+          @close="drawerVisible = false"
+          :width="480"
+          :body-style="{ padding: '16px 24px' }"
+          class="advanced-search-drawer"
+        >
+          <a-form layout="vertical">
+            <a-form-item>
+              <a-input
+                v-model:value="filterForm.detailId"
+                placeholder="质检任务明细 ID"
+                allow-clear
+              />
+            </a-form-item>
+            <a-form-item>
+              <a-input
+                v-model:value="filterForm.callId"
+                placeholder="通话记录 ID"
+                allow-clear
+              />
+            </a-form-item>
+            <a-form-item>
+              <a-select
+                v-model:value="filterForm.asrStatus"
+                placeholder="ASR 识别状态"
+                allow-clear
+                style="width: 100%"
+              >
+                <a-select-option value="未完成">未完成</a-select-option>
+                <a-select-option value="已完成">已完成</a-select-option>
+              </a-select>
+            </a-form-item>
+            <template v-if="getTaskType(currentTask) === 'ai'">
+              <a-form-item>
+                <a-select
+                  v-model:value="filterForm.aiStatus"
+                  placeholder="AI 质检状态"
+                  allow-clear
+                  style="width: 100%"
+                >
+                  <a-select-option value="pending">未开始</a-select-option>
+                  <a-select-option value="completed">已完成</a-select-option>
+                  <a-select-option value="failed">已失败</a-select-option>
+                </a-select>
+              </a-form-item>
+            </template>
+            <a-form-item>
+              <a-select
+                v-model:value="filterForm.manualStatus"
+                placeholder="人工质检状态"
+                allow-clear
+                style="width: 100%"
+              >
+                <a-select-option value="pending">未开始</a-select-option>
+                <a-select-option value="completed">已完成</a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item>
+              <a-select
+                v-model:value="filterForm.isModified"
+                placeholder="是否人工修改"
+                allow-clear
+                style="width: 100%"
+              >
+                <a-select-option value="yes">是</a-select-option>
+                <a-select-option value="no">否</a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item>
+              <a-input
+                v-model:value="filterForm.keywordRule"
+                placeholder="关键词匹配质检项"
+                allow-clear
+              />
+            </a-form-item>
+            <template v-if="getTaskType(currentTask) === 'ai'">
+              <a-form-item>
+                <a-input
+                  v-model:value="filterForm.aiRule"
+                  placeholder="AI 识别质检项"
+                  allow-clear
+                />
+              </a-form-item>
+            </template>
+            <a-form-item>
+              <a-input
+                v-model:value="filterForm.manualRule"
+                placeholder="人工标注质检项"
+                allow-clear
+              />
+            </a-form-item>
+            <template v-if="getTaskType(currentTask) === 'ai'">
+              <a-form-item>
+                <a-select
+                  v-model:value="filterForm.auditor"
+                  placeholder="审核员"
+                  allow-clear
+                  style="width: 100%"
+                >
+                  <a-select-option value="zhangsan">张三</a-select-option>
+                  <a-select-option value="lisi">李四</a-select-option>
+                  <a-select-option value="wangwu">王五</a-select-option>
+                  <a-select-option value="admin">admin</a-select-option>
+                </a-select>
+              </a-form-item>
+            </template>
+            <template v-else>
+              <a-form-item>
+                <a-select
+                  v-model:value="filterForm.inspector"
+                  placeholder="质检员"
+                  allow-clear
+                  style="width: 100%"
+                >
+                  <a-select-option value="zhangsan">张三</a-select-option>
+                  <a-select-option value="lisi">李四</a-select-option>
+                  <a-select-option value="wangwu">王五</a-select-option>
+                  <a-select-option value="zhaoliu">赵六</a-select-option>
+                </a-select>
+              </a-form-item>
+            </template>
+            <template v-if="getTaskType(currentTask) === 'ai'">
+              <a-form-item>
+                <div class="score-range-group">
+                  <a-input-number
+                    v-model:value="filterForm.aiScoreMin"
+                    :min="0"
+                    :max="100"
+                    placeholder="AI评分最低"
+                    class="range-input"
+                    allow-clear
+                  />
+                  <span class="range-separator">~</span>
+                  <a-input-number
+                    v-model:value="filterForm.aiScoreMax"
+                    :min="0"
+                    :max="100"
+                    placeholder="AI评分最高"
+                    class="range-input"
+                    allow-clear
+                  />
+                </div>
+              </a-form-item>
+            </template>
+            <a-form-item>
+              <div class="score-range-group">
+                <a-input-number
+                  v-model:value="filterForm.manualScoreMin"
+                  :min="0"
+                  :max="100"
+                  placeholder="人工评分最低"
+                  class="range-input"
+                  allow-clear
+                />
+                <span class="range-separator">~</span>
+                <a-input-number
+                  v-model:value="filterForm.manualScoreMax"
+                  :min="0"
+                  :max="100"
+                  placeholder="人工评分最高"
+                  class="range-input"
+                  allow-clear
+                />
+              </div>
+            </a-form-item>
+          </a-form>
+          <div class="drawer-footer">
+            <a-button @click="handleReset" style="margin-right: 8px">重置</a-button>
+            <a-button type="primary" @click="handleFilterSearch">搜索</a-button>
+          </div>
+        </a-drawer>
 
         <!-- 数据表格 -->
         <a-card class="table-card">
@@ -315,8 +423,14 @@
             class="quality-table"
           >
             <template #bodyCell="{ column, record }">
+              <!-- ASR 识别状态 -->
+              <template v-if="column.key === 'asrStatus'">
+                <a-tag :color="record.asrStatus === '已完成' ? 'green' : 'default'" class="status-tag">
+                  {{ record.asrStatus }}
+                </a-tag>
+              </template>
               <!-- AI 质检状态 -->
-              <template v-if="column.key === 'aiStatus'">
+              <template v-else-if="column.key === 'aiStatus'">
                 <a-tag :color="record.aiStatus === '已失败' ? 'red' : record.aiStatus === '已完成' ? 'green' : 'default'" class="status-tag">
                   {{ record.aiStatus }}
                 </a-tag>
@@ -333,15 +447,48 @@
                   {{ record.isModified || '否' }}
                 </a-tag>
               </template>
-              <!-- 触发质检规则 -->
-              <template v-else-if="column.key === 'triggerRule'">
-                <span v-if="record.triggerRule">{{ record.triggerRule }}</span>
+              <!-- 关键词匹配质检项 -->
+              <template v-else-if="column.key === 'keywordRules'">
+                <span v-if="record.keywordRules">{{ record.keywordRules }}</span>
                 <span v-else>-</span>
               </template>
-              <!-- 质检总结 -->
+              <!-- AI 识别质检项 -->
+              <template v-else-if="column.key === 'aiRules'">
+                <span v-if="record.aiRules">{{ record.aiRules }}</span>
+                <span v-else>-</span>
+              </template>
+              <!-- 人工标注质检项 -->
+              <template v-else-if="column.key === 'manualRules'">
+                <span v-if="record.manualRules">{{ record.manualRules }}</span>
+                <span v-else>-</span>
+              </template>
+              <!-- AI 质检总结 -->
               <template v-else-if="column.key === 'aiSummary'">
                 <span v-if="record.aiSummary">{{ record.aiSummary }}</span>
                 <span v-else>-</span>
+              </template>
+              <!-- 人工质检总结 -->
+              <template v-else-if="column.key === 'manualSummary'">
+                <span v-if="record.manualSummary">{{ record.manualSummary }}</span>
+                <span v-else>-</span>
+              </template>
+              <!-- AI评分 -->
+              <template v-else-if="column.key === 'aiScore'">
+                <span v-if="record.aiScore != null" :style="{ color: record.aiScore >= 80 ? '#52c41a' : record.aiScore >= 60 ? '#faad14' : '#ff4d4f', fontWeight: 600 }">{{ record.aiScore }}</span>
+                <span v-else>-</span>
+              </template>
+              <!-- 人工评分 -->
+              <template v-else-if="column.key === 'manualScore'">
+                <span v-if="record.manualScore != null" :style="{ color: record.manualScore >= 80 ? '#52c41a' : record.manualScore >= 60 ? '#faad14' : '#ff4d4f', fontWeight: 600 }">{{ record.manualScore }}</span>
+                <span v-else>-</span>
+              </template>
+              <!-- 审核员 -->
+              <template v-else-if="column.key === 'auditor'">
+                <span>{{ record.auditor || '-' }}</span>
+              </template>
+              <!-- 质检员 -->
+              <template v-else-if="column.key === 'inspector'">
+                <span>{{ record.inspector || '-' }}</span>
               </template>
               <!-- 操作 -->
               <template v-else-if="column.key === 'action'">
@@ -394,21 +541,38 @@ interface TableDataItem {
   detailId: number
   callId: number
   agent: string
+  asrStatus: '未完成' | '已完成'
   aiStatus: '未开始' | '已完成' | '已失败'
   manualStatus: '未开始' | '已完成'
-  triggerRule: string
+  keywordRules: string
+  aiRules: string
+  manualRules: string
   aiSummary?: string
+  manualSummary?: string
   isModified?: '是' | '否'
+  auditor?: string
+  inspector?: string
+  aiScore?: number
+  manualScore?: number
 }
 
 interface FilterForm {
   detailId: string
   callId: string
   agent: string | undefined
+  asrStatus: string | undefined
   aiStatus: string | undefined
   manualStatus: string | undefined
   isModified: string | undefined
-  triggerItem: string | undefined
+  keywordRule: string | undefined
+  aiRule: string | undefined
+  manualRule: string | undefined
+  auditor: string | undefined
+  inspector: string | undefined
+  aiScoreMin: number | undefined
+  aiScoreMax: number | undefined
+  manualScoreMin: number | undefined
+  manualScoreMax: number | undefined
 }
 
 // ============ 左侧任务列表状态 ============
@@ -418,6 +582,7 @@ const selectedTaskId = ref<number | null>(27)
 const currentPage = ref(1)
 const totalTasks = ref(4)
 const leftPanelCollapsed = ref(false)
+const drawerVisible = ref(false)
 
 // ============ 任务列表数据 ============
 const taskList = ref<TaskItem[]>([
@@ -513,10 +678,19 @@ const filterForm = reactive<FilterForm>({
   detailId: '',
   callId: '',
   agent: undefined,
+  asrStatus: undefined,
   aiStatus: undefined,
   manualStatus: undefined,
   isModified: undefined,
-  triggerItem: undefined
+  keywordRule: undefined,
+  aiRule: undefined,
+  manualRule: undefined,
+  auditor: undefined,
+  inspector: undefined,
+  aiScoreMin: undefined,
+  aiScoreMax: undefined,
+  manualScoreMin: undefined,
+  manualScoreMax: undefined,
 })
 
 // ============ 表格列定义 ============
@@ -533,6 +707,12 @@ const columns = computed(() => {
       dataIndex: 'callId',
       key: 'callId',
       width: 150
+    },
+    {
+      title: 'ASR 识别状态',
+      dataIndex: 'asrStatus',
+      key: 'asrStatus',
+      width: 120
     }
   ]
 
@@ -558,17 +738,54 @@ const columns = computed(() => {
         width: 120
       },
       {
-        title: '触发质检规则',
-        dataIndex: 'triggerRule',
-        key: 'triggerRule',
-        width: 150
+        title: '关键词匹配质检项',
+        dataIndex: 'keywordRules',
+        key: 'keywordRules',
+        width: 160
       },
       {
-        title: '质检总结',
+        title: 'AI 识别质检项',
+        dataIndex: 'aiRules',
+        key: 'aiRules',
+        width: 160
+      },
+      {
+        title: '人工标注质检项',
+        dataIndex: 'manualRules',
+        key: 'manualRules',
+        width: 160
+      },
+      {
+        title: 'AI 质检总结',
         dataIndex: 'aiSummary',
         key: 'aiSummary',
         width: 200,
         ellipsis: true as any
+      },
+      {
+        title: '人工质检总结',
+        dataIndex: 'manualSummary',
+        key: 'manualSummary',
+        width: 200,
+        ellipsis: true as any
+      },
+      {
+        title: 'AI评分',
+        dataIndex: 'aiScore',
+        key: 'aiScore',
+        width: 100
+      },
+      {
+        title: '人工评分',
+        dataIndex: 'manualScore',
+        key: 'manualScore',
+        width: 100
+      },
+      {
+        title: '审核员',
+        dataIndex: 'auditor',
+        key: 'auditor',
+        width: 100
       }
     )
   } else {
@@ -581,10 +798,35 @@ const columns = computed(() => {
         width: 120
       },
       {
-        title: '触发质检规则',
-        dataIndex: 'triggerRule',
-        key: 'triggerRule',
-        width: 150
+        title: '关键词匹配质检项',
+        dataIndex: 'keywordRules',
+        key: 'keywordRules',
+        width: 160
+      },
+      {
+        title: '人工标注质检项',
+        dataIndex: 'manualRules',
+        key: 'manualRules',
+        width: 160
+      },
+      {
+        title: '人工质检总结',
+        dataIndex: 'manualSummary',
+        key: 'manualSummary',
+        width: 200,
+        ellipsis: true as any
+      },
+      {
+        title: '人工评分',
+        dataIndex: 'manualScore',
+        key: 'manualScore',
+        width: 100
+      },
+      {
+        title: '质检员',
+        dataIndex: 'inspector',
+        key: 'inspector',
+        width: 100
       }
     )
   }
@@ -606,66 +848,114 @@ const tableData = ref<TableDataItem[]>([
     detailId: 3480,
     callId: 2674,
     agent: '张三',
+    asrStatus: '已完成',
     aiStatus: '已失败',
     manualStatus: '未开始',
-    triggerRule: '',
+    keywordRules: '',
+    aiRules: '',
+    manualRules: '',
     aiSummary: '',
-    isModified: '否'
+    manualSummary: '',
+    isModified: '否',
+    auditor: '张三',
+    inspector: '张三',
+    aiScore: undefined,
+    manualScore: undefined,
   },
   {
     id: 2,
     detailId: 3483,
     callId: 2679,
     agent: '李四',
+    asrStatus: '已完成',
     aiStatus: '已完成',
     manualStatus: '未开始',
-    triggerRule: '服务态度，业务规范',
+    keywordRules: 'A1',
+    aiRules: 'B1, B2',
+    manualRules: '',
     aiSummary: '客户通话过程中表现出较强的投诉倾向，坐席沟通态度良好，但业务解释不够清晰',
-    isModified: '是'
+    manualSummary: '',
+    isModified: '是',
+    auditor: '李四',
+    inspector: '李四',
+    aiScore: 80,
+    manualScore: undefined,
   },
   {
     id: 3,
     detailId: 3488,
     callId: 2689,
     agent: '王五',
+    asrStatus: '已完成',
     aiStatus: '已完成',
     manualStatus: '未开始',
-    triggerRule: '合规要求',
+    keywordRules: 'A2',
+    aiRules: '',
+    manualRules: 'B1',
     aiSummary: '坐席未按要求进行风险提示，需要补充合规话术',
-    isModified: '否'
+    manualSummary: '',
+    isModified: '否',
+    auditor: '王五',
+    inspector: '王五',
+    aiScore: 65,
+    manualScore: undefined,
   },
   {
     id: 4,
     detailId: 3482,
     callId: 2678,
     agent: '赵六',
+    asrStatus: '未完成',
     aiStatus: '已失败',
     manualStatus: '未开始',
-    triggerRule: '',
+    keywordRules: '',
+    aiRules: '',
+    manualRules: '',
     aiSummary: '',
-    isModified: '否'
+    manualSummary: '',
+    isModified: '否',
+    auditor: 'admin',
+    inspector: '赵六',
+    aiScore: undefined,
+    manualScore: undefined,
   },
   {
     id: 5,
     detailId: 3479,
     callId: 2670,
     agent: '孙七',
+    asrStatus: '已完成',
     aiStatus: '已完成',
     manualStatus: '已完成',
-    triggerRule: '营销意向',
+    keywordRules: 'A3',
+    aiRules: 'B2',
+    manualRules: 'A1',
     aiSummary: '客户表现出明确的购买意向，坐席成功引导客户完成产品介绍，建议后续跟进',
-    isModified: '是'
+    manualSummary: '坐席表现良好，话术规范',
+    isModified: '是',
+    auditor: '张三',
+    inspector: '孙七',
+    aiScore: 90,
+    manualScore: 85,
   },
   {
     id: 6,
     detailId: 3481,
     callId: 2677,
     agent: '周八',
+    asrStatus: '未完成',
     aiStatus: '未开始',
     manualStatus: '未开始',
-    triggerRule: '',
+    keywordRules: '',
+    aiRules: '',
+    manualRules: '',
     aiSummary: '',
-    isModified: '否'
+    manualSummary: '',
+    isModified: '否',
+    auditor: 'admin',
+    inspector: '周八',
+    aiScore: undefined,
+    manualScore: undefined,
   }
 ])
 
@@ -695,7 +985,7 @@ const openQualityDetail = (record: TableDataItem) => {
   console.log('qualityDetailRef:', qualityDetailRef.value)
   const taskType = currentTask.value ? getTaskType(currentTask.value) : 'ai'
   if (qualityDetailRef.value) {
-    qualityDetailRef.value.open(taskType)
+    qualityDetailRef.value.open(taskType, record.asrStatus === '已完成')
   } else {
     console.error('qualityDetailRef 为空')
   }
@@ -732,10 +1022,19 @@ const handleReset = () => {
   filterForm.detailId = ''
   filterForm.callId = ''
   filterForm.agent = undefined
+  filterForm.asrStatus = undefined
   filterForm.aiStatus = undefined
   filterForm.manualStatus = undefined
   filterForm.isModified = undefined
-  filterForm.triggerItem = undefined
+  filterForm.keywordRule = undefined
+  filterForm.aiRule = undefined
+  filterForm.manualRule = undefined
+  filterForm.auditor = undefined
+  filterForm.inspector = undefined
+  filterForm.aiScoreMin = undefined
+  filterForm.aiScoreMax = undefined
+  filterForm.manualScoreMin = undefined
+  filterForm.manualScoreMax = undefined
 }
 
 const handleFilterSearch = () => {
@@ -1084,6 +1383,34 @@ const onSelectChange = (selectedKeys: number[]) => {
   align-items: center;
 }
 
+/* 评分区间搜索 */
+.score-range-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.range-label {
+  font-size: 14px;
+  color: #595959;
+  white-space: nowrap;
+}
+
+.range-input {
+  flex: 1;
+}
+
+.range-separator {
+  color: #8f959e;
+  font-size: 14px;
+}
+
+/* 高级搜索抽屉行间距 */
+.advanced-search-drawer :deep(.ant-form-item) {
+  margin-bottom: 8px;
+}
+
 /* 表格卡片样式 */
 .table-card {
   background: #fff;
@@ -1152,5 +1479,18 @@ const onSelectChange = (selectedKeys: number[]) => {
   .left-panel {
     display: none;
   }
+}
+
+/* 高级搜索抽屉底部按钮 */
+.drawer-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 24px;
+  background: #fff;
+  border-top: 1px solid #f0f0f0;
+  text-align: right;
+  z-index: 1;
 }
 </style>

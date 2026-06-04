@@ -12,8 +12,17 @@
     <div class="quality-detail-content">
       <!-- 左侧对话区域 -->
       <div class="left-panel">
+        <!-- ASR 未完成提示 -->
+        <div v-if="!asrCompleted" class="asr-pending-notice">
+          <a-alert
+            message="ASR 识别未完成"
+            description="当前通话的 ASR 语音识别尚未完成，无法查看对话内容、AI 质检结果、关键词识别结果及进行人工审核。请等待 ASR 识别完成后再进行操作。"
+            type="warning"
+            show-icon
+          />
+        </div>
         <!-- 通话录音播放器 -->
-        <div class="audio-player">
+        <div class="audio-player" v-if="asrCompleted">
           <div class="player-left">
             <div class="play-btn">
               <PlayCircleOutlined />
@@ -31,13 +40,13 @@
         </div>
 
         <!-- 操作提示 -->
-        <div class="action-tips">
+        <div class="action-tips" v-if="asrCompleted">
           <span>点击对话文本进行标注</span>
           <a class="view-rule-link" @click="viewQualityRules">查看质检规则</a>
         </div>
 
         <!-- 对话列表 -->
-        <div class="conversation-list">
+        <div class="conversation-list" v-if="asrCompleted">
           <div
             v-for="(msg, index) in conversationList"
             :key="index"
@@ -84,8 +93,17 @@
 
       <!-- 右侧质检结果区域 -->
       <div class="right-panel">
+        <!-- ASR 未完成时显示提示 -->
+        <div v-if="!asrCompleted" class="asr-pending-right-panel">
+          <a-empty description="ASR 识别未完成，无法查看质检结果">
+            <template #image>
+              <ExclamationCircleOutlined style="font-size: 48px; color: #faad14" />
+            </template>
+          </a-empty>
+        </div>
+
         <!-- AI 质检任务显示三个标签页 -->
-        <a-tabs v-model:activeKey="activeTab" class="summary-tabs" v-if="isAiTask">
+        <a-tabs v-model:activeKey="activeTab" class="summary-tabs" v-if="isAiTask && asrCompleted">
           <a-tab-pane key="ai" tab="AI 质检结果">
             <div class="ai-result-list">
               <div
@@ -98,6 +116,7 @@
                   <div class="rule-info">
                     <span class="rule-label">规则编号：</span>
                     <span class="rule-code">{{ result.ruleCode }}</span>
+                    <a-tag v-if="getRuleScoreText(result.ruleCode)" :color="getRuleScoreColor(result.ruleCode)" size="small" class="rule-score-tag">{{ getRuleScoreText(result.ruleCode) }}</a-tag>
                     <span class="rule-desc">{{ result.ruleDesc }}</span>
                   </div>
                   <div class="dialog-content">
@@ -121,6 +140,24 @@
                   {{ aiSummaryText }}
                 </div>
               </div>
+              <!-- AI 质检评分汇总 -->
+              <div class="score-summary-box">
+                <div class="score-summary-title">评分汇总</div>
+                <div class="score-summary-items">
+                  <div class="score-item score-add">
+                    <span class="score-label">得分</span>
+                    <span class="score-value">+{{ aiScoreSummary.add }}分</span>
+                  </div>
+                  <div class="score-item score-deduct">
+                    <span class="score-label">扣分</span>
+                    <span class="score-value">-{{ aiScoreSummary.deduct }}分</span>
+                  </div>
+                  <div class="score-item score-total">
+                    <span class="score-label">合计</span>
+                    <span class="score-value" :class="aiScoreSummary.total >= 0 ? 'positive' : 'negative'">{{ aiScoreSummary.total >= 0 ? '+' : '' }}{{ aiScoreSummary.total }}分</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </a-tab-pane>
 
@@ -136,6 +173,7 @@
                   <div class="rule-info">
                     <span class="rule-label">规则编号：</span>
                     <span class="rule-code">{{ result.ruleCode }}</span>
+                    <a-tag v-if="getRuleScoreText(result.ruleCode)" :color="getRuleScoreColor(result.ruleCode)" size="small" class="rule-score-tag">{{ getRuleScoreText(result.ruleCode) }}</a-tag>
                     <span class="rule-desc">{{ result.ruleDesc }}</span>
                   </div>
                   <div class="dialog-content">
@@ -160,6 +198,7 @@
                   <div class="rule-info">
                     <span class="rule-label">规则编号：</span>
                     <span class="rule-code">{{ result.ruleCode }}</span>
+                    <a-tag v-if="getRuleScoreText(result.ruleCode)" :color="getRuleScoreColor(result.ruleCode)" size="small" class="rule-score-tag">{{ getRuleScoreText(result.ruleCode) }}</a-tag>
                     <span class="rule-type-badge" :class="'rule-type-' + result.sourceType">
                       {{ getSourceTypeLabel(result.sourceType) }}
                     </span>
@@ -189,11 +228,29 @@
                   class="summary-textarea"
                 />
               </div>
+              <!-- 评分汇总 -->
+              <div class="score-summary-box">
+                <div class="score-summary-title">评分汇总</div>
+                <div class="score-summary-items">
+                  <div class="score-item score-add">
+                    <span class="score-label">得分</span>
+                    <span class="score-value">+{{ allScoreSummary.add }}分</span>
+                  </div>
+                  <div class="score-item score-deduct">
+                    <span class="score-label">扣分</span>
+                    <span class="score-value">-{{ allScoreSummary.deduct }}分</span>
+                  </div>
+                  <div class="score-item score-total">
+                    <span class="score-label">合计</span>
+                    <span class="score-value" :class="allScoreSummary.total >= 0 ? 'positive' : 'negative'">{{ allScoreSummary.total >= 0 ? '+' : '' }}{{ allScoreSummary.total }}分</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </a-tab-pane>
         </a-tabs>
         <!-- 人工质检任务显示两个标签页：关键词识别结果和人工审核结果 -->
-        <a-tabs v-model:activeKey="activeTab" class="summary-tabs" v-else>
+        <a-tabs v-model:activeKey="activeTab" class="summary-tabs" v-else-if="asrCompleted">
           <a-tab-pane key="keyword" tab="关键词识别结果">
             <div class="keyword-result-list">
               <div
@@ -206,6 +263,7 @@
                   <div class="rule-info">
                     <span class="rule-label">规则编号：</span>
                     <span class="rule-code">{{ result.ruleCode }}</span>
+                    <a-tag v-if="getRuleScoreText(result.ruleCode)" :color="getRuleScoreColor(result.ruleCode)" size="small" class="rule-score-tag">{{ getRuleScoreText(result.ruleCode) }}</a-tag>
                     <span class="rule-desc">{{ result.ruleDesc }}</span>
                   </div>
                   <div class="dialog-content">
@@ -230,6 +288,7 @@
                   <div class="rule-info">
                     <span class="rule-label">规则编号：</span>
                     <span class="rule-code">{{ result.ruleCode }}</span>
+                    <a-tag v-if="getRuleScoreText(result.ruleCode)" :color="getRuleScoreColor(result.ruleCode)" size="small" class="rule-score-tag">{{ getRuleScoreText(result.ruleCode) }}</a-tag>
                     <span class="rule-type-badge" :class="'rule-type-' + result.sourceType">
                       {{ getSourceTypeLabel(result.sourceType) }}
                     </span>
@@ -258,6 +317,24 @@
                   :rows="4"
                   class="summary-textarea"
                 />
+              </div>
+              <!-- 评分汇总 -->
+              <div class="score-summary-box">
+                <div class="score-summary-title">评分汇总</div>
+                <div class="score-summary-items">
+                  <div class="score-item score-add">
+                    <span class="score-label">得分</span>
+                    <span class="score-value">+{{ allScoreSummary.add }}分</span>
+                  </div>
+                  <div class="score-item score-deduct">
+                    <span class="score-label">扣分</span>
+                    <span class="score-value">-{{ allScoreSummary.deduct }}分</span>
+                  </div>
+                  <div class="score-item score-total">
+                    <span class="score-label">合计</span>
+                    <span class="score-value" :class="allScoreSummary.total >= 0 ? 'positive' : 'negative'">{{ allScoreSummary.total >= 0 ? '+' : '' }}{{ allScoreSummary.total }}分</span>
+                  </div>
+                </div>
               </div>
             </div>
           </a-tab-pane>
@@ -310,9 +387,9 @@
 
     <!-- 底部操作栏 -->
     <div class="modal-footer">
-      <a-button @click="handlePrevious">上一条</a-button>
-      <a-button type="primary" @click="handleSaveManualResult">保存人工审核结果</a-button>
-      <a-button @click="handleNext">下一条</a-button>
+      <a-button @click="handlePrevious" :disabled="!asrCompleted">上一条</a-button>
+      <a-button type="primary" @click="handleSaveManualResult" :disabled="!asrCompleted">保存人工审核结果</a-button>
+      <a-button @click="handleNext" :disabled="!asrCompleted">下一条</a-button>
     </div>
   </a-modal>
 
@@ -329,7 +406,8 @@ import {
   CustomerServiceOutlined,
   CloseOutlined,
   RobotOutlined,
-  EditOutlined
+  EditOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons-vue'
 import QualityRuleListModal from './QualityRuleListModal.vue'
 import { message } from 'ant-design-vue'
@@ -337,16 +415,21 @@ import { message } from 'ant-design-vue'
 // 弹窗显示状态
 const visible = ref(false)
 
-// 打开弹窗（taskType: 'ai' | 'manual'）
-const open = (taskType: 'ai' | 'manual' = 'ai') => {
-  console.log('QualityDetailModal open called with taskType:', taskType)
+// ASR 识别是否已完成
+const asrCompleted = ref(true)
+
+// 打开弹窗（taskType: 'ai' | 'manual', isAsrCompleted: boolean）
+const open = (taskType: 'ai' | 'manual' = 'ai', isAsrCompleted: boolean = true) => {
+  console.log('QualityDetailModal open called with taskType:', taskType, 'asrCompleted:', isAsrCompleted)
   // 先关闭再打开，确保状态重置
   visible.value = false
   // 使用 nextTick 确保状态更新
   nextTick(() => {
     isAiTask.value = taskType === 'ai'
+    asrCompleted.value = isAsrCompleted
     activeTab.value = taskType === 'ai' ? 'ai' : 'manual'
     console.log('isAiTask set to:', isAiTask.value)
+    console.log('asrCompleted set to:', asrCompleted.value)
     console.log('activeTab set to:', activeTab.value)
     visible.value = true
   })
@@ -403,7 +486,7 @@ const selectedRules = ref<string[]>([])
 // 编辑的备注
 const editRemark = ref('')
 
-// AI 质检小结文本
+// AI 质检总结文本
 const aiSummaryText = ref('本通电话中，坐席在客户明确否认"老用户"身份后，仍继续营销行为，违反身份核实前置要求 (B1)。此外，坐席在通话中完整念出客户身份证号码、电话号码、银行卡号、账户余额、住址、工作单位等敏感个人信息，严重违反客户信息保密规定 (B2)。建议：1) 加强身份核实流程培训；2) 强化客户隐私保护意识；3) 规范敏感信息核对话术。')
 
 // 人工质检总结输入框
@@ -428,6 +511,29 @@ const ruleKeywords: Record<string, string[]> = {
   'A3': ['这个我不清楚', '需要查询', '稍后回复', '问一下领导', '咨询一下', '回头告诉您', '不太确定', '可能', '应该', '大概', '也许', '说不准', '不方便透露', '公司规定', '不能说的'],
   'B1': ['请问您是', '本人吗', '确认一下身份', '您是 xxx 吗', '核对信息', '身份验证', '请问怎么称呼', '先生/女士', '您的姓名', '身份证', '手机号', '不是本人', '我是代接', '我是家属', '我是朋友', '我是同事'],
   'B2': ['身份证号码', '身份证号', '电话号码', '手机号', '银行卡号', '卡号', '账户余额', '资产', '存款', '理财金额', '投资金额', '您的尾号', '后四位', '前六位', '住址', '地址', '工作单位', '单位地址', '职业', '收入']
+}
+
+// 各质检规则的评分配置（与 QualityRule.vue 保持一致）
+const ruleScores: Record<string, { type: 'add' | 'deduct'; value: number }> = {
+  'A1': { type: 'deduct', value: 10 },
+  'A2': { type: 'deduct', value: 5 },
+  'A3': { type: 'deduct', value: 5 },
+  'B1': { type: 'deduct', value: 10 },
+  'B2': { type: 'deduct', value: 15 },
+}
+
+// 获取规则评分显示文本
+const getRuleScoreText = (ruleCode: string): string => {
+  const score = ruleScores[ruleCode]
+  if (!score) return ''
+  return `${score.type === 'add' ? '+' : '-'}${score.value}分`
+}
+
+// 获取规则评分颜色
+const getRuleScoreColor = (ruleCode: string): string => {
+  const score = ruleScores[ruleCode]
+  if (!score) return 'default'
+  return score.type === 'add' ? 'green' : 'red'
 }
 
 // 高亮文本 - 根据对话触发的规则关键词进行高亮
@@ -682,6 +788,41 @@ const manualResults = computed(() => {
   return results
 })
 
+// AI 质检结果评分汇总
+const aiScoreSummary = computed(() => {
+  let addScore = 0
+  let deductScore = 0
+  const seen = new Set<string>()
+  aiResults.value.forEach(result => {
+    if (seen.has(result.ruleCode)) return
+    seen.add(result.ruleCode)
+    const score = ruleScores[result.ruleCode]
+    if (!score) return
+    if (score.type === 'add') addScore += score.value
+    else deductScore += score.value
+  })
+  return { add: addScore, deduct: deductScore, total: addScore - deductScore }
+})
+
+// 全部触发规则评分汇总（从对话中提取所有触发的规则，去重后计算）
+const allScoreSummary = computed(() => {
+  let addScore = 0
+  let deductScore = 0
+  const seen = new Set<string>()
+  conversationList.value.forEach(msg => {
+    if (!msg.triggerRules) return
+    msg.triggerRules.forEach((rule: any) => {
+      if (seen.has(rule.code)) return
+      seen.add(rule.code)
+      const score = ruleScores[rule.code]
+      if (!score) return
+      if (score.type === 'add') addScore += score.value
+      else deductScore += score.value
+    })
+  })
+  return { add: addScore, deduct: deductScore, total: addScore - deductScore }
+})
+
 // 获取规则描述
 const getRuleDescription = (ruleCode: string): string => {
   const descriptions: Record<string, string> = {
@@ -845,6 +986,20 @@ const handleNext = () => {
   display: flex;
   flex-direction: column;
   margin-right: 8px;
+}
+
+/* ASR 未完成提示 */
+.asr-pending-notice {
+  padding: 16px;
+}
+
+/* ASR 未完成时右侧提示 */
+.asr-pending-right-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
 }
 
 /* 音频播放器 */
@@ -1210,6 +1365,11 @@ const handleNext = () => {
   color: #1f2329;
 }
 
+.rule-score-tag {
+  font-weight: 600;
+  font-size: 12px;
+}
+
 .rule-type-badge {
   font-size: 12px;
   padding: 2px 8px;
@@ -1331,6 +1491,77 @@ const handleNext = () => {
 .summary-textarea {
   font-size: 14px;
   line-height: 1.6;
+}
+
+.score-summary-box {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e8e8e8;
+}
+
+.score-summary-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2329;
+  margin-bottom: 12px;
+}
+
+.score-summary-items {
+  display: flex;
+  gap: 24px;
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  min-width: 80px;
+}
+
+.score-item .score-label {
+  font-size: 12px;
+  color: #8f959e;
+}
+
+.score-item .score-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.score-item.score-add {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.score-item.score-add .score-value {
+  color: #52c41a;
+}
+
+.score-item.score-deduct {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+}
+
+.score-item.score-deduct .score-value {
+  color: #ff4d4f;
+}
+
+.score-item.score-total {
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
+}
+
+.score-item.score-total .score-value.positive {
+  color: #52c41a;
+}
+
+.score-item.score-total .score-value.negative {
+  color: #ff4d4f;
 }
 
 .popover-header {

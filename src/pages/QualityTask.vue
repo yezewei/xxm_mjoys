@@ -66,6 +66,7 @@
                   <a-select
                     v-model:value="searchForm.taskStatus"
                     placeholder="请选择任务状态"
+                    allow-clear
                   >
                     <a-select-option value="running">进行中</a-select-option>
                     <a-select-option value="completed">已完成</a-select-option>
@@ -82,6 +83,7 @@
                   <a-select
                     v-model:value="searchForm.qualityObject"
                     placeholder="请选择质检对象"
+                    allow-clear
                   >
                     <a-select-option value="manual_outbound">人工外呼录音</a-select-option>
                     <a-select-option value="ai_assisted">人机协同录音</a-select-option>
@@ -94,6 +96,7 @@
                   <a-select
                     v-model:value="searchForm.qualityModel"
                     placeholder="请选择质检模型"
+                    allow-clear
                   >
                     <a-select-option value="compliance">合规质检</a-select-option>
                     <a-select-option value="service">服务质检</a-select-option>
@@ -104,13 +107,14 @@
               <a-col :span="6" v-if="activeTab === 'ai'">
                 <a-form-item>
                   <a-select
-                    v-model:value="searchForm.auditStatus"
-                    placeholder="请选择审核状态"
+                    v-model:value="searchForm.auditor"
+                    placeholder="请选择审核员"
+                    allow-clear
                   >
-                    <a-select-option value="pending">待审核</a-select-option>
-                    <a-select-option value="auditing">审核中</a-select-option>
-                    <a-select-option value="approved">已通过</a-select-option>
-                    <a-select-option value="rejected">已驳回</a-select-option>
+                    <a-select-option value="zhangsan">张三</a-select-option>
+                    <a-select-option value="lisi">李四</a-select-option>
+                    <a-select-option value="wangwu">王五</a-select-option>
+                    <a-select-option value="admin">admin</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
@@ -119,6 +123,7 @@
                   <a-select
                     v-model:value="searchForm.inspector"
                     placeholder="请选择质检员"
+                    allow-clear
                   >
                     <a-select-option value="zhangsan">张三</a-select-option>
                     <a-select-option value="lisi">李四</a-select-option>
@@ -195,6 +200,13 @@
                   <a-tag v-else-if="record.auditStatus === 'paused'" color="orange">已暂停</a-tag>
                   <a-tag v-else-if="record.auditStatus === 'completed'" color="green">已完成</a-tag>
                   <a-tag v-else color="default">未开始</a-tag>
+                </template>
+                <!-- 审核员列 -->
+                <template v-else-if="column.key === 'auditor'">
+                  <div v-if="Array.isArray(record.auditor)" class="auditor-tags">
+                    <a-tag v-for="(name, idx) in record.auditor" :key="idx" color="blue">{{ name }}</a-tag>
+                  </div>
+                  <span v-else>{{ record.auditor }}</span>
                 </template>
                 <!-- 操作列 -->
                 <template v-else-if="column.key === 'action'">
@@ -307,7 +319,9 @@
           <a-form-item label="质检员" name="inspector">
             <a-select
               v-model:value="createTaskForm.inspector"
-              placeholder="请选择质检员"
+              mode="multiple"
+              placeholder="请选择质检员（可多选）"
+              :max-tag-count="3"
             >
               <a-select-option
                 v-for="option in inspectorOptions"
@@ -317,6 +331,9 @@
                 {{ option.label }}
               </a-select-option>
             </a-select>
+            <div v-if="createTaskForm.inspector && createTaskForm.inspector.length > 1" class="inspector-tip">
+              质检数据将平均分配给 {{ createTaskForm.inspector.length }} 位质检员
+            </div>
           </a-form-item>
         </a-form>
 
@@ -359,8 +376,23 @@
             请选择需要质检的已接通通话范围
           </div>
 
-          <!-- 条件筛选区域 - 手动上传录音时不显示 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="condition-area">
+          <!-- 质检范围选择 - 手动上传录音时不显示 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="quality-scope-section">
+            <a-form layout="horizontal" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
+              <a-form-item label="质检范围">
+                <template #label>
+                  <span class="required-label">*</span> 质检范围
+                </template>
+                <a-radio-group v-model:value="createTaskForm.qualityScope" @change="handleQualityScopeChange">
+                  <a-radio value="full">全量质检</a-radio>
+                  <a-radio value="sampling">抽检</a-radio>
+                </a-radio-group>
+              </a-form-item>
+            </a-form>
+          </div>
+
+          <!-- 条件筛选区域 - 手动上传录音时不显示，抽检模式下隐藏 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'full'" class="condition-area">
             <!-- 条件表达式列表 -->
             <div class="expression-list-inline">
               <div
@@ -394,12 +426,27 @@
                         <a-select-option value=">">&gt;</a-select-option>
                         <a-select-option value="<">&lt;</a-select-option>
                         <a-select-option value="contains">包含</a-select-option>
+                        <a-select-option v-if="condition.fieldType === 'callTime' || condition.fieldType === 'callDuration'" value="between">介于</a-select-option>
                       </a-select>
                       <a-input
+                        v-if="condition.operator !== 'between'"
                         v-model:value="condition.value"
                         style="width: 180px"
                         placeholder="请输入值"
                       />
+                      <div v-else class="between-inputs">
+                        <a-input
+                          v-model:value="condition.value"
+                          style="width: 80px"
+                          placeholder="最小值"
+                        />
+                        <span class="between-separator">~</span>
+                        <a-input
+                          v-model:value="condition.value2"
+                          style="width: 80px"
+                          placeholder="最大值"
+                        />
+                      </div>
                       <a-button
                         v-if="expression.conditions.length > 1"
                         type="text"
@@ -439,8 +486,8 @@
             </div>
           </div>
 
-          <!-- 查询数据按钮和结果 - 手动上传录音时不显示 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="query-section">
+          <!-- 查询数据按钮和结果 - 手动上传录音时不显示，抽检模式下隐藏 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'full'" class="query-section">
             <a-button type="link" @click="handleQueryData">
               <search-outlined />
               查询数据
@@ -450,8 +497,8 @@
             </span>
           </div>
 
-          <!-- 自动追加开关 - 手动上传录音时不显示 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="auto-append-section">
+          <!-- 自动追加开关 - 手动上传录音时不显示，抽检模式下隐藏 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'full'" class="auto-append-section">
             <div class="switch-row">
               <span class="switch-label">新产生的数据自动追加</span>
               <a-switch v-model:checked="createTaskForm.autoAppend" class="auto-append-switch" />
@@ -460,7 +507,212 @@
               外呼产生新话单时，若符合上面的条件，自动将该通话加入到任务中
             </div>
           </div>
+
+          <!-- 抽检模式配置区域 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'sampling'" class="sampling-config-section">
+            <!-- 抽检条数 -->
+            <a-form layout="horizontal" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
+              <a-form-item label="抽检条数">
+                <template #label>
+                  <span class="required-label">*</span> 抽检条数
+                </template>
+                <a-input-number
+                  v-model:value="createTaskForm.samplingCount"
+                  :min="1"
+                  :precision="0"
+                  style="width: 200px"
+                  placeholder="请输入抽检条数"
+                />
+              </a-form-item>
+            </a-form>
+
+            <!-- 抽检规则 -->
+            <div class="sampling-rules-section">
+              <div class="sampling-rules-header">
+                <span class="sampling-rules-title">抽检规则</span>
+                <a-button type="link" @click="handleAddSamplingRule">
+                  <plus-outlined />
+                  添加规则
+                </a-button>
+              </div>
+              <a-table
+                :columns="samplingRuleColumns"
+                :data-source="samplingRules"
+                :pagination="false"
+                row-key="id"
+                size="small"
+                bordered
+              >
+                <template #bodyCell="{ column, record, index }">
+                  <template v-if="column.key === 'index'">
+                    {{ index + 1 }}
+                  </template>
+                  <template v-else-if="column.key === 'rule'">
+                    <a-button type="link" size="small" @click="handleOpenSamplingRuleConfig(record)">
+                      <setting-outlined />
+                      配置规则
+                    </a-button>
+                    <span v-if="record.conditions && record.conditions.length > 0 && record.conditions[0].fieldType" class="rule-configured-tag">
+                      <check-circle-outlined /> 已配置
+                    </span>
+                  </template>
+                  <template v-else-if="column.key === 'ratio'">
+                    <a-input-number
+                      v-model:value="record.ratio"
+                      :min="0"
+                      :max="100"
+                      :precision="0"
+                      style="width: 80px"
+                      placeholder="占比"
+                      @change="handleRatioChange"
+                    /> %
+                  </template>
+                  <template v-else-if="column.key === 'count'">
+                    {{ samplingCountByRatio(record.ratio) }}
+                  </template>
+                  <template v-else-if="column.key === 'action'">
+                    <a-button type="link" size="small" danger @click="handleDeleteSamplingRule(index)">
+                      删除
+                    </a-button>
+                  </template>
+                </template>
+              </a-table>
+              <div class="ratio-summary" :class="{ 'ratio-error': !isRatioValid }">
+                占比合计：{{ totalRatio }}% {{ isRatioValid ? '' : '（占比必须等于100%）' }}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 去重规则 - 两种质检范围模式下都显示 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="dedup-section">
+            <a-checkbox v-model:checked="createTaskForm.dedupEnabled" @change="handleDedupChange">
+              启用去重规则
+            </a-checkbox>
+            <div v-if="createTaskForm.dedupEnabled" class="dedup-options">
+              <a-radio-group v-model:value="createTaskForm.dedupType">
+                <a-radio value="global">全局去重</a-radio>
+                <a-radio value="model">同质检模型去重</a-radio>
+              </a-radio-group>
+              <div class="dedup-descriptions">
+                <div class="dedup-desc-item">
+                  <span class="dedup-desc-label">全局去重：</span>
+                  <span class="dedup-desc-text">加入过质检任务的数据自动进行过滤</span>
+                </div>
+                <div class="dedup-desc-item">
+                  <span class="dedup-desc-label">同质检模型去重：</span>
+                  <span class="dedup-desc-text">加入过相同质检模型质检任务的数据自动进行过滤</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- 抽检规则配置弹窗 -->
+        <a-modal
+          v-model:open="samplingRuleModalVisible"
+          title="配置抽检规则"
+          width="700px"
+          :closable="false"
+          @cancel="handleSamplingRuleCancel"
+        >
+          <div class="sampling-rule-modal-content">
+            <div class="expression-list-inline">
+              <div
+                v-for="(expression, index) in currentSamplingRuleConditions"
+                :key="expression.id"
+                class="expression-item-inline"
+              >
+                <div class="expression-content">
+                  <div class="condition-list-inline">
+                    <div
+                      v-for="(condition, cIndex) in expression.conditions"
+                      :key="condition.id"
+                      class="condition-item-inline"
+                    >
+                      <a-select
+                        v-model:value="condition.fieldType"
+                        style="width: 140px"
+                        placeholder="字段类型"
+                      >
+                        <a-select-option value="callTime">通话时间</a-select-option>
+                        <a-select-option value="callDuration">通话时长</a-select-option>
+                        <a-select-option value="intent">客户意图</a-select-option>
+                        <a-select-option value="agent">坐席工号</a-select-option>
+                      </a-select>
+                      <a-select
+                        v-model:value="condition.operator"
+                        style="width: 100px"
+                        placeholder="操作符"
+                      >
+                        <a-select-option value="=">=</a-select-option>
+                        <a-select-option value=">">&gt;</a-select-option>
+                        <a-select-option value="<">&lt;</a-select-option>
+                        <a-select-option value="contains">包含</a-select-option>
+                        <a-select-option v-if="condition.fieldType === 'callTime' || condition.fieldType === 'callDuration'" value="between">介于</a-select-option>
+                      </a-select>
+                      <a-input
+                        v-if="condition.operator !== 'between'"
+                        v-model:value="condition.value"
+                        style="width: 180px"
+                        placeholder="请输入值"
+                      />
+                      <div v-else class="between-inputs">
+                        <a-input
+                          v-model:value="condition.value"
+                          style="width: 80px"
+                          placeholder="最小值"
+                        />
+                        <span class="between-separator">~</span>
+                        <a-input
+                          v-model:value="condition.value2"
+                          style="width: 80px"
+                          placeholder="最大值"
+                        />
+                      </div>
+                      <a-button
+                        v-if="expression.conditions.length > 1"
+                        type="text"
+                        danger
+                        @click="handleDeleteSamplingCondition(index, cIndex)"
+                        class="delete-condition-btn"
+                      >
+                        <minus-circle-outlined />
+                      </a-button>
+                      <a-button
+                        v-if="cIndex === expression.conditions.length - 1"
+                        type="text"
+                        @click="handleAddSamplingCondition(index)"
+                        class="add-condition-btn-inline"
+                      >
+                        <plus-circle-outlined />
+                      </a-button>
+                      <span v-if="cIndex < expression.conditions.length - 1" class="condition-connector-inline">且</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="expression-footer" v-if="currentSamplingRuleConditions.length > 1">
+                  <a-button type="text" danger @click="handleDeleteSamplingExpression(index)">
+                    <delete-outlined />
+                    删除表达式
+                  </a-button>
+                </div>
+              </div>
+            </div>
+            <div class="add-expression-btn-wrapper-inline">
+              <a-button @click="handleAddSamplingExpression" block dashed>
+                <plus-outlined />
+                或条件
+              </a-button>
+            </div>
+          </div>
+          <template #footer>
+            <a-space>
+              <a-button @click="handleSamplingRuleCancel">取消</a-button>
+              <a-button type="primary" @click="handleSamplingRuleConfirm">确定</a-button>
+            </a-space>
+          </template>
+        </a-modal>
 
         <div class="modal-footer">
           <a-space>
@@ -558,6 +810,8 @@ import {
   DeleteOutlined,
   PlusCircleOutlined,
   MinusCircleOutlined,
+  SettingOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
@@ -584,12 +838,11 @@ interface SearchFormData {
   taskName: string
   taskId: string
   taskDescription: string
-  taskStatus: string
-  qualityObject: string
-  qualityModel: string
-  auditStatus: string
-  auditor: string
-  inspector: string
+  taskStatus: string | undefined
+  qualityObject: string | undefined
+  qualityModel: string | undefined
+  auditor: string | undefined
+  inspector: string | undefined
 }
 
 interface CreateTaskForm {
@@ -598,9 +851,13 @@ interface CreateTaskForm {
   taskDescription: string
   qualityModel: string
   qualityObject: string
-  inspector: string
+  inspector: string[]
   recordType: 'ai_assisted' | 'manual_outbound' | 'manual_upload'
   autoAppend: boolean
+  qualityScope: 'full' | 'sampling'
+  samplingCount: number | null
+  dedupEnabled: boolean
+  dedupType: 'global' | 'model'
 }
 
 interface EditTaskForm {
@@ -620,6 +877,13 @@ interface ConditionItem {
   fieldType: string
   operator: string
   value: string
+  value2?: string
+}
+
+interface SamplingRule {
+  id: number
+  conditions: ConditionExpression[]
+  ratio: number
 }
 
 // ============ 表格列定义 ============
@@ -680,9 +944,13 @@ const createTaskForm = reactive<CreateTaskForm>({
   taskDescription: '',
   qualityModel: '',
   qualityObject: '',
-  inspector: '',
+  inspector: [],
   recordType: 'ai_assisted',
   autoAppend: false,
+  qualityScope: 'full',
+  samplingCount: null,
+  dedupEnabled: false,
+  dedupType: 'global',
 })
 
 // 编辑任务弹窗相关
@@ -717,6 +985,42 @@ const conditionExpressions = ref<ConditionExpression[]>([
 let expressionIdCounter = 1
 let conditionIdCounter = 1
 const queryResult = ref<number | null>(null)
+
+// 抽检规则相关
+const samplingRules = ref<SamplingRule[]>([])
+let samplingRuleIdCounter = 0
+let samplingExpressionIdCounter = 0
+let samplingConditionIdCounter = 0
+
+// 抽检规则表格列定义
+const samplingRuleColumns = [
+  { title: '序号', key: 'index', width: 60, align: 'center' as const },
+  { title: '规则', key: 'rule', width: 200 },
+  { title: '占比', key: 'ratio', width: 120 },
+  { title: '数量', key: 'count', width: 100 },
+  { title: '操作', key: 'action', width: 80, align: 'center' as const },
+]
+
+// 抽检规则配置弹窗相关
+const samplingRuleModalVisible = ref(false)
+const currentSamplingRuleIndex = ref(-1)
+const currentSamplingRuleConditions = ref<ConditionExpression[]>([])
+
+// 占比合计
+const totalRatio = computed(() => {
+  return samplingRules.value.reduce((sum, rule) => sum + (rule.ratio || 0), 0)
+})
+
+// 占比是否有效（必须等于100%）
+const isRatioValid = computed(() => {
+  return totalRatio.value === 100
+})
+
+// 根据占比计算数量
+const samplingCountByRatio = (ratio: number) => {
+  if (!createTaskForm.samplingCount || !ratio) return 0
+  return Math.floor(createTaskForm.samplingCount * ratio / 100)
+}
 
 // 文件上传方法
 const beforeUpload = (file: UploadFile) => {
@@ -779,6 +1083,104 @@ const handleQueryData = () => {
   message.success('查询成功')
 }
 
+// 质检范围变化处理
+const handleQualityScopeChange = () => {
+  // 切换时重置相关数据
+  if (createTaskForm.qualityScope === 'sampling') {
+    samplingRules.value = []
+    samplingRuleIdCounter = 0
+  }
+}
+
+// 添加抽检规则
+const handleAddSamplingRule = () => {
+  samplingRuleIdCounter++
+  samplingRules.value.push({
+    id: samplingRuleIdCounter,
+    conditions: [
+      {
+        id: ++samplingExpressionIdCounter,
+        conditions: [
+          { id: ++samplingConditionIdCounter, fieldType: '', operator: '', value: '' },
+        ],
+      },
+    ],
+    ratio: 0,
+  })
+}
+
+// 删除抽检规则
+const handleDeleteSamplingRule = (index: number) => {
+  samplingRules.value.splice(index, 1)
+}
+
+// 打开抽检规则配置弹窗
+const handleOpenSamplingRuleConfig = (record: SamplingRule) => {
+  currentSamplingRuleIndex.value = samplingRules.value.findIndex(r => r.id === record.id)
+  currentSamplingRuleConditions.value = JSON.parse(JSON.stringify(record.conditions))
+  samplingRuleModalVisible.value = true
+}
+
+// 取消抽检规则配置
+const handleSamplingRuleCancel = () => {
+  samplingRuleModalVisible.value = false
+  currentSamplingRuleIndex.value = -1
+  currentSamplingRuleConditions.value = []
+}
+
+// 确认抽检规则配置
+const handleSamplingRuleConfirm = () => {
+  if (currentSamplingRuleIndex.value >= 0) {
+    samplingRules.value[currentSamplingRuleIndex.value].conditions = JSON.parse(JSON.stringify(currentSamplingRuleConditions.value))
+  }
+  handleSamplingRuleCancel()
+  message.success('规则配置已保存')
+}
+
+// 添加抽检规则条件表达式
+const handleAddSamplingExpression = () => {
+  samplingExpressionIdCounter++
+  currentSamplingRuleConditions.value.push({
+    id: samplingExpressionIdCounter,
+    conditions: [
+      { id: ++samplingConditionIdCounter, fieldType: '', operator: '', value: '' },
+    ],
+  })
+}
+
+// 删除抽检规则条件表达式
+const handleDeleteSamplingExpression = (index: number) => {
+  currentSamplingRuleConditions.value.splice(index, 1)
+}
+
+// 添加抽检规则条件
+const handleAddSamplingCondition = (expressionIndex: number) => {
+  samplingConditionIdCounter++
+  currentSamplingRuleConditions.value[expressionIndex].conditions.push({
+    id: samplingConditionIdCounter,
+    fieldType: '',
+    operator: '',
+    value: '',
+  })
+}
+
+// 删除抽检规则条件
+const handleDeleteSamplingCondition = (expressionIndex: number, conditionIndex: number) => {
+  currentSamplingRuleConditions.value[expressionIndex].conditions.splice(conditionIndex, 1)
+}
+
+// 占比变化处理
+const handleRatioChange = () => {
+  // 占比变化时的处理，可以在这里添加校验逻辑
+}
+
+// 去重规则变化处理
+const handleDedupChange = () => {
+  if (!createTaskForm.dedupEnabled) {
+    createTaskForm.dedupType = 'global'
+  }
+}
+
 // 质检模型选项
 const qualityModelOptions = [
   { label: '合规质检', value: 'compliance' },
@@ -808,12 +1210,11 @@ const searchForm = reactive<SearchFormData>({
   taskName: '',
   taskId: '',
   taskDescription: '',
-  taskStatus: '',
-  qualityObject: '',
-  qualityModel: '',
-  auditStatus: '',
-  auditor: '',
-  inspector: '',
+  taskStatus: undefined,
+  qualityObject: undefined,
+  qualityModel: undefined,
+  auditor: undefined,
+  inspector: undefined,
 })
 
 // 分页配置
@@ -844,7 +1245,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '人工外呼录音',
     status: 'paused',
     auditStatus: 'auditing',
-    auditor: '张三',
+    auditor: ['张三', '李四'],
     creator: 'hzy',
     createdAt: '2026-02-09 19:21:35',
     aiProgressPercent: 0,
@@ -859,7 +1260,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '人工外呼录音',
     status: 'running',
     auditStatus: 'auditing',
-    auditor: '李四',
+    auditor: ['李四', '王五'],
     creator: 'hzy',
     createdAt: '2026-02-09 19:30:00',
     aiProgressPercent: 25,
@@ -874,7 +1275,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '人工外呼录音',
     status: 'running',
     auditStatus: 'auditing',
-    auditor: '王五',
+    auditor: ['王五'],
     creator: 'hzy',
     createdAt: '2026-02-09 15:32:28',
     aiProgressPercent: 55,
@@ -889,7 +1290,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '呼入录音',
     status: 'running',
     auditStatus: 'auditing',
-    auditor: 'admin',
+    auditor: ['admin', '张三'],
     creator: 'hzy',
     createdAt: '2026-02-09 19:03:27',
     aiProgressPercent: 0,
@@ -904,7 +1305,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '人工外呼录音',
     status: 'running',
     auditStatus: 'auditing',
-    auditor: 'admin',
+    auditor: ['admin'],
     creator: 'hzy',
     createdAt: '2026-02-09 15:32:28',
     aiProgressPercent: 0,
@@ -919,7 +1320,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '人机协同录音',
     status: 'running',
     auditStatus: 'auditing',
-    auditor: 'admin',
+    auditor: ['admin'],
     creator: 'hzy',
     createdAt: '2026-02-09 15:31:02',
     aiProgressPercent: 0,
@@ -935,7 +1336,7 @@ const mockData: QualityTaskItem[] = [
     qualityObject: '人机协同录音',
     status: 'running',
     auditStatus: 'running',
-    auditor: '张三',
+    auditor: ['张三', '李四', '王五'],
     creator: 'hzy',
     createdAt: '2026-02-09 19:30:00',
     aiProgressPercent: 60,
@@ -1033,12 +1434,11 @@ const handleReset = () => {
     taskName: '',
     taskId: '',
     taskDescription: '',
-    taskStatus: '',
-    qualityObject: '',
-    qualityModel: '',
-    auditStatus: '',
-    auditor: '',
-    inspector: '',
+    taskStatus: undefined,
+    qualityObject: undefined,
+    qualityModel: undefined,
+    auditor: undefined,
+    inspector: undefined,
   })
   message.success('已重置搜索条件')
 }
@@ -1078,9 +1478,13 @@ const handleCreateCancel = () => {
     taskDescription: '',
     qualityModel: '',
     qualityObject: '',
-    inspector: '',
+    inspector: [],
     recordType: 'ai_assisted',
     autoAppend: false,
+    qualityScope: 'full',
+    samplingCount: null,
+    dedupEnabled: false,
+    dedupType: 'global',
   })
   fileList.value = []
   // 重置条件表达式
@@ -1095,13 +1499,91 @@ const handleCreateCancel = () => {
   expressionIdCounter = 1
   conditionIdCounter = 1
   queryResult.value = null
+  // 重置抽检规则
+  samplingRules.value = []
+  samplingRuleIdCounter = 0
+  samplingExpressionIdCounter = 0
+  samplingConditionIdCounter = 0
 }
 
 // 确认创建
 const handleCreateConfirm = () => {
-  console.log('创建任务:', createTaskForm)
-  message.success('创建成功')
-  handleCreateCancel()
+  // 抽检模式校验
+  if (createTaskForm.qualityScope === 'sampling') {
+    // 校验抽检条数
+    if (!createTaskForm.samplingCount || createTaskForm.samplingCount <= 0) {
+      message.error('请输入有效的抽检条数')
+      return
+    }
+
+    // 校验是否有抽检规则
+    if (samplingRules.value.length === 0) {
+      message.error('请至少添加一条抽检规则')
+      return
+    }
+
+    // 校验占比是否等于100%
+    if (!isRatioValid.value) {
+      message.error('抽检规则占比合计必须等于100%')
+      return
+    }
+
+    // 校验每条规则是否已配置
+    const unconfiguredRule = samplingRules.value.find(
+      rule => !rule.conditions || rule.conditions.length === 0 || !rule.conditions[0].conditions[0].fieldType
+    )
+    if (unconfiguredRule) {
+      message.error('请配置所有抽检规则的条件表达式')
+      return
+    }
+
+    // 模拟检查满足条件的质检数据是否达到抽检规则要求的数量
+    checkSamplingDataAvailable()
+  } else {
+    // 全量质检模式直接创建
+    console.log('创建任务:', createTaskForm)
+    message.success('创建成功')
+    handleCreateCancel()
+  }
+}
+
+// 检查抽检数据是否满足要求
+const checkSamplingDataAvailable = () => {
+  // 模拟：随机生成可用数据量（实际应调用后端接口查询）
+  const availableDataCount = Math.floor(Math.random() * 500) + 50
+
+  // 计算各规则需要的数量
+  const ruleRequirements = samplingRules.value.map((rule, index) => ({
+    index: index + 1,
+    ratio: rule.ratio,
+    requiredCount: samplingCountByRatio(rule.ratio),
+  }))
+
+  const totalRequired = createTaskForm.samplingCount || 0
+
+  if (availableDataCount < totalRequired) {
+    // 数据不足，弹窗提示
+    const ruleDetails = ruleRequirements.map(r =>
+      `规则${r.index}：需要${r.requiredCount}条（占比${r.ratio}%）`
+    ).join('\n')
+
+    Modal.confirm({
+      title: '质检数据不足',
+      content: `当前满足条件的质检数据共 ${availableDataCount} 条，但抽检规则要求共 ${totalRequired} 条，数据不足无法完成抽检任务。\n\n各规则需求：\n${ruleDetails}\n\n是否继续创建任务？`,
+      okText: '继续创建',
+      cancelText: '取消',
+      onOk() {
+        console.log('创建任务:', createTaskForm)
+        message.success('创建成功')
+        handleCreateCancel()
+      },
+    })
+  } else {
+    // 数据充足，直接创建
+    console.log('创建任务:', createTaskForm)
+    message.success('创建成功')
+    handleCreateCancel()
+  }
 }
 
 const handleDetail = (row: QualityTaskItem) => {
@@ -1624,6 +2106,18 @@ const handlePageChange = (page: number, size: number) => {
   flex-shrink: 0;
 }
 
+/* 介于输入框 */
+.between-inputs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.between-separator {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
 .delete-condition-btn,
 .add-condition-btn-inline {
   color: #ff4d4f;
@@ -1757,5 +2251,139 @@ const handlePageChange = (page: number, size: number) => {
   margin-top: 24px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* 质检范围选择区域 */
+.quality-scope-section {
+  margin-bottom: 16px;
+}
+
+/* 抽检模式配置区域 */
+.sampling-config-section {
+  background: #f0f5ff;
+  border-radius: 4px;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+}
+
+/* 抽检规则区域 */
+.sampling-rules-section {
+  margin-bottom: 16px;
+}
+
+.sampling-rules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.sampling-rules-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.sampling-rules-section :deep(.ant-table) {
+  font-size: 14px;
+}
+
+.sampling-rules-section :deep(.ant-table-thead > tr > th) {
+  background: #e6f4ff;
+  font-weight: 600;
+  color: #262626;
+}
+
+.rule-configured-tag {
+  margin-left: 8px;
+  color: #52c41a;
+  font-size: 12px;
+}
+
+/* 占比合计 */
+.ratio-summary {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #262626;
+  text-align: right;
+}
+
+.ratio-summary.ratio-error {
+  color: #ff4d4f;
+  background: #fff2f0;
+}
+
+/* 去重规则区域 */
+.dedup-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #d9d9d9;
+  background: #fafafa;
+  border-radius: 4px;
+  padding: 16px 24px;
+}
+
+.dedup-options {
+  margin-top: 12px;
+  padding-left: 24px;
+}
+
+.dedup-descriptions {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
+.dedup-desc-item {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.dedup-desc-item:last-child {
+  margin-bottom: 0;
+}
+
+.dedup-desc-label {
+  color: #262626;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dedup-desc-text {
+  color: #8c8c8c;
+}
+
+/* 抽检规则配置弹窗 */
+.sampling-rule-modal-content {
+  padding: 16px 0;
+}
+
+/* 质检员多选提示 */
+.inspector-tip {
+  margin-top: 8px;
+  color: #1677ff;
+  font-size: 13px;
+  background: #e6f4ff;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+/* 审核员标签 */
+.auditor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.auditor-tags .ant-tag {
+  margin-right: 0;
 }
 </style>
