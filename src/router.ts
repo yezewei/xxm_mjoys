@@ -107,6 +107,11 @@ const routes = [
     component: () => import("./pages/QualityRule.vue"),
   },
   {
+    path: "/sampling-rule",
+    name: "SamplingRule",
+    component: () => import("./pages/SamplingRule.vue"),
+  },
+  {
     path: "/seat-config",
     name: "SeatConfig",
     component: () => import("./pages/SeatConfig.vue"),

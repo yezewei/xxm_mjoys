@@ -89,6 +89,9 @@
             <a-menu-item key="quality-rule">
               <span>质检规则</span>
             </a-menu-item>
+            <a-menu-item key="sampling-rule">
+              <span>抽检规则</span>
+            </a-menu-item>
           </a-sub-menu>
 
           <a-sub-menu key="seat">
@@ -249,7 +252,7 @@ import { UserOutlined } from '@ant-design/icons-vue';
 const route = useRoute();
 const router = useRouter();
 const selectedKeys = ref(['exception']);
-const openKeys = ref([]);
+const openKeys = ref<string[]>([]);
 
 // 菜单项与路由的映射
 const menuRouteMap: Record<string, string> = {
@@ -272,6 +275,7 @@ const menuRouteMap: Record<string, string> = {
   'quality-model': '/quality-model',
   'quality-task': '/quality-task',
   'quality-rule': '/quality-rule',
+  'sampling-rule': '/sampling-rule',
   'seat-config': '/seat-config',
   'seat-monitor': '/seat-monitor',
   'skill-group': '/skill-group',
@@ -315,6 +319,7 @@ const menuTitleMap: Record<string, string> = {
   'quality-model': '质检模型',
   'quality-task': '质检任务',
   'quality-rule': '质检规则',
+  'sampling-rule': '抽检规则',
   seat: '坐席管理',
   'seat-config': '直营坐席配置',
   'seat-monitor': '坐席监控',
@@ -388,6 +393,7 @@ watch(
       '/quality-model': 'quality-model',
       '/quality-task': 'quality-task',
       '/quality-rule': 'quality-rule',
+      '/sampling-rule': 'sampling-rule',
       '/seat-config': 'seat-config',
       '/seat-monitor': 'seat-monitor',
       '/skill-group': 'skill-group',
@@ -424,7 +430,7 @@ watch(
       'data-board-group': ['data-board', 'ai-call-report', 'manual-call-report', 'call-funnel'],
       business: ['scene-management', 'scene-template', 'org-management', 'workbench-settings'],
       'phone-work': ['phone-work-home', 'phone-work-workbench'],
-      'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule'],
+      'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule', 'sampling-rule'],
       seat: ['seat-config', 'seat-monitor', 'skill-group'],
       knowledge: ['knowledge-word', 'knowledge-intent', 'knowledge-qa', 'knowledge-scene'],
       customer: ['customer-management', 'customer-tag-management', 'customer-group-management'],
