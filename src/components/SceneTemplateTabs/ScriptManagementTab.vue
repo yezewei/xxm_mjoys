@@ -587,6 +587,9 @@ const audioPackagePagination = reactive<TablePaginationConfig>({
   },
 });
 
+// 话术搜索关键词
+const scriptSearchKeyword = ref('');
+
 // 录音包搜索关键词
 const audioPackageSearchKeyword = ref('');
 

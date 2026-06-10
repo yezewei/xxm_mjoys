@@ -186,11 +186,11 @@
 
     <!-- 列设置弹窗 -->
     <ColumnSettingModal
-      v-model:visible="columnSettingVisible"
-      :columns="allColumns"
-      :column-order="columnOrder"
-      :visible-column-keys="visibleColumnKeys"
-      @apply="handleColumnSettingApply"
+      ref="columnSettingModalRef"
+      page-key="manual-call-report"
+      :default-columns="allColumns"
+      @save="handleColumnSave"
+      @cancel="handleColumnCancel"
     />
 
     <!-- 对话详情弹窗 -->
@@ -286,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, onMounted } from 'vue';
 import {
   SearchOutlined,
   ReloadOutlined,
@@ -299,6 +299,7 @@ import { message } from 'ant-design-vue';
 import type { Dayjs } from 'dayjs';
 import Pagination from '@/components/Pagination';
 import ColumnSettingModal from '../components/ColumnSettingModal.vue';
+import type { ColumnConfigItem } from '../utils/columnConfig';
 import * as XLSX from 'xlsx';
 
 // 搜索表单
@@ -348,29 +349,30 @@ const pagination = reactive({
   total: 0,
 });
 
-// 定义所有列
-const allColumns: TableColumnType[] = [
-  { title: '通话ID', dataIndex: 'callUuid', key: 'callUuid', width: 200 },
-  { title: '通话录音路径', dataIndex: 'callRecordPath', key: 'callRecordPath', width: 220 },
-  { title: '主叫号码', dataIndex: 'callerPhoneNum', key: 'callerPhoneNum', width: 140 },
-  { title: '被叫号码', dataIndex: 'calleePhoneNum', key: 'calleePhoneNum', width: 140 },
-  { title: '被叫归属地', dataIndex: 'calleeArea', key: 'calleeArea', width: 120 },
-  { title: '坐席分机号', dataIndex: 'seatExtNum', key: 'seatExtNum', width: 120 },
-  { title: '坐席手机号', dataIndex: 'seatMobile', key: 'seatMobile', width: 140 },
-  { title: '外呼发起方式', dataIndex: 'dialMethod', key: 'dialMethod', width: 130 },
-  { title: '拨打时间', dataIndex: 'dialTime', key: 'dialTime', width: 180 },
-  { title: '坐席接听时间', dataIndex: 'seatAnswerTime', key: 'seatAnswerTime', width: 180 },
-  { title: '客户接听时间', dataIndex: 'custAnswerTime', key: 'custAnswerTime', width: 180 },
-  { title: '挂断时间', dataIndex: 'hangupTime', key: 'hangupTime', width: 180 },
-  { title: '挂断方', dataIndex: 'hangupBy', key: 'hangupBy', width: 100 },
-  { title: '通话状态', dataIndex: 'callStatus', key: 'callStatus', width: 100 },
-  { title: '通话时长', dataIndex: 'callDuration', key: 'callDuration', width: 110 },
-  { title: '拨号内容', dataIndex: 'dialContent', key: 'dialContent', width: 300 },
-  { title: '操作', dataIndex: 'action', key: 'action', width: 120, align: 'center', fixed: 'right' },
-];
+// 列表显示设置相关
+const columnSettingModalRef = ref<InstanceType<typeof ColumnSettingModal> | null>(null);
+const currentColumns = ref<ColumnConfigItem[]>([]);
 
-// 列设置相关状态
-const columnSettingVisible = ref(false);
+// 定义所有列
+const allColumns: ColumnConfigItem[] = [
+  { key: 'callUuid', title: '通话ID', dataIndex: 'callUuid', width: 200, visible: true, order: 0 },
+  { key: 'callRecordPath', title: '通话录音路径', dataIndex: 'callRecordPath', width: 220, visible: true, order: 1 },
+  { key: 'callerPhoneNum', title: '主叫号码', dataIndex: 'callerPhoneNum', width: 140, visible: true, order: 2 },
+  { key: 'calleePhoneNum', title: '被叫号码', dataIndex: 'calleePhoneNum', width: 140, visible: true, order: 3 },
+  { key: 'calleeArea', title: '被叫归属地', dataIndex: 'calleeArea', width: 120, visible: true, order: 4 },
+  { key: 'seatExtNum', title: '坐席分机号', dataIndex: 'seatExtNum', width: 120, visible: true, order: 5 },
+  { key: 'seatMobile', title: '坐席手机号', dataIndex: 'seatMobile', width: 140, visible: true, order: 6 },
+  { key: 'dialMethod', title: '外呼发起方式', dataIndex: 'dialMethod', width: 130, visible: true, order: 7 },
+  { key: 'dialTime', title: '拨打时间', dataIndex: 'dialTime', width: 180, visible: true, order: 8 },
+  { key: 'seatAnswerTime', title: '坐席接听时间', dataIndex: 'seatAnswerTime', width: 180, visible: true, order: 9 },
+  { key: 'custAnswerTime', title: '客户接听时间', dataIndex: 'custAnswerTime', width: 180, visible: true, order: 10 },
+  { key: 'hangupTime', title: '挂断时间', dataIndex: 'hangupTime', width: 180, visible: true, order: 11 },
+  { key: 'hangupBy', title: '挂断方', dataIndex: 'hangupBy', width: 100, visible: true, order: 12 },
+  { key: 'callStatus', title: '通话状态', dataIndex: 'callStatus', width: 100, visible: true, order: 13 },
+  { key: 'callDuration', title: '通话时长', dataIndex: 'callDuration', width: 110, visible: true, order: 14 },
+  { key: 'dialContent', title: '拨号内容', dataIndex: 'dialContent', width: 300, visible: true, order: 15 },
+  { key: 'action', title: '操作', dataIndex: 'action', width: 120, visible: true, order: 16 },
+];
 
 // 对话详情弹窗相关状态
 const detailModalVisible = ref(false);
@@ -409,36 +411,44 @@ const handleExportCheckAll = (e: any) => {
     exportFieldKeys.value = [];
   }
 };
-const STORAGE_KEY = 'column_config_manual-call-report';
-const savedConfig = localStorage.getItem(STORAGE_KEY);
-const defaultVisibleKeys = ['callUuid', 'callerPhoneNum', 'calleePhoneNum', 'calleeArea', 'seatExtNum', 'seatMobile', 'dialMethod', 'dialTime', 'seatAnswerTime', 'custAnswerTime', 'hangupTime', 'hangupBy', 'callStatus', 'callDuration'];
-const defaultOrder = allColumns.map(col => col.dataIndex as string);
-
-const visibleColumnKeys = ref<string[]>(
-  savedConfig ? JSON.parse(savedConfig).visibleKeys : defaultVisibleKeys
-);
-const columnOrder = ref<string[]>(
-  savedConfig ? JSON.parse(savedConfig).order : defaultOrder
-);
-
-// 计算可见列（按顺序），操作列始终显示
+// 根据当前配置计算可见列
 const visibleColumns = computed(() => {
-  const keySet = new Set(visibleColumnKeys.value);
-  const ordered = columnOrder.value
-    .filter(key => keySet.has(key))
-    .map(key => allColumns.find(col => col.dataIndex === key))
-    .filter(Boolean) as TableColumnType[];
-  allColumns.forEach(col => {
-    if (keySet.has(col.dataIndex as string) && !ordered.find(c => c.dataIndex === col.dataIndex)) {
-      ordered.push(col);
+  const columnsToUse = currentColumns.value.length > 0 ? currentColumns.value : allColumns;
+  return columnsToUse
+    .filter(col => col.visible)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map(col => ({
+      title: col.title,
+      dataIndex: col.dataIndex,
+      key: col.key,
+      width: col.width,
+      align: col.key === 'action' ? 'center' as const : undefined,
+      fixed: col.key === 'action' ? 'right' as const : undefined,
+    }));
+});
+
+// 初始化时加载保存的列配置
+onMounted(() => {
+  const stored = localStorage.getItem('column_config_manual-call-report');
+  if (stored) {
+    try {
+      const savedConfig = JSON.parse(stored);
+      const merged = savedConfig.map((s: ColumnConfigItem) => {
+        const defaultCol = allColumns.find(c => c.key === s.key);
+        return {
+          key: s.key,
+          title: s.title,
+          dataIndex: s.dataIndex,
+          width: s.width || defaultCol?.width,
+          visible: s.visible !== undefined ? s.visible : true,
+          order: s.order !== undefined ? s.order : defaultCol?.order || 0,
+        };
+      });
+      currentColumns.value = merged.sort((a: ColumnConfigItem, b: ColumnConfigItem) => a.order - b.order);
+    } catch (e) {
+      console.warn('加载列配置失败:', e);
     }
-  });
-  // 操作列始终追加在最后
-  const actionCol = allColumns.find(col => col.key === 'action');
-  if (actionCol && !ordered.find(c => c.key === 'action')) {
-    ordered.push(actionCol);
   }
-  return ordered;
 });
 
 // 格式化通话时长
@@ -541,7 +551,17 @@ const onSelectChange = (keys: string[]) => {
 
 // 打开列设置弹窗
 const showColumnSetting = () => {
-  columnSettingVisible.value = true;
+  columnSettingModalRef.value?.open();
+};
+
+// 列设置保存回调
+const handleColumnSave = (columns: ColumnConfigItem[]) => {
+  currentColumns.value = columns;
+};
+
+// 列设置取消回调
+const handleColumnCancel = () => {
+  // 取消时不做任何操作
 };
 
 // 查看对话详情
@@ -561,15 +581,6 @@ const handleViewDetail = (record: ReportItem) => {
   detailModalVisible.value = true;
 };
 
-// 列设置应用回调
-const handleColumnSettingApply = (newVisibleKeys: string[], newOrder: string[]) => {
-  visibleColumnKeys.value = newVisibleKeys;
-  columnOrder.value = newOrder;
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ visibleKeys: newVisibleKeys, order: newOrder })
-  );
-};
 
 // 导出 Excel
 const handleExportExcel = () => {

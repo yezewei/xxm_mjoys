@@ -9,10 +9,16 @@
             <p class="page-description">选择需要质检的通话录音和质检模型，创建 AI 质检和人工质检任务。</p>
           </div>
           <div class="header-right">
-            <a-button type="primary" class="create-task-btn" @click="handleCreateTask">
-              <plus-outlined />
-              新建质检任务
-            </a-button>
+            <a-space>
+              <a-button class="create-task-btn" @click="handleCreateSamplingRule">
+                <experiment-outlined />
+                新建抽检规则
+              </a-button>
+              <a-button type="primary" class="create-task-btn" @click="handleCreateTask">
+                <plus-outlined />
+                新建质检任务
+              </a-button>
+            </a-space>
           </div>
         </div>
       </div>
@@ -243,7 +249,7 @@
       <a-modal
         v-model:open="createTaskModalVisible"
         title="新建质检任务"
-        width="800px"
+        width="900px"
         :closable="false"
         :footer="null"
         @cancel="handleCreateCancel"
@@ -338,7 +344,7 @@
         </a-form>
 
         <!-- 步骤 2：选择质检数据 -->
-        <div v-else class="step-2-content">
+        <div v-else-if="createTaskStep === 2" class="step-2-content">
           <!-- 录音类型选择 -->
           <a-form layout="horizontal" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
             <a-form-item label="录音类型">
@@ -376,23 +382,8 @@
             请选择需要质检的已接通通话范围
           </div>
 
-          <!-- 质检范围选择 - 手动上传录音时不显示 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="quality-scope-section">
-            <a-form layout="horizontal" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
-              <a-form-item label="质检范围">
-                <template #label>
-                  <span class="required-label">*</span> 质检范围
-                </template>
-                <a-radio-group v-model:value="createTaskForm.qualityScope" @change="handleQualityScopeChange">
-                  <a-radio value="full">全量质检</a-radio>
-                  <a-radio value="sampling">抽检</a-radio>
-                </a-radio-group>
-              </a-form-item>
-            </a-form>
-          </div>
-
-          <!-- 条件筛选区域 - 手动上传录音时不显示，抽检模式下隐藏 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'full'" class="condition-area">
+          <!-- 条件筛选区域 - 手动上传录音时不显示 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="condition-area">
             <!-- 条件表达式列表 -->
             <div class="expression-list-inline">
               <div
@@ -486,8 +477,8 @@
             </div>
           </div>
 
-          <!-- 查询数据按钮和结果 - 手动上传录音时不显示，抽检模式下隐藏 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'full'" class="query-section">
+          <!-- 查询数据按钮和结果 - 手动上传录音时不显示 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="query-section">
             <a-button type="link" @click="handleQueryData">
               <search-outlined />
               查询数据
@@ -497,8 +488,8 @@
             </span>
           </div>
 
-          <!-- 自动追加开关 - 手动上传录音时不显示，抽检模式下隐藏 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'full'" class="auto-append-section">
+          <!-- 自动追加开关 - 手动上传录音时不显示 -->
+          <div v-if="createTaskForm.recordType !== 'manual_upload'" class="auto-append-section">
             <div class="switch-row">
               <span class="switch-label">新产生的数据自动追加</span>
               <a-switch v-model:checked="createTaskForm.autoAppend" class="auto-append-switch" />
@@ -508,83 +499,7 @@
             </div>
           </div>
 
-          <!-- 抽检模式配置区域 -->
-          <div v-if="createTaskForm.recordType !== 'manual_upload' && createTaskForm.qualityScope === 'sampling'" class="sampling-config-section">
-            <!-- 抽检条数 -->
-            <a-form layout="horizontal" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
-              <a-form-item label="抽检条数">
-                <template #label>
-                  <span class="required-label">*</span> 抽检条数
-                </template>
-                <a-input-number
-                  v-model:value="createTaskForm.samplingCount"
-                  :min="1"
-                  :precision="0"
-                  style="width: 200px"
-                  placeholder="请输入抽检条数"
-                />
-              </a-form-item>
-            </a-form>
-
-            <!-- 抽检规则 -->
-            <div class="sampling-rules-section">
-              <div class="sampling-rules-header">
-                <span class="sampling-rules-title">抽检规则</span>
-                <a-button type="link" @click="handleAddSamplingRule">
-                  <plus-outlined />
-                  添加规则
-                </a-button>
-              </div>
-              <a-table
-                :columns="samplingRuleColumns"
-                :data-source="samplingRules"
-                :pagination="false"
-                row-key="id"
-                size="small"
-                bordered
-              >
-                <template #bodyCell="{ column, record, index }">
-                  <template v-if="column.key === 'index'">
-                    {{ index + 1 }}
-                  </template>
-                  <template v-else-if="column.key === 'rule'">
-                    <a-button type="link" size="small" @click="handleOpenSamplingRuleConfig(record)">
-                      <setting-outlined />
-                      配置规则
-                    </a-button>
-                    <span v-if="record.conditions && record.conditions.length > 0 && record.conditions[0].fieldType" class="rule-configured-tag">
-                      <check-circle-outlined /> 已配置
-                    </span>
-                  </template>
-                  <template v-else-if="column.key === 'ratio'">
-                    <a-input-number
-                      v-model:value="record.ratio"
-                      :min="0"
-                      :max="100"
-                      :precision="0"
-                      style="width: 80px"
-                      placeholder="占比"
-                      @change="handleRatioChange"
-                    /> %
-                  </template>
-                  <template v-else-if="column.key === 'count'">
-                    {{ samplingCountByRatio(record.ratio) }}
-                  </template>
-                  <template v-else-if="column.key === 'action'">
-                    <a-button type="link" size="small" danger @click="handleDeleteSamplingRule(index)">
-                      删除
-                    </a-button>
-                  </template>
-                </template>
-              </a-table>
-              <div class="ratio-summary" :class="{ 'ratio-error': !isRatioValid }">
-                占比合计：{{ totalRatio }}% {{ isRatioValid ? '' : '（占比必须等于100%）' }}
-              </div>
-            </div>
-
-          </div>
-
-          <!-- 去重规则 - 两种质检范围模式下都显示 -->
+          <!-- 去重规则 -->
           <div v-if="createTaskForm.recordType !== 'manual_upload'" class="dedup-section">
             <a-checkbox v-model:checked="createTaskForm.dedupEnabled" @change="handleDedupChange">
               启用去重规则
@@ -608,124 +523,534 @@
           </div>
         </div>
 
-        <!-- 抽检规则配置弹窗 -->
-        <a-modal
-          v-model:open="samplingRuleModalVisible"
-          title="配置抽检规则"
-          width="700px"
-          :closable="false"
-          @cancel="handleSamplingRuleCancel"
-        >
-          <div class="sampling-rule-modal-content">
-            <div class="expression-list-inline">
-              <div
-                v-for="(expression, index) in currentSamplingRuleConditions"
-                :key="expression.id"
-                class="expression-item-inline"
-              >
-                <div class="expression-content">
-                  <div class="condition-list-inline">
-                    <div
-                      v-for="(condition, cIndex) in expression.conditions"
-                      :key="condition.id"
-                      class="condition-item-inline"
-                    >
-                      <a-select
-                        v-model:value="condition.fieldType"
-                        style="width: 140px"
-                        placeholder="字段类型"
-                      >
-                        <a-select-option value="callTime">通话时间</a-select-option>
-                        <a-select-option value="callDuration">通话时长</a-select-option>
-                        <a-select-option value="intent">客户意图</a-select-option>
-                        <a-select-option value="agent">坐席工号</a-select-option>
-                      </a-select>
-                      <a-select
-                        v-model:value="condition.operator"
-                        style="width: 100px"
-                        placeholder="操作符"
-                      >
-                        <a-select-option value="=">=</a-select-option>
-                        <a-select-option value=">">&gt;</a-select-option>
-                        <a-select-option value="<">&lt;</a-select-option>
-                        <a-select-option value="contains">包含</a-select-option>
-                        <a-select-option v-if="condition.fieldType === 'callTime' || condition.fieldType === 'callDuration'" value="between">介于</a-select-option>
-                      </a-select>
-                      <a-input
-                        v-if="condition.operator !== 'between'"
-                        v-model:value="condition.value"
-                        style="width: 180px"
-                        placeholder="请输入值"
-                      />
-                      <div v-else class="between-inputs">
-                        <a-input
-                          v-model:value="condition.value"
-                          style="width: 80px"
-                          placeholder="最小值"
-                        />
-                        <span class="between-separator">~</span>
-                        <a-input
-                          v-model:value="condition.value2"
-                          style="width: 80px"
-                          placeholder="最大值"
-                        />
-                      </div>
-                      <a-button
-                        v-if="expression.conditions.length > 1"
-                        type="text"
-                        danger
-                        @click="handleDeleteSamplingCondition(index, cIndex)"
-                        class="delete-condition-btn"
-                      >
-                        <minus-circle-outlined />
-                      </a-button>
-                      <a-button
-                        v-if="cIndex === expression.conditions.length - 1"
-                        type="text"
-                        @click="handleAddSamplingCondition(index)"
-                        class="add-condition-btn-inline"
-                      >
-                        <plus-circle-outlined />
-                      </a-button>
-                      <span v-if="cIndex < expression.conditions.length - 1" class="condition-connector-inline">且</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="expression-footer" v-if="currentSamplingRuleConditions.length > 1">
-                  <a-button type="text" danger @click="handleDeleteSamplingExpression(index)">
-                    <delete-outlined />
-                    删除表达式
-                  </a-button>
-                </div>
-              </div>
-            </div>
-            <div class="add-expression-btn-wrapper-inline">
-              <a-button @click="handleAddSamplingExpression" block dashed>
-                <plus-outlined />
-                或条件
-              </a-button>
-            </div>
-          </div>
-          <template #footer>
-            <a-space>
-              <a-button @click="handleSamplingRuleCancel">取消</a-button>
-              <a-button type="primary" @click="handleSamplingRuleConfirm">确定</a-button>
-            </a-space>
-          </template>
-        </a-modal>
-
         <div class="modal-footer">
           <a-space>
             <a-button @click="handleCreateCancel">取消</a-button>
-            <a-button v-if="createTaskStep === 1" @click="handleCreateNext">
-              下一步
-            </a-button>
-            <a-button v-else @click="handleCreatePrev">
+            <a-button
+              v-if="createTaskStep > 1"
+              @click="handleCreatePrev"
+            >
               上一步
             </a-button>
-            <a-button v-if="createTaskStep === 2" type="primary" @click="handleCreateConfirm">
+            <a-button
+              v-if="isLastStep"
+              type="primary"
+              @click="handleCreateConfirm"
+            >
               完成
             </a-button>
+            <a-button
+              v-else
+              type="primary"
+              @click="handleCreateNext"
+            >
+              下一步
+            </a-button>
+          </a-space>
+        </div>
+      </a-modal>
+
+      <!-- 新建抽检规则弹窗 -->
+      <a-modal
+        v-model:open="samplingRuleModalVisible"
+        title="新建抽检规则"
+        width="900px"
+        :closable="false"
+        :footer="null"
+        @cancel="handleSamplingRuleCancel"
+      >
+        <!-- 步骤条 -->
+        <a-steps :current="samplingRuleStep - 1" class="modal-steps">
+          <a-step title="数据范围" />
+          <a-step title="抽样维度" />
+          <a-step title="配额上限" />
+          <a-step title="调度计划" />
+          <a-step title="命名保存" />
+        </a-steps>
+
+        <!-- 步骤 1：选择数据范围 -->
+        <div v-if="samplingRuleStep === 1" class="step-sampling-content">
+          <div class="step-section-title">选择数据范围</div>
+          <div class="step-section-desc">确定本次抽检的数据源，支持叠加筛选条件</div>
+          <div class="data-range-filters">
+            <div
+              v-for="(filter, index) in dataRangeFilters"
+              :key="filter.id"
+              class="filter-row"
+            >
+              <a-select
+                v-model:value="filter.field"
+                style="width: 160px"
+                placeholder="选择字段"
+                @change="handleFilterFieldChange(filter)"
+              >
+                <a-select-option value="timeRange">时间范围</a-select-option>
+                <a-select-option value="businessType">业务类型</a-select-option>
+                <a-select-option value="callDirection">呼叫方向</a-select-option>
+                <a-select-option value="customTag">自定义标签</a-select-option>
+              </a-select>
+
+              <template v-if="filter.field === 'timeRange'">
+                <a-range-picker
+                  v-model:value="filter.value"
+                  style="width: 280px"
+                  format="YYYY-MM-DD"
+                  :placeholder="['开始日期', '结束日期']"
+                />
+              </template>
+              <template v-else-if="filter.field === 'businessType'">
+                <a-select
+                  v-model:value="filter.value"
+                  style="width: 200px"
+                  placeholder="选择业务类型"
+                  mode="multiple"
+                  :max-tag-count="2"
+                >
+                  <a-select-option value="credit_card">信用卡</a-select-option>
+                  <a-select-option value="loan">贷款</a-select-option>
+                  <a-select-option value="finance">理财</a-select-option>
+                  <a-select-option value="deposit">存款</a-select-option>
+                  <a-select-option value="insurance">保险</a-select-option>
+                </a-select>
+              </template>
+              <template v-else-if="filter.field === 'callDirection'">
+                <a-select
+                  v-model:value="filter.value"
+                  style="width: 160px"
+                  placeholder="选择方向"
+                >
+                  <a-select-option value="outbound">外呼</a-select-option>
+                  <a-select-option value="inbound">呼入</a-select-option>
+                </a-select>
+              </template>
+              <template v-else-if="filter.field === 'customTag'">
+                <a-input
+                  v-model:value="filter.value"
+                  style="width: 200px"
+                  placeholder="输入标签名称"
+                />
+              </template>
+
+              <a-button
+                type="text"
+                danger
+                @click="handleDeleteDataRangeFilter(index)"
+                class="delete-filter-btn"
+              >
+                <minus-circle-outlined />
+              </a-button>
+            </div>
+          </div>
+          <a-button
+            type="dashed"
+            block
+            @click="handleAddDataRangeFilter"
+            class="add-filter-btn"
+          >
+            <plus-outlined />
+            添加筛选条件
+          </a-button>
+          <div class="filter-preview" v-if="dataRangeFilters.length > 0">
+            <span class="filter-preview-label">数据预览：</span>
+            <a-button type="link" size="small" @click="handlePreviewData">
+              <search-outlined />
+              查询符合条件的数据量
+            </a-button>
+            <span v-if="dataPreviewCount !== null" class="filter-preview-count">
+              共 <strong>{{ dataPreviewCount }}</strong> 条
+            </span>
+          </div>
+        </div>
+
+        <!-- 步骤 2：配置抽样维度 -->
+        <div v-else-if="samplingRuleStep === 2" class="step-sampling-content">
+          <div class="step-section-title">配置抽样维度</div>
+          <div class="step-section-desc">按维度依次抽选，后置维度在前置结果基础上抽样</div>
+
+          <div class="dimension-list">
+            <div
+              v-for="(dimension, dIndex) in samplingDimensions"
+              :key="dimension.id"
+              class="dimension-card"
+            >
+              <div class="dimension-card-header">
+                <div class="dimension-card-title">
+                  <span class="dimension-index">{{ dIndex + 1 }}</span>
+                  <a-select
+                    v-model:value="dimension.type"
+                    style="width: 140px"
+                    placeholder="维度类型"
+                    @change="handleDimensionTypeChange(dimension)"
+                  >
+                    <a-select-option value="scene">按场景</a-select-option>
+                    <a-select-option value="agent">按坐席</a-select-option>
+                    <a-select-option value="callDuration">按通话时长</a-select-option>
+                    <a-select-option value="custom">自定义</a-select-option>
+                  </a-select>
+                  <a-input
+                    v-if="dimension.type === 'custom'"
+                    v-model:value="dimension.customLabel"
+                    style="width: 120px; margin-left: 8px"
+                    placeholder="维度名称"
+                  />
+                </div>
+                <div class="dimension-card-actions">
+                  <span class="mutual-exclusive-label">互斥</span>
+                  <a-switch
+                    v-model:checked="dimension.mutualExclusive"
+                    size="small"
+                    class="mutual-exclusive-switch"
+                  />
+                  <a-button
+                    v-if="samplingDimensions.length > 1"
+                    type="text"
+                    danger
+                    size="small"
+                    @click="handleDeleteDimension(dIndex)"
+                  >
+                    <delete-outlined />
+                  </a-button>
+                </div>
+              </div>
+
+              <div class="dimension-card-body">
+                <!-- 按场景 -->
+                <template v-if="dimension.type === 'scene'">
+                  <div class="dimension-config-label">抽样方式：比例抽取</div>
+                  <a-table
+                    :columns="sceneColumns"
+                    :data-source="dimension.sceneItems"
+                    :pagination="false"
+                    row-key="id"
+                    size="small"
+                    bordered
+                    class="dimension-table"
+                  >
+                    <template #bodyCell="{ column, record: item, index: itemIndex }">
+                      <template v-if="column.key === 'sceneName'">
+                        <a-input v-model:value="item.sceneName" placeholder="场景名称" size="small" />
+                      </template>
+                      <template v-else-if="column.key === 'ratio'">
+                        <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'action'">
+                        <a-button type="link" size="small" danger @click="handleDeleteSceneItem(dIndex, itemIndex)">删除</a-button>
+                      </template>
+                    </template>
+                  </a-table>
+                  <div class="dimension-table-footer">
+                    <a-button type="link" size="small" @click="handleAddSceneItem(dIndex)">
+                      <plus-outlined /> 添加场景
+                    </a-button>
+                    <span class="scene-ratio-total" :class="{ 'ratio-error': getDimensionSceneRatio(dIndex) > 100 }">
+                      合计：{{ getDimensionSceneRatio(dIndex) }}%
+                    </span>
+                  </div>
+                  <div class="dimension-option-row">
+                    <a-checkbox v-model:checked="dimension.sceneAutoRemaining">
+                      剩余未分配比例自动归入「其他」
+                    </a-checkbox>
+                  </div>
+                </template>
+
+                <!-- 按坐席 -->
+                <template v-else-if="dimension.type === 'agent'">
+                  <div class="dimension-config-label">
+                    抽样方式：
+                    <a-radio-group v-model:value="dimension.samplingMethod" size="small" class="inline-radio-group">
+                      <a-radio value="count">数量抽取</a-radio>
+                    </a-radio-group>
+                  </div>
+                  <a-radio-group v-model:value="dimension.agentMode" size="small" class="agent-mode-radio">
+                    <a-radio value="list">按坐席列表</a-radio>
+                    <a-radio value="group">按坐席分组</a-radio>
+                  </a-radio-group>
+
+                  <template v-if="dimension.agentMode === 'list'">
+                    <a-table
+                      :columns="agentListColumns"
+                      :data-source="dimension.agentList"
+                      :pagination="false"
+                      row-key="id"
+                      size="small"
+                      bordered
+                      class="dimension-table"
+                    >
+                      <template #bodyCell="{ column, record: item, index: itemIndex }">
+                        <template v-if="column.key === 'agentId'">
+                          <a-input v-model:value="item.agentId" placeholder="坐席工号" size="small" />
+                        </template>
+                        <template v-else-if="column.key === 'count'">
+                          <a-input-number v-model:value="item.count" :min="1" :precision="0" size="small" style="width: 80px" />
+                        </template>
+                        <template v-else-if="column.key === 'action'">
+                          <a-button type="link" size="small" danger @click="handleDeleteAgentItem(dIndex, itemIndex)">删除</a-button>
+                        </template>
+                      </template>
+                    </a-table>
+                    <a-button type="link" size="small" @click="handleAddAgentItem(dIndex)">
+                      <plus-outlined /> 添加坐席
+                    </a-button>
+                  </template>
+
+                  <template v-else>
+                    <a-table
+                      :columns="agentGroupColumns"
+                      :data-source="dimension.agentGroups"
+                      :pagination="false"
+                      row-key="id"
+                      size="small"
+                      bordered
+                      class="dimension-table"
+                    >
+                      <template #bodyCell="{ column, record: item, index: itemIndex }">
+                        <template v-if="column.key === 'groupName'">
+                          <a-input v-model:value="item.groupName" placeholder="分组名称（如：初级客服）" size="small" />
+                        </template>
+                        <template v-else-if="column.key === 'count'">
+                          <a-input-number v-model:value="item.count" :min="1" :precision="0" size="small" style="width: 80px" /> 条/人
+                        </template>
+                        <template v-else-if="column.key === 'action'">
+                          <a-button type="link" size="small" danger @click="handleDeleteAgentGroup(dIndex, itemIndex)">删除</a-button>
+                        </template>
+                      </template>
+                    </a-table>
+                    <a-button type="link" size="small" @click="handleAddAgentGroup(dIndex)">
+                      <plus-outlined /> 添加分组
+                    </a-button>
+                  </template>
+                </template>
+
+                <!-- 按通话时长 -->
+                <template v-else-if="dimension.type === 'callDuration'">
+                  <div class="dimension-config-label">抽样方式：比例抽取（按区间分段）</div>
+                  <a-table
+                    :columns="durationColumns"
+                    :data-source="dimension.durationIntervals"
+                    :pagination="false"
+                    row-key="id"
+                    size="small"
+                    bordered
+                    class="dimension-table"
+                  >
+                    <template #bodyCell="{ column, record: item, index: itemIndex }">
+                      <template v-if="column.key === 'range'">
+                        <a-input-number v-model:value="item.minDuration" :min="0" :precision="0" size="small" style="width: 80px" placeholder="秒" />
+                        <span class="range-separator">~</span>
+                        <a-input-number v-model:value="item.maxDuration" :min="0" :precision="0" size="small" style="width: 80px" placeholder="秒" />
+                        <span class="range-unit">秒</span>
+                      </template>
+                      <template v-else-if="column.key === 'ratio'">
+                        <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'action'">
+                        <a-button type="link" size="small" danger @click="handleDeleteDurationInterval(dIndex, itemIndex)">删除</a-button>
+                      </template>
+                    </template>
+                  </a-table>
+                  <div class="dimension-table-footer">
+                    <a-button type="link" size="small" @click="handleAddDurationInterval(dIndex)">
+                      <plus-outlined /> 添加区间
+                    </a-button>
+                    <span class="scene-ratio-total" :class="{ 'ratio-error': getDimensionDurationRatio(dIndex) > 100 }">
+                      合计：{{ getDimensionDurationRatio(dIndex) }}%
+                    </span>
+                  </div>
+                  <div class="duration-chart-preview" v-if="dimension.durationIntervals.length > 0">
+                    <div class="chart-bar-wrapper">
+                      <div
+                        v-for="(item, idx) in dimension.durationIntervals"
+                        :key="item.id"
+                        class="chart-bar-segment"
+                        :style="{ width: item.ratio + '%', backgroundColor: chartColors[idx % chartColors.length] }"
+                      >
+                        <span v-if="item.ratio >= 10">{{ item.ratio }}%</span>
+                      </div>
+                    </div>
+                    <div class="chart-legend">
+                      <span
+                        v-for="(item, idx) in dimension.durationIntervals"
+                        :key="item.id"
+                        class="chart-legend-item"
+                      >
+                        <span class="chart-legend-dot" :style="{ backgroundColor: chartColors[idx % chartColors.length] }"></span>
+                        {{ item.minDuration || 0 }}s~{{ item.maxDuration || '∞' }}s
+                      </span>
+                    </div>
+                  </div>
+                </template>
+
+                <!-- 自定义维度 -->
+                <template v-else-if="dimension.type === 'custom'">
+                  <div class="dimension-config-label">
+                    抽样方式：
+                    <a-radio-group v-model:value="dimension.samplingMethod" size="small" class="inline-radio-group">
+                      <a-radio value="ratio">比例抽取</a-radio>
+                      <a-radio value="count">数量抽取</a-radio>
+                    </a-radio-group>
+                  </div>
+                  <div class="custom-dimension-placeholder">
+                    <a-input placeholder="自定义维度配置（预留扩展）" disabled />
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+
+          <a-button type="dashed" block @click="handleAddDimension" class="add-dimension-btn">
+            <plus-outlined />
+            添加抽样维度
+          </a-button>
+
+          <div class="estimated-total">
+            <span class="estimated-label">预计抽检总数：</span>
+            <span class="estimated-value">{{ estimatedSamplingTotal }}</span>
+            <span v-if="globalQuotas.taskTotalMax && estimatedSamplingTotal > globalQuotas.taskTotalMax" class="estimated-warning">
+              ⚠ 已超过任务上限 {{ globalQuotas.taskTotalMax }} 条
+            </span>
+          </div>
+        </div>
+
+        <!-- 步骤 3：设置全局配额与上限 -->
+        <div v-else-if="samplingRuleStep === 3" class="step-sampling-content">
+          <div class="step-section-title">设置全局配额与上限</div>
+          <div class="step-section-desc">配置质检员工作量和任务规模限制</div>
+
+          <a-form layout="horizontal" :label-col="{ span: 8 }" :wrapper-col="{ span: 14 }" class="quota-form">
+            <a-form-item label="每人每日最大处理量">
+              <a-input-number v-model:value="globalQuotas.inspectorDailyMax" :min="1" :precision="0" style="width: 200px" placeholder="如 100" />
+              <span class="quota-unit">条/人/日</span>
+              <div class="quota-hint">系统自动约束任务分配时每位质检员的工作量上限</div>
+            </a-form-item>
+
+            <a-form-item label="单次任务总上限">
+              <a-input-number v-model:value="globalQuotas.taskTotalMax" :min="1" :precision="0" style="width: 200px" placeholder="如 5000" />
+              <span class="quota-unit">条</span>
+              <div class="quota-hint">防止任务过载，抽检总数不得超过此上限</div>
+              <div v-if="globalQuotas.taskTotalMax && estimatedSamplingTotal > globalQuotas.taskTotalMax" class="quota-error">
+                当前预计抽检 {{ estimatedSamplingTotal }} 条，已超过上限
+              </div>
+            </a-form-item>
+
+            <a-form-item label="每维度最小命中量">
+              <a-input-number v-model:value="globalQuotas.dimensionMinCount" :min="0" :precision="0" style="width: 200px" placeholder="如 3" />
+              <span class="quota-unit">条（可选）</span>
+              <div class="quota-hint">避免小样本被遗漏，每个抽样维度至少命中此数量</div>
+            </a-form-item>
+          </a-form>
+        </div>
+
+        <!-- 步骤 4：设置调度计划 -->
+        <div v-else-if="samplingRuleStep === 4" class="step-sampling-content">
+          <div class="step-section-title">设置调度计划</div>
+          <div class="step-section-desc">配置抽检任务的自动执行计划</div>
+
+          <a-form layout="horizontal" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }" class="schedule-form">
+            <a-form-item label="执行频率">
+              <a-radio-group v-model:value="scheduleConfig.frequency">
+                <a-radio value="daily">每日</a-radio>
+                <a-radio value="weekly">每周</a-radio>
+                <a-radio value="monthly">每月</a-radio>
+              </a-radio-group>
+            </a-form-item>
+
+            <a-form-item v-if="scheduleConfig.frequency === 'weekly'" label="执行日期">
+              <a-checkbox-group v-model:value="scheduleConfig.weekDays">
+                <a-checkbox :value="1">周一</a-checkbox>
+                <a-checkbox :value="2">周二</a-checkbox>
+                <a-checkbox :value="3">周三</a-checkbox>
+                <a-checkbox :value="4">周四</a-checkbox>
+                <a-checkbox :value="5">周五</a-checkbox>
+                <a-checkbox :value="6">周六</a-checkbox>
+                <a-checkbox :value="0">周日</a-checkbox>
+              </a-checkbox-group>
+            </a-form-item>
+
+            <a-form-item v-if="scheduleConfig.frequency === 'monthly'" label="执行日期">
+              <a-select
+                v-model:value="scheduleConfig.monthDays"
+                mode="multiple"
+                style="width: 100%"
+                placeholder="选择每月几号执行"
+                :max-tag-count="5"
+              >
+                <a-select-option v-for="d in 28" :key="d" :value="d">{{ d }}号</a-select-option>
+              </a-select>
+            </a-form-item>
+
+            <a-form-item label="执行时间">
+              <a-time-picker v-model:value="scheduleConfig.executeTimeValue" format="HH:mm" style="width: 200px" :placeholder="'选择执行时间'" />
+            </a-form-item>
+
+            <a-form-item label="生效时间">
+              <div class="schedule-date-range">
+                <a-date-picker v-model:value="scheduleConfig.startDateValue" format="YYYY-MM-DD" placeholder="开始日期" style="width: 160px" />
+                <span class="date-separator">至</span>
+                <a-date-picker v-if="!scheduleConfig.permanent" v-model:value="scheduleConfig.endDateValue" format="YYYY-MM-DD" placeholder="结束日期" style="width: 160px" />
+                <a-checkbox v-model:checked="scheduleConfig.permanent" style="margin-left: 12px">永久有效</a-checkbox>
+              </div>
+            </a-form-item>
+
+            <a-form-item label="数据时间偏移">
+              <div class="offset-row">
+                <span class="offset-prefix">固定抓取</span>
+                <a-input-number v-model:value="scheduleConfig.dataOffset" :min="0" :max="30" :precision="0" style="width: 80px" />
+                <span class="offset-suffix">日前的数据</span>
+              </div>
+              <div class="offset-preview">{{ scheduleDescription }}</div>
+            </a-form-item>
+          </a-form>
+        </div>
+
+        <!-- 步骤 5：命名与保存 -->
+        <div v-else-if="samplingRuleStep === 5" class="step-sampling-content">
+          <div class="step-section-title">命名与保存</div>
+          <div class="step-section-desc">确认策略配置并保存</div>
+
+          <a-form layout="horizontal" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }" class="naming-form">
+            <a-form-item label="策略名称">
+              <a-input v-model:value="samplingRuleForm.taskName" placeholder="请输入策略名称" :maxlength="50" show-count />
+            </a-form-item>
+            <a-form-item label="策略描述">
+              <a-textarea v-model:value="samplingRuleForm.taskDescription" placeholder="请输入策略描述" :rows="3" :maxlength="200" show-count />
+            </a-form-item>
+            <a-form-item label="启用状态">
+              <a-switch v-model:checked="samplingRuleForm.strategyEnabled" />
+              <span class="strategy-status-text">{{ samplingRuleForm.strategyEnabled ? '启用' : '停用' }}</span>
+            </a-form-item>
+          </a-form>
+
+          <!-- 策略概览卡片 -->
+          <div class="strategy-overview">
+            <div class="overview-title">策略概览</div>
+            <div class="overview-grid">
+              <div class="overview-item">
+                <span class="overview-label">筛选条件</span>
+                <span class="overview-value">{{ dataRangeFilters.filter(f => f.field).length }} 个条件</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">抽样维度</span>
+                <span class="overview-value">{{ samplingDimensions.length }} 个维度</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">预计抽检量</span>
+                <span class="overview-value">{{ estimatedSamplingTotal }} 条</span>
+              </div>
+              <div class="overview-item">
+                <span class="overview-label">执行频率</span>
+                <span class="overview-value">{{ scheduleDescription }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="modal-footer">
+          <a-space>
+            <a-button @click="handleSamplingRuleCancel">取消</a-button>
+            <a-button v-if="samplingRuleStep > 1" @click="handleSamplingRulePrev">上一步</a-button>
+            <a-button v-if="samplingRuleStep === 5" type="primary" @click="handleSamplingRuleConfirm">完成</a-button>
+            <a-button v-else type="primary" @click="handleSamplingRuleNext">下一步</a-button>
           </a-space>
         </div>
       </a-modal>
@@ -812,6 +1137,7 @@ import {
   MinusCircleOutlined,
   SettingOutlined,
   CheckCircleOutlined,
+  ExperimentOutlined,
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
@@ -825,7 +1151,7 @@ interface QualityTaskItem {
   qualityObject: string
   status: 'running' | 'paused' | 'completed' | 'pending'
   auditStatus: string
-  auditor: string
+  auditor: string | string[]
   creator: string
   createdAt: string
   completedAt?: string
@@ -858,6 +1184,7 @@ interface CreateTaskForm {
   samplingCount: number | null
   dedupEnabled: boolean
   dedupType: 'global' | 'model'
+  strategyEnabled: boolean
 }
 
 interface EditTaskForm {
@@ -884,6 +1211,72 @@ interface SamplingRule {
   id: number
   conditions: ConditionExpression[]
   ratio: number
+}
+
+// ============ 抽检策略相关类型定义 ============
+interface DataRangeFilter {
+  id: number
+  field: string
+  operator: string
+  value: string
+  value2?: string
+}
+
+interface SceneDimensionItem {
+  id: number
+  sceneName: string
+  ratio: number
+}
+
+interface AgentDimensionItem {
+  id: number
+  agentId: string
+  count: number
+}
+
+interface AgentGroupItem {
+  id: number
+  groupName: string
+  count: number
+}
+
+interface DurationInterval {
+  id: number
+  minDuration: number | null
+  maxDuration: number | null
+  ratio: number
+}
+
+interface SamplingDimension {
+  id: number
+  type: 'scene' | 'agent' | 'callDuration' | 'custom'
+  samplingMethod: 'ratio' | 'count'
+  mutualExclusive: boolean
+  sceneItems: SceneDimensionItem[]
+  sceneAutoRemaining: boolean
+  agentMode: 'list' | 'group'
+  agentList: AgentDimensionItem[]
+  agentGroups: AgentGroupItem[]
+  durationIntervals: DurationInterval[]
+  customLabel: string
+}
+
+interface GlobalQuotas {
+  inspectorDailyMax: number | null
+  taskTotalMax: number | null
+  dimensionMinCount: number | null
+}
+
+interface ScheduleConfig {
+  frequency: 'daily' | 'weekly' | 'monthly'
+  weekDays: number[]
+  monthDays: number[]
+  executeTime: string
+  startDate: string
+  endDate: string | null
+  permanent: boolean
+  dataOffset: number
+  [key: string]: any
 }
 
 // ============ 表格列定义 ============
@@ -951,6 +1344,20 @@ const createTaskForm = reactive<CreateTaskForm>({
   samplingCount: null,
   dedupEnabled: false,
   dedupType: 'global',
+  strategyEnabled: true,
+})
+
+// 抽检规则弹窗相关
+const samplingRuleModalVisible = ref(false)
+const samplingRuleStep = ref(1)
+const samplingRuleForm = reactive({
+  taskType: 'ai' as 'ai' | 'manual',
+  taskName: '',
+  taskDescription: '',
+  qualityModel: '',
+  qualityObject: '',
+  inspector: [] as string[],
+  strategyEnabled: true,
 })
 
 // 编辑任务弹窗相关
@@ -1001,11 +1408,6 @@ const samplingRuleColumns = [
   { title: '操作', key: 'action', width: 80, align: 'center' as const },
 ]
 
-// 抽检规则配置弹窗相关
-const samplingRuleModalVisible = ref(false)
-const currentSamplingRuleIndex = ref(-1)
-const currentSamplingRuleConditions = ref<ConditionExpression[]>([])
-
 // 占比合计
 const totalRatio = computed(() => {
   return samplingRules.value.reduce((sum, rule) => sum + (rule.ratio || 0), 0)
@@ -1021,6 +1423,125 @@ const samplingCountByRatio = (ratio: number) => {
   if (!createTaskForm.samplingCount || !ratio) return 0
   return Math.floor(createTaskForm.samplingCount * ratio / 100)
 }
+
+// ============ 抽检策略 - 数据范围筛选 ============
+const dataRangeFilters = ref<DataRangeFilter[]>([
+  { id: 1, field: 'timeRange', operator: 'between', value: '' },
+])
+let dataRangeFilterIdCounter = 1
+const dataPreviewCount = ref<number | null>(null)
+
+// ============ 抽检策略 - 抽样维度 ============
+let dimensionIdCounter = 1
+let sceneItemIdCounter = 1
+let agentItemIdCounter = 1
+let agentGroupIdCounter = 1
+let durationIntervalIdCounter = 1
+
+const samplingDimensions = ref<SamplingDimension[]>([
+  {
+    id: 1,
+    type: 'scene',
+    samplingMethod: 'ratio',
+    mutualExclusive: true,
+    sceneItems: [{ id: 1, sceneName: '', ratio: 0 }],
+    sceneAutoRemaining: true,
+    agentMode: 'list',
+    agentList: [{ id: 1, agentId: '', count: 1 }],
+    agentGroups: [{ id: 1, groupName: '', count: 1 }],
+    durationIntervals: [{ id: 1, minDuration: null, maxDuration: null, ratio: 0 }],
+    customLabel: '',
+  },
+])
+
+const chartColors = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#13c2c2', '#eb2f96', '#fa8c16']
+
+// 按场景表格列
+const sceneColumns = [
+  { title: '场景名称', key: 'sceneName', width: 200 },
+  { title: '比例', key: 'ratio', width: 140 },
+  { title: '操作', key: 'action', width: 80, align: 'center' as const },
+]
+
+// 按坐席列表表格列
+const agentListColumns = [
+  { title: '坐席工号', key: 'agentId', width: 200 },
+  { title: '抽取条数', key: 'count', width: 140 },
+  { title: '操作', key: 'action', width: 80, align: 'center' as const },
+]
+
+// 按坐席分组表格列
+const agentGroupColumns = [
+  { title: '分组名称', key: 'groupName', width: 200 },
+  { title: '每人抽取', key: 'count', width: 160 },
+  { title: '操作', key: 'action', width: 80, align: 'center' as const },
+]
+
+// 按通话时长表格列
+const durationColumns = [
+  { title: '时长区间', key: 'range', width: 240 },
+  { title: '比例', key: 'ratio', width: 140 },
+  { title: '操作', key: 'action', width: 80, align: 'center' as const },
+]
+
+// ============ 抽检策略 - 全局配额 ============
+const globalQuotas = reactive<GlobalQuotas>({
+  inspectorDailyMax: null,
+  taskTotalMax: null,
+  dimensionMinCount: null,
+})
+
+// ============ 抽检策略 - 调度计划 ============
+const scheduleConfig = reactive<ScheduleConfig>({
+  frequency: 'daily',
+  weekDays: [],
+  monthDays: [],
+  executeTime: '',
+  startDate: '',
+  endDate: null,
+  permanent: true,
+  dataOffset: 1,
+  executeTimeValue: null as any,
+  startDateValue: null as any,
+  endDateValue: null as any,
+})
+
+// ============ 抽检策略 - 计算属性 ============
+const isLastStep = computed(() => {
+  return createTaskStep.value === 2
+})
+
+const estimatedSamplingTotal = computed(() => {
+  if (samplingDimensions.value.length === 0) return 0
+  const firstDimension = samplingDimensions.value[0]
+  if (firstDimension.type === 'scene') {
+    return firstDimension.sceneItems.reduce((sum, item) => sum + (item.ratio || 0), 0)
+  }
+  if (firstDimension.type === 'agent') {
+    if (firstDimension.agentMode === 'list') {
+      return firstDimension.agentList.reduce((sum, item) => sum + (item.count || 0), 0)
+    }
+    return firstDimension.agentGroups.reduce((sum, item) => sum + (item.count || 0), 0)
+  }
+  if (firstDimension.type === 'callDuration') {
+    return firstDimension.durationIntervals.reduce((sum, item) => sum + (item.ratio || 0), 0)
+  }
+  return 0
+})
+
+const scheduleDescription = computed(() => {
+  const freqMap: Record<string, string> = { daily: '每天', weekly: '每周', monthly: '每月' }
+  let desc = freqMap[scheduleConfig.frequency] || '每天'
+  if (scheduleConfig.frequency === 'weekly' && scheduleConfig.weekDays.length > 0) {
+    const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    desc += ' ' + scheduleConfig.weekDays.map(d => dayNames[d]).join('、')
+  }
+  if (scheduleConfig.frequency === 'monthly' && scheduleConfig.monthDays.length > 0) {
+    desc += ' ' + scheduleConfig.monthDays.map(d => d + '号').join('、')
+  }
+  desc += ` 生成T-${scheduleConfig.dataOffset}日的抽检任务`
+  return desc
+})
 
 // 文件上传方法
 const beforeUpload = (file: UploadFile) => {
@@ -1112,61 +1633,6 @@ const handleAddSamplingRule = () => {
 // 删除抽检规则
 const handleDeleteSamplingRule = (index: number) => {
   samplingRules.value.splice(index, 1)
-}
-
-// 打开抽检规则配置弹窗
-const handleOpenSamplingRuleConfig = (record: SamplingRule) => {
-  currentSamplingRuleIndex.value = samplingRules.value.findIndex(r => r.id === record.id)
-  currentSamplingRuleConditions.value = JSON.parse(JSON.stringify(record.conditions))
-  samplingRuleModalVisible.value = true
-}
-
-// 取消抽检规则配置
-const handleSamplingRuleCancel = () => {
-  samplingRuleModalVisible.value = false
-  currentSamplingRuleIndex.value = -1
-  currentSamplingRuleConditions.value = []
-}
-
-// 确认抽检规则配置
-const handleSamplingRuleConfirm = () => {
-  if (currentSamplingRuleIndex.value >= 0) {
-    samplingRules.value[currentSamplingRuleIndex.value].conditions = JSON.parse(JSON.stringify(currentSamplingRuleConditions.value))
-  }
-  handleSamplingRuleCancel()
-  message.success('规则配置已保存')
-}
-
-// 添加抽检规则条件表达式
-const handleAddSamplingExpression = () => {
-  samplingExpressionIdCounter++
-  currentSamplingRuleConditions.value.push({
-    id: samplingExpressionIdCounter,
-    conditions: [
-      { id: ++samplingConditionIdCounter, fieldType: '', operator: '', value: '' },
-    ],
-  })
-}
-
-// 删除抽检规则条件表达式
-const handleDeleteSamplingExpression = (index: number) => {
-  currentSamplingRuleConditions.value.splice(index, 1)
-}
-
-// 添加抽检规则条件
-const handleAddSamplingCondition = (expressionIndex: number) => {
-  samplingConditionIdCounter++
-  currentSamplingRuleConditions.value[expressionIndex].conditions.push({
-    id: samplingConditionIdCounter,
-    fieldType: '',
-    operator: '',
-    value: '',
-  })
-}
-
-// 删除抽检规则条件
-const handleDeleteSamplingCondition = (expressionIndex: number, conditionIndex: number) => {
-  currentSamplingRuleConditions.value[expressionIndex].conditions.splice(conditionIndex, 1)
 }
 
 // 占比变化处理
@@ -1386,10 +1852,6 @@ const tableData = computed(() => {
     filtered = filtered.filter(item => item.qualityModel === searchForm.qualityModel)
   }
 
-  if (searchForm.auditStatus && activeTab.value === 'ai') {
-    filtered = filtered.filter(item => item.auditStatus === searchForm.auditStatus)
-  }
-
   if (searchForm.inspector && activeTab.value === 'manual') {
     filtered = filtered.filter(item => item.creator === searchForm.inspector)
   }
@@ -1448,21 +1910,89 @@ const handleCreateTask = () => {
   createTaskStep.value = 1
 }
 
+const handleCreateSamplingRule = () => {
+  samplingRuleModalVisible.value = true
+  samplingRuleStep.value = 1
+}
+
+const handleSamplingRuleNext = () => {
+  if (samplingRuleStep.value < 5) {
+    samplingRuleStep.value++
+  }
+}
+
+const handleSamplingRulePrev = () => {
+  if (samplingRuleStep.value > 1) {
+    samplingRuleStep.value--
+  }
+}
+
+const handleSamplingRuleCancel = () => {
+  samplingRuleModalVisible.value = false
+  samplingRuleStep.value = 1
+  Object.assign(samplingRuleForm, {
+    taskType: 'ai',
+    taskName: '',
+    taskDescription: '',
+    qualityModel: '',
+    qualityObject: '',
+    inspector: [],
+    strategyEnabled: true,
+  })
+  dataRangeFilters.value = [{ id: 1, field: 'timeRange', operator: 'between', value: '' }]
+  dataRangeFilterIdCounter = 1
+  dataPreviewCount.value = null
+  samplingDimensions.value = [{
+    id: 1, type: 'scene', samplingMethod: 'ratio', mutualExclusive: true,
+    sceneItems: [{ id: 1, sceneName: '', ratio: 0 }], sceneAutoRemaining: true,
+    agentMode: 'list', agentList: [{ id: 1, agentId: '', count: 1 }],
+    agentGroups: [{ id: 1, groupName: '', count: 1 }],
+    durationIntervals: [{ id: 1, minDuration: null, maxDuration: null, ratio: 0 }],
+    customLabel: '',
+  }]
+  dimensionIdCounter = 1
+  Object.assign(globalQuotas, { inspectorDailyMax: null, taskTotalMax: null, dimensionMinCount: null })
+  Object.assign(scheduleConfig, {
+    frequency: 'daily', weekDays: [], monthDays: [], executeTime: '',
+    startDate: '', endDate: null, permanent: true, dataOffset: 1,
+    executeTimeValue: null, startDateValue: null, endDateValue: null,
+  })
+}
+
+const handleSamplingRuleConfirm = () => {
+  if (samplingDimensions.value.length === 0) {
+    message.error('请至少添加一个抽样维度')
+    return
+  }
+  if (!samplingRuleForm.taskName) {
+    message.error('请输入策略名称')
+    return
+  }
+  console.log('创建抽检规则:', samplingRuleForm)
+  message.success('抽检规则创建成功')
+  handleSamplingRuleCancel()
+}
+
 // 下一步
 const handleCreateNext = async () => {
-  if (!createTaskFormRef.value) return
-  
-  try {
-    await createTaskFormRef.value.validate()
-    createTaskStep.value = 2
-  } catch (error) {
-    console.error('表单验证失败:', error)
+  if (createTaskStep.value === 1) {
+    if (!createTaskFormRef.value) return
+    try {
+      await createTaskFormRef.value.validate()
+      createTaskStep.value = 2
+    } catch (error) {
+      console.error('表单验证失败:', error)
+    }
+  } else {
+    createTaskStep.value++
   }
 }
 
 // 上一步
 const handleCreatePrev = () => {
-  createTaskStep.value = 1
+  if (createTaskStep.value > 1) {
+    createTaskStep.value--
+  }
 }
 
 // 取消创建
@@ -1481,109 +2011,17 @@ const handleCreateCancel = () => {
     inspector: [],
     recordType: 'ai_assisted',
     autoAppend: false,
-    qualityScope: 'full',
-    samplingCount: null,
     dedupEnabled: false,
     dedupType: 'global',
   })
   fileList.value = []
-  // 重置条件表达式
-  conditionExpressions.value = [
-    {
-      id: 1,
-      conditions: [
-        { id: 1, fieldType: '', operator: '', value: '' },
-      ],
-    },
-  ]
-  expressionIdCounter = 1
-  conditionIdCounter = 1
-  queryResult.value = null
-  // 重置抽检规则
-  samplingRules.value = []
-  samplingRuleIdCounter = 0
-  samplingExpressionIdCounter = 0
-  samplingConditionIdCounter = 0
 }
 
 // 确认创建
 const handleCreateConfirm = () => {
-  // 抽检模式校验
-  if (createTaskForm.qualityScope === 'sampling') {
-    // 校验抽检条数
-    if (!createTaskForm.samplingCount || createTaskForm.samplingCount <= 0) {
-      message.error('请输入有效的抽检条数')
-      return
-    }
-
-    // 校验是否有抽检规则
-    if (samplingRules.value.length === 0) {
-      message.error('请至少添加一条抽检规则')
-      return
-    }
-
-    // 校验占比是否等于100%
-    if (!isRatioValid.value) {
-      message.error('抽检规则占比合计必须等于100%')
-      return
-    }
-
-    // 校验每条规则是否已配置
-    const unconfiguredRule = samplingRules.value.find(
-      rule => !rule.conditions || rule.conditions.length === 0 || !rule.conditions[0].conditions[0].fieldType
-    )
-    if (unconfiguredRule) {
-      message.error('请配置所有抽检规则的条件表达式')
-      return
-    }
-
-    // 模拟检查满足条件的质检数据是否达到抽检规则要求的数量
-    checkSamplingDataAvailable()
-  } else {
-    // 全量质检模式直接创建
-    console.log('创建任务:', createTaskForm)
-    message.success('创建成功')
-    handleCreateCancel()
-  }
-}
-
-// 检查抽检数据是否满足要求
-const checkSamplingDataAvailable = () => {
-  // 模拟：随机生成可用数据量（实际应调用后端接口查询）
-  const availableDataCount = Math.floor(Math.random() * 500) + 50
-
-  // 计算各规则需要的数量
-  const ruleRequirements = samplingRules.value.map((rule, index) => ({
-    index: index + 1,
-    ratio: rule.ratio,
-    requiredCount: samplingCountByRatio(rule.ratio),
-  }))
-
-  const totalRequired = createTaskForm.samplingCount || 0
-
-  if (availableDataCount < totalRequired) {
-    // 数据不足，弹窗提示
-    const ruleDetails = ruleRequirements.map(r =>
-      `规则${r.index}：需要${r.requiredCount}条（占比${r.ratio}%）`
-    ).join('\n')
-
-    Modal.confirm({
-      title: '质检数据不足',
-      content: `当前满足条件的质检数据共 ${availableDataCount} 条，但抽检规则要求共 ${totalRequired} 条，数据不足无法完成抽检任务。\n\n各规则需求：\n${ruleDetails}\n\n是否继续创建任务？`,
-      okText: '继续创建',
-      cancelText: '取消',
-      onOk() {
-        console.log('创建任务:', createTaskForm)
-        message.success('创建成功')
-        handleCreateCancel()
-      },
-    })
-  } else {
-    // 数据充足，直接创建
-    console.log('创建任务:', createTaskForm)
-    message.success('创建成功')
-    handleCreateCancel()
-  }
+  console.log('创建任务:', createTaskForm)
+  message.success('创建成功')
+  handleCreateCancel()
 }
 
 const handleDetail = (row: QualityTaskItem) => {
@@ -1596,7 +2034,7 @@ const handleEdit = (row: QualityTaskItem) => {
   editTaskForm.taskId = row.taskId
   editTaskForm.taskName = row.taskName
   editTaskForm.taskDescription = row.taskDescription
-  editTaskForm.inspector = row.auditor || row.creator
+  editTaskForm.inspector = Array.isArray(row.auditor) ? row.auditor[0] : (row.auditor || row.creator)
   editTaskModalVisible.value = true
 }
 
@@ -1665,6 +2103,122 @@ const handlePageChange = (page: number, size: number) => {
   pagination.currentPage = page
   pagination.pageSize = size
   console.log('分页变化:', page, size)
+}
+
+// ============ 抽检策略 - 数据范围筛选方法 ============
+const handleAddDataRangeFilter = () => {
+  dataRangeFilterIdCounter++
+  dataRangeFilters.value.push({
+    id: dataRangeFilterIdCounter,
+    field: '',
+    operator: '',
+    value: '',
+  })
+}
+
+const handleDeleteDataRangeFilter = (index: number) => {
+  dataRangeFilters.value.splice(index, 1)
+}
+
+const handleFilterFieldChange = (filter: DataRangeFilter) => {
+  filter.value = ''
+  filter.value2 = ''
+  dataPreviewCount.value = null
+}
+
+const handlePreviewData = () => {
+  dataPreviewCount.value = Math.floor(Math.random() * 5000) + 200
+  message.success('数据查询完成')
+}
+
+// ============ 抽检策略 - 抽样维度方法 ============
+const handleAddDimension = () => {
+  dimensionIdCounter++
+  samplingDimensions.value.push({
+    id: dimensionIdCounter,
+    type: 'scene',
+    samplingMethod: 'ratio',
+    mutualExclusive: true,
+    sceneItems: [{ id: ++sceneItemIdCounter, sceneName: '', ratio: 0 }],
+    sceneAutoRemaining: true,
+    agentMode: 'list',
+    agentList: [{ id: ++agentItemIdCounter, agentId: '', count: 1 }],
+    agentGroups: [{ id: ++agentGroupIdCounter, groupName: '', count: 1 }],
+    durationIntervals: [{ id: ++durationIntervalIdCounter, minDuration: null, maxDuration: null, ratio: 0 }],
+    customLabel: '',
+  })
+}
+
+const handleDeleteDimension = (dIndex: number) => {
+  samplingDimensions.value.splice(dIndex, 1)
+}
+
+const handleDimensionTypeChange = (dimension: SamplingDimension) => {
+  dimension.samplingMethod = dimension.type === 'agent' ? 'count' : 'ratio'
+}
+
+// 按场景
+const handleAddSceneItem = (dIndex: number) => {
+  sceneItemIdCounter++
+  samplingDimensions.value[dIndex].sceneItems.push({
+    id: sceneItemIdCounter,
+    sceneName: '',
+    ratio: 0,
+  })
+}
+
+const handleDeleteSceneItem = (dIndex: number, itemIndex: number) => {
+  samplingDimensions.value[dIndex].sceneItems.splice(itemIndex, 1)
+}
+
+const getDimensionSceneRatio = (dIndex: number) => {
+  return samplingDimensions.value[dIndex].sceneItems.reduce((sum, item) => sum + (item.ratio || 0), 0)
+}
+
+// 按坐席
+const handleAddAgentItem = (dIndex: number) => {
+  agentItemIdCounter++
+  samplingDimensions.value[dIndex].agentList.push({
+    id: agentItemIdCounter,
+    agentId: '',
+    count: 1,
+  })
+}
+
+const handleDeleteAgentItem = (dIndex: number, itemIndex: number) => {
+  samplingDimensions.value[dIndex].agentList.splice(itemIndex, 1)
+}
+
+const handleAddAgentGroup = (dIndex: number) => {
+  agentGroupIdCounter++
+  samplingDimensions.value[dIndex].agentGroups.push({
+    id: agentGroupIdCounter,
+    groupName: '',
+    count: 1,
+  })
+}
+
+const handleDeleteAgentGroup = (dIndex: number, itemIndex: number) => {
+  samplingDimensions.value[dIndex].agentGroups.splice(itemIndex, 1)
+}
+
+// 按通话时长
+const handleAddDurationInterval = (dIndex: number) => {
+  durationIntervalIdCounter++
+  samplingDimensions.value[dIndex].durationIntervals.push({
+    id: durationIntervalIdCounter,
+    minDuration: null,
+    maxDuration: null,
+    ratio: 0,
+  })
+}
+
+const handleDeleteDurationInterval = (dIndex: number, itemIndex: number) => {
+  samplingDimensions.value[dIndex].durationIntervals.splice(itemIndex, 1)
+}
+
+const getDimensionDurationRatio = (dIndex: number) => {
+  return samplingDimensions.value[dIndex].durationIntervals.reduce((sum, item) => sum + (item.ratio || 0), 0)
 }
 </script>
 
@@ -2385,5 +2939,389 @@ const handlePageChange = (page: number, size: number) => {
 
 .auditor-tags .ant-tag {
   margin-right: 0;
+}
+
+/* 质检范围提示 */
+.scope-tip {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 4px;
+}
+
+/* 抽检模式步骤内容 */
+.step-sampling-content {
+  padding: 10px 20px;
+  min-height: 300px;
+}
+
+.step-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 4px;
+}
+
+.step-section-desc {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 20px;
+}
+
+/* 数据范围筛选 */
+.data-range-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-filter-btn {
+  font-size: 18px;
+  color: #ff4d4f;
+  flex-shrink: 0;
+}
+
+.add-filter-btn {
+  margin-bottom: 16px;
+}
+
+.filter-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f0f5ff;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+.filter-preview-label {
+  font-size: 14px;
+  color: #595959;
+}
+
+.filter-preview-count {
+  font-size: 14px;
+  color: #262626;
+}
+
+.filter-preview-count strong {
+  color: #1677ff;
+  font-weight: 600;
+}
+
+/* 抽样维度 */
+.dimension-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.dimension-card {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.dimension-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f0f5ff;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.dimension-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dimension-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #1677ff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dimension-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mutual-exclusive-label {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.dimension-card-body {
+  padding: 16px;
+}
+
+.dimension-config-label {
+  font-size: 13px;
+  color: #595959;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-radio-group {
+  display: inline-flex;
+}
+
+.agent-mode-radio {
+  margin-bottom: 12px;
+}
+
+.dimension-table {
+  margin-bottom: 8px;
+}
+
+.dimension-table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.scene-ratio-total {
+  font-size: 13px;
+  color: #595959;
+}
+
+.dimension-option-row {
+  margin-top: 8px;
+}
+
+.range-separator {
+  margin: 0 4px;
+  color: #8c8c8c;
+}
+
+.range-unit {
+  margin-left: 4px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.add-dimension-btn {
+  margin-bottom: 16px;
+}
+
+.estimated-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+}
+
+.estimated-label {
+  font-size: 14px;
+  color: #595959;
+}
+
+.estimated-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #52c41a;
+}
+
+.estimated-warning {
+  font-size: 13px;
+  color: #ff4d4f;
+  margin-left: 8px;
+}
+
+/* 通话时长饼图预览 */
+.duration-chart-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.chart-bar-wrapper {
+  display: flex;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.chart-bar-segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 2px;
+  transition: width 0.3s;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #595959;
+}
+
+.chart-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.custom-dimension-placeholder {
+  max-width: 300px;
+}
+
+/* 全局配额表单 */
+.quota-form {
+  padding: 10px 0;
+}
+
+.quota-unit {
+  margin-left: 8px;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.quota-hint {
+  font-size: 12px;
+  color: #bfbfbf;
+  margin-top: 4px;
+}
+
+.quota-error {
+  font-size: 13px;
+  color: #ff4d4f;
+  margin-top: 4px;
+  background: #fff2f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* 调度计划表单 */
+.schedule-form {
+  padding: 10px 0;
+}
+
+.schedule-date-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.date-separator {
+  color: #8c8c8c;
+}
+
+.offset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offset-prefix,
+.offset-suffix {
+  font-size: 14px;
+  color: #595959;
+}
+
+.offset-preview {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f0f5ff;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1677ff;
+}
+
+/* 命名与保存 */
+.naming-form {
+  padding: 10px 0;
+}
+
+.strategy-status-text {
+  margin-left: 12px;
+  font-size: 14px;
+  color: #595959;
+}
+
+/* 策略概览卡片 */
+.strategy-overview {
+  margin-top: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.overview-title {
+  padding: 10px 16px;
+  background: #f0f5ff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0;
+}
+
+.overview-item {
+  display: flex;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+}
+
+.overview-item:nth-child(even) {
+  border-right: none;
+}
+
+.overview-label {
+  font-size: 13px;
+  color: #8c8c8c;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.overview-value {
+  font-size: 13px;
+  color: #262626;
+  font-weight: 500;
 }
 </style>
