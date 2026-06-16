@@ -302,6 +302,7 @@
       <SystemSettingsTab
         @save="handleSystemSettingsSave"
         @back="handleSystemSettingsBack"
+        @go-to-fallback-setting="handleGoToFallbackSetting"
       />
     </div>
 
@@ -3174,6 +3175,11 @@ const handleSystemSettingsSave = (data: object) => {
 // 返回
 const handleSystemSettingsBack = () => {
   console.log('返回操作');
+};
+
+// 跳转到流程兜底设置
+const handleGoToFallbackSetting = () => {
+  activeTabKey.value = 'fallback';
 };
 </script>
 

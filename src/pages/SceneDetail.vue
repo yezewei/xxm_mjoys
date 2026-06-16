@@ -83,6 +83,7 @@
         v-if="activeTabKey === 'system-settings'"
         v-model="systemSettingsData"
         @save="handleSaveSystemSettings"
+        @go-to-fallback-setting="handleGoToFallbackSetting"
       />
 
       <!-- 场景短信 -->
@@ -468,6 +469,13 @@ const handleSaveClassify = (data: any) => {
 const handleSaveSystemSettings = (data: any) => {
   console.log('保存系统设置:', data);
   // TODO: 实现保存逻辑
+};
+
+/**
+ * 跳转到流程兜底设置
+ */
+const handleGoToFallbackSetting = () => {
+  activeTabKey.value = 'fallback';
 };
 
 /**

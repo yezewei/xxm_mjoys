@@ -241,6 +241,12 @@
             <span>其他设置</span>
           </div>
           <div class="section-content">
+            <a-form-item label="转接提示语" name="transferPrompt" required>
+              <a-input
+                v-model:value="fallbackForm.transferPrompt"
+                placeholder="请输入转接提示语"
+              />
+            </a-form-item>
             <a-form-item label="转人工坐席忙回复">
               <div class="reply-input-group">
                 <a-textarea
@@ -344,6 +350,7 @@ const fallbackForm = reactive({
   keyErrorRepeatMode: 'continuous',
   keyErrorCount: 3,
   // 其他设置
+  transferPrompt: '正在为您转接人工',
   transferBusyReplies: [''] as string[],
   voiceBreakTimeout: 500,
   asrInitTimeout: 0,
@@ -384,6 +391,7 @@ const fallbackRules: Record<string, Rule[]> = {
   keyInputTimeout: [{ required: true, message: '请输入按键等待时长', trigger: 'blur' }],
   voiceBreakTimeout: [{ required: true, message: '请输入语音断句时长', trigger: 'blur' }],
   asrInitTimeout: [{ required: true, message: '请输入 ASR 识别设置', trigger: 'blur' }],
+  transferPrompt: [{ required: true, message: '请输入转接提示语', trigger: 'blur' }],
 };
 
 // ==================== 方法 ====================

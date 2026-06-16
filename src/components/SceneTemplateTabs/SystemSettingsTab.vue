@@ -116,17 +116,80 @@
             <!-- 转人工条件 -->
             <a-form-item label="转人工条件：" class="required-label" v-if="systemSettingsForm.humanMachineCollaboration">
               <a-radio-group v-model:value="systemSettingsForm.transferCondition">
-                <a-radio value="auto-transfer">接通自动转接</a-radio>
-                <a-radio value="after-intro">听完开场白自动转接</a-radio>
-                <a-radio value="trigger">触发话术/QA 转接</a-radio>
+                <div class="transfer-condition-list">
+                  <div class="transfer-condition-item">
+                    <a-radio value="auto-transfer">呼通即转</a-radio>
+                    <a-tooltip placement="topLeft" overlay-class-name="transfer-tooltip">
+                      <template #title>
+                        <div class="tooltip-content">即业界预测式外呼，指AI呼通后不播放开场白直接转接坐席，在转人工最大等待时长期间，每间隔10s查找一次空闲坐席，若未找到空闲坐席，系统播放转人工坐席忙话术并自动挂断；若找到空闲坐席，坐席侧振铃，坐席振铃最大时长30s，若坐席未接通系统播放转人工坐席忙话术并自动挂断，若坐席接通则进行人工通话。</div>
+                      </template>
+                      <question-circle-outlined class="condition-help-icon" />
+                    </a-tooltip>
+                  </div>
+                  <div class="transfer-condition-item">
+                    <a-radio value="auto-transfer-ai">呼通即转(AI同时接待)</a-radio>
+                    <a-tooltip placement="topLeft" overlay-class-name="transfer-tooltip">
+                      <template #title>
+                        <div class="tooltip-content">电话接通后AI播放话术同时转接人工，系统每间隔10s查找一次空闲坐席，若找到空闲坐席，坐席侧振铃，坐席振铃最大时长30s，若坐席未接通，系统将不再查找新的坐席，后续由AI接待至通话结束，若坐席接通则停止AI接待进行人工通话。</div>
+                      </template>
+                      <question-circle-outlined class="condition-help-icon" />
+                    </a-tooltip>
+                  </div>
+                  <div class="transfer-condition-item">
+                    <a-radio value="after-intro">AI播放完开场白后转接</a-radio>
+                    <a-tooltip placement="topLeft" overlay-class-name="transfer-tooltip">
+                      <template #title>
+                        <div class="tooltip-content">客户接起电话后AI播放完开场白后转接坐席，和呼通即转(AI同时接待)差别是转接时机不同。</div>
+                      </template>
+                      <question-circle-outlined class="condition-help-icon" />
+                    </a-tooltip>
+                  </div>
+                  <div class="transfer-condition-item">
+                    <a-radio value="trigger">触发话术/QA转接</a-radio>
+                    <a-tooltip placement="topLeft" overlay-class-name="transfer-tooltip">
+                      <template #title>
+                        <div class="tooltip-content">流转至转人工节点或客户主动触发转人工QA，系统播放完成话术后触发转人工，在转人工最大等待时长期间，每间隔10s查找一次空闲坐席，若未找到空闲坐席，系统提示坐席忙并自动挂断；若找到空闲坐席，坐席侧振铃，坐席振铃最大时长30s，若坐席未接通系统播放转人工坐席忙话术并自动挂断，若坐席接通则进行人工通话。</div>
+                      </template>
+                      <question-circle-outlined class="condition-help-icon" />
+                    </a-tooltip>
+                  </div>
+                </div>
               </a-radio-group>
-              <!-- <div class="form-tip" style="margin-top: 8px;">
-                <question-circle-outlined style="margin-right: 4px;" />
-                <question-circle-outlined style="margin-right: 4px;" />
-                <question-circle-outlined />
-              </div> -->
-              <div class="form-tip error-text" style="margin-top: 12px;">
-                注意：接通自动转接模式中话术/QA 中的转人工配置不生效
+              <!-- 呼通即转：转接提示语 -->
+              <div v-if="systemSettingsForm.transferCondition === 'auto-transfer'" class="transfer-sub-setting">
+                <a-form-item label="转接提示语配置项：" class="required-label" style="margin-bottom: 0;">
+                  <span class="form-tip">提示：请在<a class="link-text" @click.prevent="handleGoToFallbackSetting">流程兜底设置</a>中配置转接提示语文案，并上传对应录音</span>
+                </a-form-item>
+              </div>
+              <!-- 呼通即转(AI同时接待) / AI播发完开场白后转接：坐席介入方式 -->
+              <div v-if="systemSettingsForm.transferCondition === 'auto-transfer-ai' || systemSettingsForm.transferCondition === 'after-intro'" class="transfer-sub-setting">
+                <a-form-item label="坐席接管方式：" style="margin-bottom: 0;">
+                  <a-radio-group v-model:value="systemSettingsForm.agentInterventionRule">
+                    <div class="transfer-condition-list">
+                      <div class="transfer-condition-item">
+                        <a-radio value="after-current-script">等AI说完当前话术再接入</a-radio>
+                        <a-tooltip placement="topLeft" overlay-class-name="transfer-tooltip">
+                          <template #title>
+                            <div class="tooltip-content">坐席接通后，系统等待 AI 播完当前正在播放的话术节点，再将通话交由坐席接管，坐席可立即与客户对话。</div>
+                          </template>
+                          <question-circle-outlined class="condition-help-icon" />
+                        </a-tooltip>
+                      </div>
+                      <div class="transfer-condition-item">
+                        <a-radio value="immediate">坐席接通后立即接管通话</a-radio>
+                        <a-tooltip placement="topLeft" overlay-class-name="transfer-tooltip">
+                          <template #title>
+                            <div class="tooltip-content">坐席接通后，系统立即停止 AI 播放，将通话交由坐席接管，坐席直接与客户对话。</div>
+                          </template>
+                          <question-circle-outlined class="condition-help-icon" />
+                        </a-tooltip>
+                      </div>
+                    </div>
+                  </a-radio-group>
+                </a-form-item>
+              </div>
+              <div v-if="systemSettingsForm.transferCondition !== 'trigger'" class="form-tip error-text" style="margin-top: 12px;">
+                注意：当前模式下，主流程转人工节点和QA转人工节点配置不生效
               </div>
             </a-form-item>
 
@@ -196,6 +259,7 @@ const emit = defineEmits<{
   (e: 'guide-next'): void;
   (e: 'guide-prev'): void;
   (e: 'guide-jump', index: number): void;
+  (e: 'go-to-fallback-setting'): void;
 }>();
 
 // ==================== 响应式数据 ====================
@@ -215,7 +279,8 @@ const systemSettingsForm = reactive({
   // 人机协同配置
   humanMachineCollaboration: true, // 人机协同模式
   collaborationMode: 'transfer' as 'active-intervention' | 'transfer' | 'both', // 协同方式
-  transferCondition: 'auto-transfer' as 'auto-transfer' | 'after-intro' | 'trigger', // 转人工条件
+  transferCondition: 'auto-transfer' as 'auto-transfer' | 'auto-transfer-ai' | 'after-intro' | 'trigger', // 转人工条件
+  agentInterventionRule: 'after-current-script' as 'after-current-script' | 'immediate', // 坐席介入规则
   collaborationStrategy: 'random-free' as 'random-free' | 'distribution' | 'external-skill', // 协同策略
 });
 
@@ -287,6 +352,11 @@ const handleSave = () => {
 // 返回
 const handleBack = () => {
   emit('back');
+};
+
+// 跳转到流程兜底设置
+const handleGoToFallbackSetting = () => {
+  emit('go-to-fallback-setting');
 };
 
 // 关闭引导
@@ -434,6 +504,47 @@ defineExpose({
   line-height: 1.5;
 }
 
+/* 转人工条件列表 */
+.transfer-condition-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 8px 0;
+}
+
+.transfer-condition-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transfer-condition-item .ant-radio-wrapper {
+  font-size: 14px;
+  color: #595959;
+  line-height: 1.5;
+}
+
+.condition-help-icon {
+  color: #8c8c8c;
+  font-size: 14px;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.condition-help-icon:hover {
+  color: #1890ff;
+}
+
+/* 转人工条件子配置 */
+.transfer-sub-setting {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 4px;
+  border: 1px solid #f0f0f0;
+}
+
 .success-text {
   color: #52c41a;
   font-weight: 500;
@@ -573,5 +684,19 @@ defineExpose({
 
 .step-dot:hover {
   background: #40a9ff;
+}
+</style>
+
+<style>
+.transfer-tooltip .ant-tooltip-inner {
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #fff;
+}
+
+.transfer-tooltip .tooltip-content {
+  white-space: normal;
+  word-break: break-all;
 }
 </style>

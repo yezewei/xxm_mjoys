@@ -621,36 +621,7 @@
         <div class="step-section-desc">配置定时创建任务的执行计划和有效期</div>
         <a-form layout="horizontal" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }" class="step-form">
           <a-form-item label="执行频率">
-            <a-radio-group v-model:value="formData.schedule.frequency" :disabled="isViewMode">
-              <a-radio value="daily">每日</a-radio>
-              <a-radio value="weekly">每周</a-radio>
-              <a-radio value="monthly">每月</a-radio>
-            </a-radio-group>
-          </a-form-item>
-
-          <a-form-item v-if="formData.schedule.frequency === 'weekly'" label="执行日期">
-            <a-checkbox-group v-model:value="formData.schedule.weekDays" :disabled="isViewMode">
-              <a-checkbox :value="1">周一</a-checkbox>
-              <a-checkbox :value="2">周二</a-checkbox>
-              <a-checkbox :value="3">周三</a-checkbox>
-              <a-checkbox :value="4">周四</a-checkbox>
-              <a-checkbox :value="5">周五</a-checkbox>
-              <a-checkbox :value="6">周六</a-checkbox>
-              <a-checkbox :value="0">周日</a-checkbox>
-            </a-checkbox-group>
-          </a-form-item>
-
-          <a-form-item v-if="formData.schedule.frequency === 'monthly'" label="执行日期">
-            <a-select
-              v-model:value="formData.schedule.monthDays"
-              mode="multiple"
-              style="width: 100%"
-              placeholder="选择每月几号执行"
-              :max-tag-count="5"
-              :disabled="isViewMode"
-            >
-              <a-select-option v-for="d in 28" :key="d" :value="d">{{ d }}号</a-select-option>
-            </a-select>
+            <span class="fixed-value">每日</span>
           </a-form-item>
 
           <a-form-item label="执行时间">
@@ -658,10 +629,21 @@
           </a-form-item>
 
           <a-form-item label="数据时间偏移">
-            <div class="offset-row">
+            <a-radio-group v-model:value="formData.schedule.dataOffsetMode" :disabled="isViewMode" style="margin-bottom: 8px">
+              <a-radio value="days">按天偏移</a-radio>
+              <a-radio value="timeRange">精确时间范围</a-radio>
+            </a-radio-group>
+            <div v-if="formData.schedule.dataOffsetMode === 'days'" class="offset-row">
               <span class="offset-prefix">固定抓取</span>
               <a-input-number v-model:value="formData.schedule.dataOffset" :min="0" :max="30" :precision="0" style="width: 80px" :disabled="isViewMode" />
               <span class="offset-suffix">日前的数据</span>
+            </div>
+            <div v-else class="offset-range-row">
+              <span class="offset-prefix">抓取当天</span>
+              <a-time-picker v-model:value="formData.schedule.dataStartTime" format="HH:mm" placeholder="开始时间" style="width: 120px" :disabled="isViewMode" :allow-clear="false" />
+              <span class="date-separator">至</span>
+              <a-time-picker v-model:value="formData.schedule.dataEndTime" format="HH:mm" placeholder="结束时间" style="width: 120px" :disabled="isViewMode" :allow-clear="false" />
+              <span class="offset-suffix">的外呼数据</span>
             </div>
             <div class="offset-preview">{{ scheduleDescription }}</div>
           </a-form-item>
@@ -716,6 +698,17 @@
             <div class="overview-item">
               <span class="overview-label">执行频率</span>
               <span class="overview-value">{{ scheduleDescription }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">数据时间偏移</span>
+              <span class="overview-value">
+                <template v-if="formData.schedule.dataOffsetMode === 'timeRange'">
+                  当天 {{ formData.schedule.dataStartTime ? formData.schedule.dataStartTime.format('HH:mm') : '未设置' }} ~ {{ formData.schedule.dataEndTime ? formData.schedule.dataEndTime.format('HH:mm') : '未设置' }}
+                </template>
+                <template v-else>
+                  T-{{ formData.schedule.dataOffset }} 日
+                </template>
+              </span>
             </div>
             <div class="overview-item">
               <span class="overview-label">分配质检员</span>
@@ -788,10 +781,10 @@ interface DurationItem {
 }
 
 interface ScheduleData {
-  frequency: 'daily' | 'weekly' | 'monthly'
-  weekDays: number[]
-  monthDays: number[]
+  dataOffsetMode: 'days' | 'timeRange'
   dataOffset: number
+  dataStartTime: any
+  dataEndTime: any
   permanent: boolean
   executeTimeValue: any
   startDateValue: any
@@ -806,11 +799,11 @@ interface SamplingRuleItem {
   samplingMethod: string
   allocationMethod: string
   allocationValue: number
-  scheduleFrequency: string
-  scheduleWeekDays: number[]
-  scheduleMonthDays: number[]
   executeTime: string
+  dataOffsetMode: 'days' | 'timeRange'
   dataOffset: number
+  dataStartTime: string | null
+  dataEndTime: string | null
   startDate: string
   endDate: string | null
   permanent: boolean
@@ -837,6 +830,7 @@ interface FormData {
   schedule: ScheduleData
   enabled: boolean
 }
+
 
 // ============ 列表相关 ============
 const columns = [
@@ -920,11 +914,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'ratio',
     allocationMethod: 'total',
     allocationValue: 500,
-    scheduleFrequency: 'daily',
-    scheduleWeekDays: [],
-    scheduleMonthDays: [],
     executeTime: '09:00',
+    dataOffsetMode: 'days',
     dataOffset: 1,
+    dataStartTime: null,
+    dataEndTime: null,
     startDate: '2026-01-01',
     endDate: '2026-03-31',
     permanent: false,
@@ -940,11 +934,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'average',
     allocationMethod: 'ratio',
     allocationValue: 10,
-    scheduleFrequency: 'weekly',
-    scheduleWeekDays: [1, 3, 5],
-    scheduleMonthDays: [],
     executeTime: '08:30',
+    dataOffsetMode: 'days',
     dataOffset: 2,
+    dataStartTime: null,
+    dataEndTime: null,
     startDate: '2026-02-01',
     endDate: null,
     permanent: true,
@@ -960,11 +954,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'ratio',
     allocationMethod: 'perPerson',
     allocationValue: 20,
-    scheduleFrequency: 'daily',
-    scheduleWeekDays: [],
-    scheduleMonthDays: [],
     executeTime: '10:00',
+    dataOffsetMode: 'timeRange',
     dataOffset: 1,
+    dataStartTime: '08:00',
+    dataEndTime: '18:00',
     startDate: '2026-03-01',
     endDate: '2026-06-30',
     permanent: false,
@@ -980,11 +974,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'average',
     allocationMethod: 'total',
     allocationValue: 200,
-    scheduleFrequency: 'monthly',
-    scheduleWeekDays: [],
-    scheduleMonthDays: [1, 15],
     executeTime: '08:00',
+    dataOffsetMode: 'days',
     dataOffset: 3,
+    dataStartTime: null,
+    dataEndTime: null,
     startDate: '2026-04-01',
     endDate: null,
     permanent: true,
@@ -1000,11 +994,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'ratio',
     allocationMethod: 'ratio',
     allocationValue: 15,
-    scheduleFrequency: 'weekly',
-    scheduleWeekDays: [2, 4],
-    scheduleMonthDays: [],
     executeTime: '09:30',
+    dataOffsetMode: 'timeRange',
     dataOffset: 1,
+    dataStartTime: '09:00',
+    dataEndTime: '20:00',
     startDate: '2026-01-15',
     endDate: '2026-12-31',
     permanent: false,
@@ -1020,11 +1014,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'ratio',
     allocationMethod: 'total',
     allocationValue: 300,
-    scheduleFrequency: 'daily',
-    scheduleWeekDays: [],
-    scheduleMonthDays: [],
     executeTime: '07:00',
+    dataOffsetMode: 'days',
     dataOffset: 2,
+    dataStartTime: null,
+    dataEndTime: null,
     startDate: '2026-05-01',
     endDate: null,
     permanent: true,
@@ -1040,11 +1034,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'average',
     allocationMethod: 'perPerson',
     allocationValue: 15,
-    scheduleFrequency: 'monthly',
-    scheduleWeekDays: [],
-    scheduleMonthDays: [10],
     executeTime: '10:30',
+    dataOffsetMode: 'days',
     dataOffset: 5,
+    dataStartTime: null,
+    dataEndTime: null,
     startDate: '2026-03-01',
     endDate: '2026-09-30',
     permanent: false,
@@ -1060,11 +1054,11 @@ const mockData: SamplingRuleItem[] = [
     samplingMethod: 'ratio',
     allocationMethod: 'total',
     allocationValue: 400,
-    scheduleFrequency: 'weekly',
-    scheduleWeekDays: [1],
-    scheduleMonthDays: [],
     executeTime: '08:00',
+    dataOffsetMode: 'days',
     dataOffset: 1,
+    dataStartTime: null,
+    dataEndTime: null,
     startDate: '2026-06-01',
     endDate: null,
     permanent: true,
@@ -1094,16 +1088,12 @@ const tableData = computed(() => {
 })
 
 const getScheduleLabel = (record: SamplingRuleItem) => {
-  const freqMap: Record<string, string> = { daily: '每天', weekly: '每周', monthly: '每月' }
-  let desc = freqMap[record.scheduleFrequency] || '每天'
-  if (record.scheduleFrequency === 'weekly' && record.scheduleWeekDays.length > 0) {
-    const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-    desc += ' ' + record.scheduleWeekDays.map(d => dayNames[d]).join('、')
+  let desc = `每天 ${record.executeTime}`
+  if (record.dataOffsetMode === 'timeRange') {
+    desc += ` (${record.dataStartTime || '?'}~${record.dataEndTime || '?'})`
+  } else {
+    desc += ` T-${record.dataOffset}`
   }
-  if (record.scheduleFrequency === 'monthly' && record.scheduleMonthDays.length > 0) {
-    desc += ' ' + record.scheduleMonthDays.map(d => d + '号').join('、')
-  }
-  desc += ` ${record.executeTime}`
   return desc
 }
 
@@ -1144,10 +1134,10 @@ const createDefaultFormData = (): FormData => ({
   allocationValue: null,
   inspectors: [],
   schedule: {
-    frequency: 'daily',
-    weekDays: [],
-    monthDays: [],
+    dataOffsetMode: 'days',
     dataOffset: 1,
+    dataStartTime: null,
+    dataEndTime: null,
     permanent: true,
     executeTimeValue: null,
     startDateValue: null,
@@ -1195,16 +1185,14 @@ const durationRatioTotal = computed(() =>
 
 // 调度描述
 const scheduleDescription = computed(() => {
-  const freqMap: Record<string, string> = { daily: '每天', weekly: '每周', monthly: '每月' }
-  let desc = freqMap[formData.schedule.frequency] || '每天'
-  if (formData.schedule.frequency === 'weekly' && formData.schedule.weekDays.length > 0) {
-    const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
-    desc += ' ' + formData.schedule.weekDays.map(d => dayNames[d]).join('、')
+  let desc = '每天'
+  if (formData.schedule.dataOffsetMode === 'timeRange') {
+    const start = formData.schedule.dataStartTime ? formData.schedule.dataStartTime.format('HH:mm') : '未设置'
+    const end = formData.schedule.dataEndTime ? formData.schedule.dataEndTime.format('HH:mm') : '未设置'
+    desc += ` 抓取当天 ${start}~${end} 的数据`
+  } else {
+    desc += ` 生成T-${formData.schedule.dataOffset}日的抽检任务`
   }
-  if (formData.schedule.frequency === 'monthly' && formData.schedule.monthDays.length > 0) {
-    desc += ' ' + formData.schedule.monthDays.map(d => d + '号').join('、')
-  }
-  desc += ` 生成T-${formData.schedule.dataOffset}日的抽检任务`
   return desc
 })
 
@@ -1304,10 +1292,10 @@ const fillFormData = (record: SamplingRuleItem) => {
   formData.allocationMethod = record.allocationMethod
   formData.allocationValue = record.allocationValue
   formData.inspectors = []
-  formData.schedule.frequency = record.scheduleFrequency
-  formData.schedule.weekDays = [...record.scheduleWeekDays]
-  formData.schedule.monthDays = [...record.scheduleMonthDays]
+  formData.schedule.dataOffsetMode = record.dataOffsetMode
   formData.schedule.dataOffset = record.dataOffset
+  formData.schedule.dataStartTime = null
+  formData.schedule.dataEndTime = null
   formData.schedule.permanent = record.permanent
   formData.enabled = record.status === 'enabled'
   formData.schedule.executeTimeValue = null
@@ -1902,6 +1890,13 @@ const handleDeleteDurationItem = (index: number) => {
   gap: 8px;
 }
 
+.offset-range-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .offset-prefix,
 .offset-suffix {
   color: #595959;
@@ -1928,6 +1923,11 @@ const handleDeleteDurationItem = (index: number) => {
 /* 策略状态文字 */
 .strategy-status-text {
   margin-left: 8px;
+  color: #595959;
+  font-size: 14px;
+}
+
+.fixed-value {
   color: #595959;
   font-size: 14px;
 }
