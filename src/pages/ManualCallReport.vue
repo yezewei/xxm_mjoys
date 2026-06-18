@@ -197,10 +197,33 @@
     <a-modal
       v-model:open="detailModalVisible"
       title="对话详情"
-      width="700px"
+      width="800px"
       :footer="null"
-      :body-style="{ padding: 0, display: 'flex', flexDirection: 'column', height: '560px' }"
+      :body-style="{ padding: 0, display: 'flex', flexDirection: 'column', height: '640px' }"
     >
+      <!-- 通话字段信息区域 -->
+      <div class="detail-info-section">
+        <div class="detail-info-header" @click="detailExpanded = !detailExpanded">
+          <span class="detail-info-title">通话信息</span>
+          <span class="detail-info-toggle">
+            <UpOutlined v-if="detailExpanded" style="font-size: 10px" />
+            <DownOutlined v-else style="font-size: 10px" />
+          </span>
+        </div>
+        <div v-show="detailExpanded" class="detail-info-body">
+          <div class="detail-field-grid">
+            <div
+              v-for="field in detailFields"
+              :key="field.key"
+              class="detail-field-item"
+            >
+              <span class="detail-field-label">{{ field.label }}</span>
+              <span class="detail-field-value">{{ getDetailFieldValue(detailRecord, field) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 对话区域 -->
       <div class="chat-container">
         <div class="chat-messages">
@@ -293,6 +316,8 @@ import {
   SettingOutlined,
   FileExcelOutlined,
   UserOutlined,
+  DownOutlined,
+  UpOutlined,
 } from '@ant-design/icons-vue';
 import type { TableColumnType } from 'ant-design-vue';
 import { message } from 'ant-design-vue';
@@ -377,6 +402,36 @@ const allColumns: ColumnConfigItem[] = [
 // 对话详情弹窗相关状态
 const detailModalVisible = ref(false);
 const detailRecord = ref<ReportItem | null>(null);
+const detailExpanded = ref(true);
+
+// 详情字段定义
+const detailFields = [
+  { key: 'callUuid', label: '通话ID' },
+  { key: 'callerPhoneNum', label: '主叫号码' },
+  { key: 'calleePhoneNum', label: '被叫号码' },
+  { key: 'calleeArea', label: '被叫归属地' },
+  { key: 'seatExtNum', label: '坐席分机号' },
+  { key: 'seatMobile', label: '坐席手机号' },
+  { key: 'dialMethod', label: '外呼发起方式' },
+  { key: 'dialTime', label: '拨打时间' },
+  { key: 'seatAnswerTime', label: '坐席接听时间' },
+  { key: 'custAnswerTime', label: '客户接听时间' },
+  { key: 'hangupTime', label: '挂断时间' },
+  { key: 'hangupBy', label: '挂断方' },
+  { key: 'callStatus', label: '通话状态' },
+  { key: 'callDuration', label: '通话时长', format: 'duration' as const },
+  { key: 'dialContent', label: '拨号内容' },
+  { key: 'callRecordPath', label: '通话录音路径' },
+];
+
+const getDetailFieldValue = (record: ReportItem | null, field: typeof detailFields[number]) => {
+  if (!record) return '-';
+  const value = (record as any)[field.key];
+  if (value === undefined || value === null || value === '') return '-';
+  if (field.format === 'duration') return formatDuration(value);
+  return String(value);
+};
+
 interface AsrItem {
   role: 'seat' | 'customer';
   time: string;
@@ -709,6 +764,83 @@ const handleExportExcel = () => {
 }
 
 :deep(.ant-table-tbody > tr > td) {
+  white-space: nowrap;
+}
+
+/* 对话详情弹窗 - 通话信息区域 */
+.detail-info-section {
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.detail-info-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.detail-info-header:hover {
+  background: #fafafa;
+}
+
+.detail-info-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.detail-info-toggle {
+  color: #999;
+  font-size: 12px;
+}
+
+.detail-info-body {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 0 16px 12px;
+}
+
+.detail-info-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-info-body::-webkit-scrollbar-thumb {
+  background: #d9d9d9;
+  border-radius: 3px;
+}
+
+.detail-info-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 24px;
+}
+
+.detail-field-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detail-field-label {
+  font-size: 12px;
+  color: #999;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.detail-field-value {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

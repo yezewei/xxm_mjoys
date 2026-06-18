@@ -25,7 +25,8 @@
       "Bash(text *)",
       "Bash(1)",
       "Bash(.string)",
-      "Bash(pyeof)"
+      "Bash(pyeof)",
+      "Bash(git *)"
     ]
   },
   "$version": 4
