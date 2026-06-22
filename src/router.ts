@@ -22,6 +22,11 @@ const routes = [
     component: () => import("./pages/AICallReport.vue"),
   },
   {
+    path: "/ai-call-record",
+    name: "AICallRecord",
+    component: () => import("./pages/AICallRecord.vue"),
+  },
+  {
     path: "/manual-call-report",
     name: "ManualCallReport",
     component: () => import("./pages/ManualCallReport.vue"),

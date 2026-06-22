@@ -156,6 +156,9 @@
             <a-menu-item key="ai-call-report">
               <span>AI 外呼报表</span>
             </a-menu-item>
+            <a-menu-item key="ai-call-record">
+              <span>AI 外呼记录</span>
+            </a-menu-item>
             <a-menu-item key="manual-call-report">
               <span>人工通信接口外呼记录</span>
             </a-menu-item>
@@ -260,6 +263,7 @@ const menuRouteMap: Record<string, string> = {
   exception: '/exception',
   'role-management': '/role-management',
   'ai-call-report': '/ai-call-report',
+  'ai-call-record': '/ai-call-record',
   'data-board': '/data-board',
   'manual-call-report': '/manual-call-report',
   'call-funnel': '/call-funnel',
@@ -337,6 +341,7 @@ const menuTitleMap: Record<string, string> = {
   'data-board': '数据看板',
   'data-board-group': '数据看板',
   'ai-call-report': 'AI 外呼报表',
+  'ai-call-record': 'AI 外呼记录',
   'manual-call-report': '人工通信接口外呼记录',
   'call-funnel': '外呼漏斗图',
   exception: '异常看板',
@@ -407,6 +412,7 @@ watch(
       '/data-lake': 'data-lake',
       '/data-board': 'data-board',
       '/ai-call-report': 'ai-call-report',
+      '/ai-call-record': 'ai-call-record',
       '/manual-call-report': 'manual-call-report',
       '/call-funnel': 'call-funnel',
       '/global-service': 'global-service',
@@ -427,7 +433,7 @@ watch(
     selectedKeys.value = [key];
     // 自动展开父级子菜单
     const subMenuChildren: Record<string, string[]> = {
-      'data-board-group': ['data-board', 'ai-call-report', 'manual-call-report', 'call-funnel'],
+      'data-board-group': ['data-board', 'ai-call-report', 'ai-call-record', 'manual-call-report', 'call-funnel'],
       business: ['scene-management', 'scene-template', 'org-management', 'workbench-settings'],
       'phone-work': ['phone-work-home', 'phone-work-workbench'],
       'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule', 'sampling-rule'],

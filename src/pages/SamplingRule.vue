@@ -663,59 +663,6 @@
           </a-form-item>
         </a-form>
 
-        <!-- 策略概览卡片 -->
-        <div class="strategy-overview">
-          <div class="overview-title">规则概览</div>
-          <div class="overview-grid">
-            <div class="overview-item">
-              <span class="overview-label">规则名称</span>
-              <span class="overview-value">{{ formData.ruleName || '未填写' }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">数据类型</span>
-              <span class="overview-value">{{ formData.dataType === 'ai_assisted' ? '人机协同录音' : '人工外呼录音' }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">质检方式</span>
-              <span class="overview-value">{{ formData.inspectType === 'ai' ? 'AI 质检' : '人工质检' }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">质检模型</span>
-              <span class="overview-value">{{ qualityModelOptions.find(o => o.value === formData.qualityModel)?.label || '未选择' }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">采样方式</span>
-              <span class="overview-value">{{ formData.samplingMethod === 'average' ? '平均采样' : '按比例采样' }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">分配方式</span>
-              <span class="overview-value">
-                <template v-if="formData.allocationMethod === 'total'">按总数 {{ formData.allocationValue }} 条</template>
-                <template v-else-if="formData.allocationMethod === 'ratio'">按比例 {{ formData.allocationValue }}%</template>
-                <template v-else>人均 {{ formData.allocationValue }} 条</template>
-              </span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">执行频率</span>
-              <span class="overview-value">{{ scheduleDescription }}</span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">数据时间偏移</span>
-              <span class="overview-value">
-                <template v-if="formData.schedule.dataOffsetMode === 'timeRange'">
-                  当天 {{ formData.schedule.dataStartTime ? formData.schedule.dataStartTime.format('HH:mm') : '未设置' }} ~ {{ formData.schedule.dataEndTime ? formData.schedule.dataEndTime.format('HH:mm') : '未设置' }}
-                </template>
-                <template v-else>
-                  T-{{ formData.schedule.dataOffset }} 日
-                </template>
-              </span>
-            </div>
-            <div class="overview-item">
-              <span class="overview-label">分配质检员</span>
-              <span class="overview-value">{{ formData.inspectors.length }} 人</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- 底部按钮 -->
@@ -729,6 +676,112 @@
           </template>
         </a-space>
       </div>
+    </a-modal>
+
+    <!-- 查看规则概览弹窗 -->
+    <a-modal
+      v-model:open="viewModalVisible"
+      title="查看抽检规则"
+      width="800px"
+      :footer="null"
+      @cancel="viewModalVisible = false"
+    >
+      <div v-if="viewRecord" class="view-overview-content">
+        <!-- 基本信息 -->
+        <div class="view-section">
+          <div class="view-section-title">规则基本信息</div>
+          <div class="overview-grid">
+            <div class="overview-item">
+              <span class="overview-label">规则名称</span>
+              <span class="overview-value">{{ viewRecord.ruleName }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">规则说明</span>
+              <span class="overview-value">{{ viewRecord.ruleDescription }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">质检方式</span>
+              <span class="overview-value">{{ viewRecord.inspectType === 'ai' ? 'AI 质检' : '人工质检' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">质检模型</span>
+              <span class="overview-value">{{ qualityModelOptions.find(o => o.value === viewRecord!.qualityModel)?.label || viewRecord.qualityModel }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">数据类型</span>
+              <span class="overview-value">
+                <a-tag v-if="viewRecord.dataType === 'ai_assisted'" color="blue">人机协同录音</a-tag>
+                <a-tag v-else color="cyan">人工外呼录音</a-tag>
+              </span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">分配质检员</span>
+              <span class="overview-value">{{ viewRecord.inspectorCount }} 人</span>
+            </div>
+          </div>
+        </div>
+
+        <a-divider />
+
+        <!-- 数据抽样规则 -->
+        <div class="view-section">
+          <div class="view-section-title">数据抽样规则</div>
+          <div class="overview-grid">
+            <div class="overview-item">
+              <span class="overview-label">采样方式</span>
+              <span class="overview-value">{{ viewRecord.samplingMethod === 'average' ? '平均采样' : '按比例采样' }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">分配方式</span>
+              <span class="overview-value">
+                <template v-if="viewRecord.allocationMethod === 'total'">按总数 {{ viewRecord.allocationValue }} 条</template>
+                <template v-else-if="viewRecord.allocationMethod === 'ratio'">按比例 {{ viewRecord.allocationValue }}%</template>
+                <template v-else>人均 {{ viewRecord.allocationValue }} 条</template>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <a-divider />
+
+        <!-- 任务创建规则 -->
+        <div class="view-section">
+          <div class="view-section-title">任务创建规则</div>
+          <div class="overview-grid">
+            <div class="overview-item">
+              <span class="overview-label">执行频率</span>
+              <span class="overview-value">{{ getViewScheduleLabel(viewRecord) }}</span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">数据时间偏移</span>
+              <span class="overview-value">
+                <template v-if="viewRecord.dataOffsetMode === 'timeRange'">
+                  当天 {{ viewRecord.dataStartTime || '未设置' }} ~ {{ viewRecord.dataEndTime || '未设置' }}
+                </template>
+                <template v-else>
+                  T-{{ viewRecord.dataOffset }} 日
+                </template>
+              </span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">有效期</span>
+              <span class="overview-value">
+                <template v-if="viewRecord.permanent">永久有效</template>
+                <template v-else>{{ viewRecord.startDate }} 至 {{ viewRecord.endDate || '未设置' }}</template>
+              </span>
+            </div>
+            <div class="overview-item">
+              <span class="overview-label">启用状态</span>
+              <span class="overview-value">
+                <a-switch :checked="viewRecord.status === 'enabled'" size="small" disabled />
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <a-button @click="viewModalVisible = false">关闭</a-button>
+      </template>
     </a-modal>
   </div>
 </template>
@@ -795,6 +848,8 @@ interface SamplingRuleItem {
   ruleId: number
   ruleName: string
   ruleDescription: string
+  inspectType: 'ai' | 'manual'
+  qualityModel: string
   dataType: string
   samplingMethod: string
   allocationMethod: string
@@ -910,6 +965,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1001,
     ruleName: '2026年Q1金融合规抽检',
     ruleDescription: '针对金融产品外呼录音的合规性抽检，覆盖信用卡和贷款业务',
+    inspectType: 'ai',
+    qualityModel: 'compliance',
     dataType: 'ai_assisted',
     samplingMethod: 'ratio',
     allocationMethod: 'total',
@@ -930,6 +987,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1002,
     ruleName: '营销话术合规抽检',
     ruleDescription: '针对营销类外呼的话术合规性抽检',
+    inspectType: 'manual',
+    qualityModel: 'sales',
     dataType: 'manual_outbound',
     samplingMethod: 'average',
     allocationMethod: 'ratio',
@@ -950,6 +1009,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1003,
     ruleName: '投诉专线质量抽检',
     ruleDescription: '投诉倾向录音质量抽检，每人每日分配定量',
+    inspectType: 'ai',
+    qualityModel: 'complaint',
     dataType: 'ai_assisted',
     samplingMethod: 'ratio',
     allocationMethod: 'perPerson',
@@ -970,6 +1031,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1004,
     ruleName: '新员工入职质检抽检',
     ruleDescription: '新入职坐席通话质量抽检规则',
+    inspectType: 'manual',
+    qualityModel: 'service',
     dataType: 'manual_outbound',
     samplingMethod: 'average',
     allocationMethod: 'total',
@@ -990,6 +1053,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1005,
     ruleName: '信用卡业务合规抽检',
     ruleDescription: '信用卡相关外呼录音合规性抽检',
+    inspectType: 'ai',
+    qualityModel: 'compliance',
     dataType: 'ai_assisted',
     samplingMethod: 'ratio',
     allocationMethod: 'ratio',
@@ -1010,6 +1075,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1006,
     ruleName: '贷款业务话术抽检',
     ruleDescription: '贷款类外呼话术合规性抽检',
+    inspectType: 'manual',
+    qualityModel: 'marketing',
     dataType: 'manual_outbound',
     samplingMethod: 'ratio',
     allocationMethod: 'total',
@@ -1030,6 +1097,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1007,
     ruleName: '理财业务风险抽检',
     ruleDescription: '理财产品外呼风险提示合规抽检',
+    inspectType: 'ai',
+    qualityModel: 'compliance',
     dataType: 'ai_assisted',
     samplingMethod: 'average',
     allocationMethod: 'perPerson',
@@ -1050,6 +1119,8 @@ const mockData: SamplingRuleItem[] = [
     ruleId: 1008,
     ruleName: '保险业务合规抽检',
     ruleDescription: '保险产品外呼合规性抽检规则',
+    inspectType: 'manual',
+    qualityModel: 'service',
     dataType: 'manual_outbound',
     samplingMethod: 'ratio',
     allocationMethod: 'total',
@@ -1097,8 +1168,20 @@ const getScheduleLabel = (record: SamplingRuleItem) => {
   return desc
 }
 
+const getViewScheduleLabel = (record: SamplingRuleItem) => {
+  let desc = `每天 ${record.executeTime}`
+  if (record.dataOffsetMode === 'timeRange') {
+    desc += `，抓取当天 ${record.dataStartTime || '未设置'}~${record.dataEndTime || '未设置'} 的数据`
+  } else {
+    desc += `，T-${record.dataOffset} 日`
+  }
+  return desc
+}
+
 // ============ 弹窗相关 ============
 const modalVisible = ref(false)
+const viewModalVisible = ref(false)
+const viewRecord = ref<SamplingRuleItem | null>(null)
 const currentStep = ref(1)
 const isEditMode = ref(false)
 const isViewMode = ref(false)
@@ -1224,12 +1307,8 @@ const handleCreate = () => {
 }
 
 const handleView = (record: SamplingRuleItem) => {
-  isViewMode.value = true
-  isEditMode.value = false
-  editingRuleId.value = record.ruleId
-  currentStep.value = 1
-  fillFormData(record)
-  modalVisible.value = true
+  viewRecord.value = record
+  viewModalVisible.value = true
 }
 
 const handleEdit = (record: SamplingRuleItem) => {
@@ -1977,5 +2056,21 @@ const handleDeleteDurationItem = (index: number) => {
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
+}
+
+/* 查看规则概览弹窗 */
+.view-overview-content {
+  padding: 8px 0;
+}
+
+.view-section {
+  margin-bottom: 0;
+}
+
+.view-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 16px;
 }
 </style>

@@ -1,12 +1,12 @@
 <template>
-  <div class="manual-call-report">
+  <div class="ai-call-record">
     <div class="quality-wrapper">
       <!-- 页面标题区域 -->
       <div class="page-header-section">
         <div class="page-header">
           <div class="header-left">
-            <h2 class="page-title">人工通信接口外呼记录</h2>
-            <p class="page-description">记录外部系统通过调用"人工外呼通信接口"，产生的人工外呼记录。</p>
+            <h2 class="page-title">AI 外呼记录</h2>
+            <p class="page-description">记录 AI 机器人自动外呼的通话明细，支持查看对话详情与 ASR 识别结果。</p>
           </div>
         </div>
       </div>
@@ -19,13 +19,25 @@
             <a-row :gutter="16" style="margin-bottom: -12px;">
               <a-col :span="6">
                 <a-form-item>
-                  <a-range-picker
-                    v-model:value="searchForm.dialTimeRange"
-                    style="width: 100%"
+                  <a-select
+                    v-model:value="searchForm.scene"
+                    placeholder="请选择外呼场景"
                     allow-clear
-                    :placeholder="['拨打开始时间', '拨打结束时间']"
-                    show-time
-                    format="YYYY-MM-DD HH:mm:ss"
+                  >
+                    <a-select-option value="贷款转存">贷款转存</a-select-option>
+                    <a-select-option value="信用卡营销">信用卡营销</a-select-option>
+                    <a-select-option value="理财推荐">理财推荐</a-select-option>
+                    <a-select-option value="客户回访">客户回访</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="6">
+                <a-form-item>
+                  <a-input
+                    v-model:value="searchForm.batchName"
+                    placeholder="请输入数据批次名称"
+                    allow-clear
+                    @press-enter="handleSearch"
                   />
                 </a-form-item>
               </a-col>
@@ -49,27 +61,17 @@
                   />
                 </a-form-item>
               </a-col>
-              <a-col :span="6">
-                <a-form-item>
-                  <a-select
-                    v-model:value="searchForm.hangupBy"
-                    placeholder="请选择挂断方"
-                    allow-clear
-                  >
-                    <a-select-option value="坐席挂断">坐席挂断</a-select-option>
-                    <a-select-option value="客户挂断">客户挂断</a-select-option>
-                  </a-select>
-                </a-form-item>
-              </a-col>
             </a-row>
             <a-row :gutter="16" style="margin-top: -12px;">
               <a-col :span="6">
                 <a-form-item>
-                  <a-input
-                    v-model:value="searchForm.seatExtNum"
-                    placeholder="请输入坐席分机号"
+                  <a-range-picker
+                    v-model:value="searchForm.dialTimeRange"
+                    style="width: 100%"
                     allow-clear
-                    @press-enter="handleSearch"
+                    :placeholder="['拨打开始时间', '拨打结束时间']"
+                    show-time
+                    format="YYYY-MM-DD HH:mm:ss"
                   />
                 </a-form-item>
               </a-col>
@@ -80,20 +82,20 @@
                     placeholder="请选择通话状态"
                     allow-clear
                   >
-                    <a-select-option value="1">已接通</a-select-option>
-                    <a-select-option value="0">未接通</a-select-option>
+                    <a-select-option value="已接通">已接通</a-select-option>
+                    <a-select-option value="未接通">未接通</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
               <a-col :span="6">
                 <a-form-item>
                   <a-select
-                    v-model:value="searchForm.dialMethod"
-                    placeholder="请选择外呼发起方式"
+                    v-model:value="searchForm.transferStatus"
+                    placeholder="请选择转人工状态"
                     allow-clear
                   >
-                    <a-select-option value="坐席分机">坐席分机</a-select-option>
-                    <a-select-option value="坐席手机">坐席手机</a-select-option>
+                    <a-select-option value="已转人工">已转人工</a-select-option>
+                    <a-select-option value="未转人工">未转人工</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
@@ -142,26 +144,33 @@
               :loading="loading"
               row-key="callUuid"
               :row-selection="{ selectedRowKeys, onChange: onSelectChange }"
-              :scroll="{ x: 2000 }"
+              :scroll="{ x: 2400 }"
               @change="handleTableChange"
             >
-              <!-- 通话状态列 -->
               <template #bodyCell="{ column, record }">
+                <!-- 通话状态列 -->
                 <template v-if="column.key === 'callStatus'">
                   <a-badge
                     :status="record.callStatus === '已接通' ? 'success' : 'error'"
                     :text="record.callStatus"
                   />
                 </template>
-                <!-- 挂断方列 -->
-                <template v-else-if="column.key === 'hangupBy'">
-                  <a-tag :color="record.hangupBy === '坐席挂断' ? 'blue' : 'green'">
-                    {{ record.hangupBy }}
+                <!-- 转人工状态列 -->
+                <template v-else-if="column.key === 'transferStatus'">
+                  <a-tag :color="record.transferStatus === '已转人工' ? 'orange' : 'default'">
+                    {{ record.transferStatus }}
                   </a-tag>
                 </template>
                 <!-- 通话时长列 -->
                 <template v-else-if="column.key === 'callDuration'">
                   {{ formatDuration(record.callDuration) }}
+                </template>
+                <!-- 意图识别列 -->
+                <template v-else-if="column.key === 'intentResult'">
+                  <a-tag v-if="record.intentResult && record.intentResult !== '-'" color="blue">
+                    {{ record.intentResult }}
+                  </a-tag>
+                  <span v-else>-</span>
                 </template>
                 <!-- 操作列 -->
                 <template v-else-if="column.key === 'action'">
@@ -187,7 +196,7 @@
     <!-- 列设置弹窗 -->
     <ColumnSettingModal
       ref="columnSettingModalRef"
-      page-key="manual-call-report"
+      page-key="ai-call-record"
       :default-columns="allColumns"
       @save="handleColumnSave"
       @cancel="handleColumnCancel"
@@ -231,50 +240,22 @@
             v-for="(item, index) in asrDialogList"
             :key="index"
             class="chat-row"
-            :class="item.role === 'seat' ? 'chat-row-left' : 'chat-row-right'"
+            :class="item.role === 'robot' ? 'chat-row-left' : 'chat-row-right'"
           >
-            <!-- 坐席：头像在左 -->
-            <template v-if="item.role === 'seat'">
+            <!-- 机器人：头像在左 -->
+            <template v-if="item.role === 'robot'">
               <div class="chat-avatar">
-                <a-avatar :size="40" style="background-color: #1890ff">
-                  <template #icon><UserOutlined /></template>
+                <a-avatar :size="40" style="background-color: #722ed1">
+                  <template #icon><RobotOutlined /></template>
                 </a-avatar>
               </div>
               <div class="chat-bubble-wrap">
                 <div class="chat-name">
-                  <span>坐席</span>
-                  <a-tooltip v-if="item.endpoint">
-                    <template #title>
-                      端点检测：VAD 响应 {{ item.endpoint.vadDuration }}ms
-                    </template>
-                    <a-tag class="asr-endpoint-tag" color="blue" size="small">
-                      <span class="asr-endpoint-dot"></span>端点检测
-                    </a-tag>
-                  </a-tooltip>
-                  <a-tag v-if="item.confidence" class="asr-confidence-tag" size="small">
-                    置信度 {{ item.confidence }}%
-                  </a-tag>
+                  <span>AI 机器人</span>
                 </div>
-                <div class="chat-bubble chat-bubble-left">
-                  <template v-for="(seg, si) in getTextSegments(item)" :key="si">
-                    <span v-if="seg.type === 'text'">{{ seg.content }}</span>
-                    <a-tooltip v-else>
-                      <template #title>
-                        <span>{{ seg.tooltip }}</span>
-                      </template>
-                      <span :class="['asr-annotation', getAnnotationClass(seg.type)]">
-                        {{ seg.content }}
-                        <span class="asr-ann-badge">{{ getAnnotationLabel(seg.type) }}</span>
-                      </span>
-                    </a-tooltip>
-                  </template>
-                  <div v-if="item.annotations && item.annotations.length > 0" class="asr-processed-mark">
-                    <check-circle-outlined /> 后处理
-                  </div>
-                </div>
+                <div class="chat-bubble chat-bubble-left">{{ item.text }}</div>
                 <div class="asr-meta">
                   <span class="asr-time">{{ item.time }}</span>
-                  <span class="asr-punctuation-tag">智能断句</span>
                 </div>
               </div>
             </template>
@@ -315,6 +296,21 @@
                 <div class="asr-meta asr-meta-right">
                   <span class="asr-punctuation-tag">智能断句</span>
                   <span class="asr-time">{{ item.time }}</span>
+                </div>
+                <!-- 语义分析标签 -->
+                <div v-if="item.semantic" class="semantic-section">
+                  <div class="semantic-row" v-if="item.semantic.intentTag">
+                    <span class="semantic-label">意图</span>
+                    <a-tag color="blue" size="small">{{ item.semantic.intentTag }}</a-tag>
+                  </div>
+                  <div class="semantic-row" v-if="item.semantic.keywords && item.semantic.keywords.length > 0">
+                    <span class="semantic-label">关键词</span>
+                    <a-tag v-for="kw in item.semantic.keywords" :key="kw" size="small" class="semantic-kw-tag">{{ kw }}</a-tag>
+                  </div>
+                  <div class="semantic-row" v-if="item.semantic.contextRef">
+                    <span class="semantic-label">上下文</span>
+                    <span class="semantic-context">{{ item.semantic.contextRef }}</span>
+                  </div>
                 </div>
               </div>
               <div class="chat-avatar">
@@ -382,6 +378,7 @@ import {
   SettingOutlined,
   FileExcelOutlined,
   UserOutlined,
+  RobotOutlined,
   DownOutlined,
   UpOutlined,
   CheckCircleOutlined,
@@ -397,33 +394,34 @@ import * as XLSX from 'xlsx';
 // 搜索表单
 const searchFormRef = ref<any>();
 const searchForm = reactive({
-  dialTimeRange: undefined as [Dayjs, Dayjs] | undefined,
+  scene: undefined as string | undefined,
+  batchName: '',
   callerPhoneNum: '',
   calleePhoneNum: '',
-  hangupBy: undefined as string | undefined,
-  seatExtNum: '',
+  dialTimeRange: undefined as [Dayjs, Dayjs] | undefined,
   callStatus: undefined as string | undefined,
-  dialMethod: undefined as string | undefined,
+  transferStatus: undefined as string | undefined,
 });
 
 // 表格数据接口
 interface ReportItem {
   callUuid: string;
   callRecordPath: string;
+  scene: string;
+  batchName: string;
+  robotName: string;
   callerPhoneNum: string;
   calleePhoneNum: string;
   calleeArea: string;
-  seatExtNum: string;
-  seatMobile: string;
-  dialMethod: string;
+  customerName: string;
   dialTime: string;
-  seatAnswerTime: string;
-  custAnswerTime: string;
+  answerTime: string;
   hangupTime: string;
-  hangupBy: string;
-  callStatus: string;
   callDuration: number;
-  dialContent: string;
+  callStatus: string;
+  answerResult: string;
+  intentResult: string;
+  transferStatus: string;
 }
 
 // 表格数据
@@ -448,21 +446,21 @@ const currentColumns = ref<ColumnConfigItem[]>([]);
 // 定义所有列
 const allColumns: ColumnConfigItem[] = [
   { key: 'callUuid', title: '通话ID', dataIndex: 'callUuid', width: 200, visible: true, order: 0 },
-  { key: 'callRecordPath', title: '通话录音路径', dataIndex: 'callRecordPath', width: 220, visible: true, order: 1 },
-  { key: 'callerPhoneNum', title: '主叫号码', dataIndex: 'callerPhoneNum', width: 140, visible: true, order: 2 },
-  { key: 'calleePhoneNum', title: '被叫号码', dataIndex: 'calleePhoneNum', width: 140, visible: true, order: 3 },
-  { key: 'calleeArea', title: '被叫归属地', dataIndex: 'calleeArea', width: 120, visible: true, order: 4 },
-  { key: 'seatExtNum', title: '坐席分机号', dataIndex: 'seatExtNum', width: 120, visible: true, order: 5 },
-  { key: 'seatMobile', title: '坐席手机号', dataIndex: 'seatMobile', width: 140, visible: true, order: 6 },
-  { key: 'dialMethod', title: '外呼发起方式', dataIndex: 'dialMethod', width: 130, visible: true, order: 7 },
+  { key: 'scene', title: '外呼场景', dataIndex: 'scene', width: 180, visible: true, order: 1 },
+  { key: 'batchName', title: '数据批次名称', dataIndex: 'batchName', width: 200, visible: true, order: 2 },
+  { key: 'robotName', title: '机器人名称', dataIndex: 'robotName', width: 130, visible: true, order: 3 },
+  { key: 'callerPhoneNum', title: '主叫号码', dataIndex: 'callerPhoneNum', width: 140, visible: true, order: 4 },
+  { key: 'calleePhoneNum', title: '被叫号码', dataIndex: 'calleePhoneNum', width: 140, visible: true, order: 5 },
+  { key: 'calleeArea', title: '被叫归属地', dataIndex: 'calleeArea', width: 120, visible: true, order: 6 },
+  { key: 'customerName', title: '客户姓名', dataIndex: 'customerName', width: 110, visible: true, order: 7 },
   { key: 'dialTime', title: '拨打时间', dataIndex: 'dialTime', width: 180, visible: true, order: 8 },
-  { key: 'seatAnswerTime', title: '坐席接听时间', dataIndex: 'seatAnswerTime', width: 180, visible: true, order: 9 },
-  { key: 'custAnswerTime', title: '客户接听时间', dataIndex: 'custAnswerTime', width: 180, visible: true, order: 10 },
-  { key: 'hangupTime', title: '挂断时间', dataIndex: 'hangupTime', width: 180, visible: true, order: 11 },
-  { key: 'hangupBy', title: '挂断方', dataIndex: 'hangupBy', width: 100, visible: true, order: 12 },
-  { key: 'callStatus', title: '通话状态', dataIndex: 'callStatus', width: 100, visible: true, order: 13 },
-  { key: 'callDuration', title: '通话时长', dataIndex: 'callDuration', width: 110, visible: true, order: 14 },
-  { key: 'dialContent', title: '拨号内容', dataIndex: 'dialContent', width: 300, visible: true, order: 15 },
+  { key: 'answerTime', title: '接通时间', dataIndex: 'answerTime', width: 180, visible: true, order: 9 },
+  { key: 'hangupTime', title: '挂断时间', dataIndex: 'hangupTime', width: 180, visible: true, order: 10 },
+  { key: 'callDuration', title: '通话时长', dataIndex: 'callDuration', width: 110, visible: true, order: 11 },
+  { key: 'callStatus', title: '通话状态', dataIndex: 'callStatus', width: 100, visible: true, order: 12 },
+  { key: 'answerResult', title: '接通结果', dataIndex: 'answerResult', width: 120, visible: true, order: 13 },
+  { key: 'intentResult', title: '意图识别', dataIndex: 'intentResult', width: 120, visible: true, order: 14 },
+  { key: 'transferStatus', title: '转人工状态', dataIndex: 'transferStatus', width: 110, visible: true, order: 15 },
   { key: 'action', title: '操作', dataIndex: 'action', width: 120, visible: true, order: 16 },
 ];
 
@@ -474,20 +472,21 @@ const detailExpanded = ref(true);
 // 详情字段定义
 const detailFields = [
   { key: 'callUuid', label: '通话ID' },
+  { key: 'scene', label: '外呼场景' },
+  { key: 'batchName', label: '数据批次名称' },
+  { key: 'robotName', label: '机器人名称' },
   { key: 'callerPhoneNum', label: '主叫号码' },
   { key: 'calleePhoneNum', label: '被叫号码' },
   { key: 'calleeArea', label: '被叫归属地' },
-  { key: 'seatExtNum', label: '坐席分机号' },
-  { key: 'seatMobile', label: '坐席手机号' },
-  { key: 'dialMethod', label: '外呼发起方式' },
+  { key: 'customerName', label: '客户姓名' },
   { key: 'dialTime', label: '拨打时间' },
-  { key: 'seatAnswerTime', label: '坐席接听时间' },
-  { key: 'custAnswerTime', label: '客户接听时间' },
+  { key: 'answerTime', label: '接通时间' },
   { key: 'hangupTime', label: '挂断时间' },
-  { key: 'hangupBy', label: '挂断方' },
-  { key: 'callStatus', label: '通话状态' },
   { key: 'callDuration', label: '通话时长', format: 'duration' as const },
-  { key: 'dialContent', label: '拨号内容' },
+  { key: 'callStatus', label: '通话状态' },
+  { key: 'answerResult', label: '接通结果' },
+  { key: 'intentResult', label: '意图识别' },
+  { key: 'transferStatus', label: '转人工状态' },
   { key: 'callRecordPath', label: '通话录音路径' },
 ];
 
@@ -499,6 +498,7 @@ const getDetailFieldValue = (record: ReportItem | null, field: typeof detailFiel
   return String(value);
 };
 
+// ASR 相关类型定义
 interface AsrAnnotation {
   type: 'replace' | 'highlight' | 'number';
   start: number;
@@ -512,13 +512,20 @@ interface AsrEndpoint {
   isEndpoint: boolean;
 }
 
+interface SemanticAnalysis {
+  intentTag: string;
+  keywords: string[];
+  contextRef?: string;
+}
+
 interface AsrItem {
-  role: 'seat' | 'customer';
+  role: 'robot' | 'customer';
   time: string;
   text: string;
   confidence: number;
   endpoint?: AsrEndpoint;
   annotations?: AsrAnnotation[];
+  semantic?: SemanticAnalysis;
 }
 const asrDialogList = ref<AsrItem[]>([]);
 
@@ -577,8 +584,6 @@ const exportFieldOptions = computed(() => {
     label: col.title as string,
     value: col.dataIndex as string,
   }));
-  // 追加"对话内容"
-  cols.push({ label: '对话内容', value: 'dialContent' });
   return cols;
 });
 
@@ -596,6 +601,7 @@ const handleExportCheckAll = (e: any) => {
     exportFieldKeys.value = [];
   }
 };
+
 // 根据当前配置计算可见列
 const visibleColumns = computed(() => {
   const columnsToUse = currentColumns.value.length > 0 ? currentColumns.value : allColumns;
@@ -614,7 +620,7 @@ const visibleColumns = computed(() => {
 
 // 初始化时加载保存的列配置
 onMounted(() => {
-  const stored = localStorage.getItem('column_config_manual-call-report');
+  const stored = localStorage.getItem('column_config_ai-call-record');
   if (stored) {
     try {
       const savedConfig = JSON.parse(stored);
@@ -649,42 +655,32 @@ const loadData = () => {
   loading.value = true;
   // TODO: 调用后端 API 获取数据
   setTimeout(() => {
+    const scenes = ['贷款转存', '信用卡营销', '理财推荐', '客户回访'];
+    const robots = ['小象助手-贷款版', '小象助手-信用卡版', '小象助手-理财版', '小象助手-回访版'];
+    const intents = ['有意向', '无意向', '需跟进', '已拒绝', '-'];
+    const answerResults = ['本人接听', '他人接听', '语音信箱', '空号', '关机'];
     dataSource.value = Array.from({ length: 15 }, (_, index) => {
-      const isExt = index % 2 === 0;
-      const mobile = `139${String(80000000 + index * 1111).slice(0, 8)}`;
+      const sceneIdx = index % 4;
+      const mobile = `138${String(10000000 + index * 1111111).slice(0, 8)}`;
+      const isAnswered = index % 3 !== 0;
       return {
-        callUuid: `CALL-20260508-${String(index + 1).padStart(3, '0')}`,
-        callRecordPath: `/records/2026/05/08/${String(index + 1).padStart(3, '0')}.wav`,
-        callerPhoneNum: isExt ? `021-5555${String(1000 + index).slice(1)}` : mobile,
-        calleePhoneNum: `138${String(10000000 + index * 1111).slice(0, 8)}`,
+        callUuid: `AI-CALL-${String(index + 1).padStart(6, '0')}`,
+        callRecordPath: `/records/ai/2026/05/08/${String(index + 1).padStart(3, '0')}.wav`,
+        scene: scenes[sceneIdx],
+        batchName: `批次-${scenes[sceneIdx]}-20260508`,
+        robotName: robots[sceneIdx],
+        callerPhoneNum: `0571-8888${String(1000 + index).slice(1)}`,
+        calleePhoneNum: mobile,
         calleeArea: ['上海', '北京', '广州', '深圳', '杭州'][index % 5],
-        seatExtNum: isExt ? `8${String(100 + index)}` : '-',
-        seatMobile: isExt ? '-' : mobile,
-        dialMethod: isExt ? '坐席分机' : '坐席手机',
+        customerName: ['张三', '李四', '王五', '赵六', '钱七'][index % 5],
         dialTime: `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:30`,
-        seatAnswerTime: `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:35`,
-        custAnswerTime: index % 3 === 0 ? '-' : `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:42`,
+        answerTime: isAnswered ? `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:35` : '-',
         hangupTime: `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(18 + index).padStart(2, '0')}:20`,
-        hangupBy: ['坐席挂断', '客户挂断'][index % 2],
-        callStatus: index % 3 === 0 ? '未接通' : '已接通',
-        callDuration: [158, 30, 457, 210, 95, 300, 180, 45, 520, 130, 60, 390, 240, 75, 480][index],
-        dialContent: [
-          '客户咨询理财产品到期续期事宜',
-          '信用卡账单提醒',
-          '贷款还款提醒及还款方案沟通',
-          '保险产品推荐',
-          '基金定投收益汇报',
-          '客户投诉处理跟进',
-          '新开户资料补充通知',
-          'VIP 客户专属活动邀请',
-          '房贷利率调整通知',
-          '信用卡额度提升邀请',
-          '理财产品到期提醒',
-          '客户回访满意度调查',
-          '贷款审批进度通知',
-          '账户异常交易提醒',
-          '贵宾服务升级通知',
-        ][index],
+        callDuration: isAnswered ? [158, 30, 457, 210, 95, 300, 180, 45, 520, 130, 60][index % 11] : 0,
+        callStatus: isAnswered ? '已接通' : '未接通',
+        answerResult: isAnswered ? answerResults[index % 3] : answerResults[3 + (index % 2)],
+        intentResult: isAnswered ? intents[index % 5] : '-',
+        transferStatus: isAnswered && index % 5 === 0 ? '已转人工' : '未转人工',
       };
     });
     total.value = 150;
@@ -705,13 +701,13 @@ const handleSearch = () => {
 
 // 重置
 const handleReset = () => {
-  searchForm.dialTimeRange = undefined;
+  searchForm.scene = undefined;
+  searchForm.batchName = '';
   searchForm.callerPhoneNum = '';
   searchForm.calleePhoneNum = '';
-  searchForm.hangupBy = undefined;
-  searchForm.seatExtNum = '';
+  searchForm.dialTimeRange = undefined;
   searchForm.callStatus = undefined;
-  searchForm.dialMethod = undefined;
+  searchForm.transferStatus = undefined;
   pagination.current = 1;
   loadData();
   message.success('重置成功');
@@ -745,101 +741,161 @@ const handleColumnSave = (columns: ColumnConfigItem[]) => {
 };
 
 // 列设置取消回调
-const handleColumnCancel = () => {
-  // 取消时不做任何操作
-};
+const handleColumnCancel = () => {};
 
 // 查看对话详情
 const handleViewDetail = (record: ReportItem) => {
   detailRecord.value = record;
   // TODO: 调用后端 API 获取 ASR 对话文本
   asrDialogList.value = [
+    // ── 第一轮：开场确认身份 ──
     {
-      role: 'seat',
-      time: '00:00:05',
-      text: '您好，这里是XX银行客户服务中心，请问是张先生吗？',
-      confidence: 98,
-      endpoint: { vadDuration: 120, isEndpoint: true },
+      role: 'robot',
+      time: '00:00:03',
+      text: '您好，我是XX银行的智能客服小象，请问是张三先生吗？',
+      confidence: 0,
     },
     {
       role: 'customer',
-      time: '00:00:08',
-      text: '是的，我是。',
-      confidence: 96,
-      endpoint: { vadDuration: 85, isEndpoint: true },
-    },
-    {
-      role: 'seat',
-      time: '00:00:12',
-      text: '张先生您好，您在我行有一笔理财产品即将到期，想跟您确认一下续期意向。',
-      confidence: 94,
-      endpoint: { vadDuration: 150, isEndpoint: true },
-      annotations: [
-        { type: 'replace' as const, start: 16, end: 18, original: '一齐', value: '一起' },
-      ],
-    },
-    {
-      role: 'customer',
-      time: '00:00:18',
-      text: '哦好的，是什么产品？',
-      confidence: 93,
-      endpoint: { vadDuration: 92, isEndpoint: true },
-    },
-    {
-      role: 'seat',
-      time: '00:00:22',
-      text: '是您去年购买的稳健型理财产品，年化收益是百分之四点五，到期日是下个月十五号。',
+      time: '00:00:06',
+      text: '嗯，是我。',
       confidence: 95,
-      endpoint: { vadDuration: 180, isEndpoint: true },
+      endpoint: { vadDuration: 80, isEndpoint: true },
+      semantic: {
+        intentTag: '确认身份',
+        keywords: ['是'],
+      },
+    },
+    // ── 第二轮：AI 引出业务，客户残缺意图表达 ──
+    {
+      role: 'robot',
+      time: '00:00:10',
+      text: '张先生您好，您在我行有一笔个人消费贷款即将到期，想跟您确认一下续贷事宜。',
+      confidence: 0,
+    },
+    {
+      role: 'customer',
+      time: '00:00:16',
+      text: '贷款？什么贷款来着…就是之前那个嘛。',
+      confidence: 91,
+      endpoint: { vadDuration: 95, isEndpoint: true },
       annotations: [
-        { type: 'highlight' as const, start: 10, end: 14, original: '稳健型理财', value: '稳健型理财' },
-        { type: 'number' as const, start: 19, end: 26, original: '百分之四点五', value: '4.5%' },
-        { type: 'number' as const, start: 32, end: 36, original: '十五号', value: '15号' },
+        { type: 'replace' as const, start: 10, end: 12, original: '辣是', value: '就是' },
       ],
+      semantic: {
+        intentTag: '残缺追问',
+        keywords: ['贷款', '之前'],
+        contextRef: '关联上文「个人消费贷款」，补充指代消解',
+      },
+    },
+    // ── 第三轮：AI 基于上下文补全信息 ──
+    {
+      role: 'robot',
+      time: '00:00:22',
+      text: '您去年三月申请的那笔，金额三十万元，年化利率百分之四点三五，到期日是下个月二十号。您还有印象吗？',
+      confidence: 0,
     },
     {
       role: 'customer',
       time: '00:00:30',
-      text: '收益还可以，我想了解一下新的产品有什么选择。',
-      confidence: 95,
+      text: '哦哦，想起来了，那个利率…能不能再低点？',
+      confidence: 93,
       endpoint: { vadDuration: 110, isEndpoint: true },
+      semantic: {
+        intentTag: '议价咨询',
+        keywords: ['利率', '低'],
+        contextRef: '承接上文「年化利率4.35%」，延续利率话题',
+      },
     },
+    // ── 第四轮：AI 识别议价意图并引导 ──
     {
-      role: 'seat',
-      time: '00:00:35',
-      text: '好的，目前我们有几款新产品，我可以发短信给您详细介绍，您看方便吗？',
-      confidence: 97,
-      endpoint: { vadDuration: 280, isEndpoint: true },
+      role: 'robot',
+      time: '00:00:36',
+      text: '理解您的想法。目前续贷可以享受老客户专属优惠，利率最低可至百分之三点八五，比上次降了零点五个百分点。您看这个方案可以吗？',
+      confidence: 0,
     },
     {
       role: 'customer',
-      time: '00:00:40',
-      text: '好的，可以的，谢谢。',
-      confidence: 97,
-      endpoint: { vadDuration: 75, isEndpoint: true },
-    },
-    {
-      role: 'seat',
       time: '00:00:45',
-      text: '贷款金额是三万五千元，分十二期还款。',
-      confidence: 92,
-      endpoint: { vadDuration: 200, isEndpoint: true },
+      text: '嗯…还行吧，那个…还款方式呢，能不能长一点？',
+      confidence: 89,
+      endpoint: { vadDuration: 130, isEndpoint: true },
       annotations: [
-        { type: 'number' as const, start: 5, end: 10, original: '三万五千元', value: '35000元' },
-        { type: 'number' as const, start: 12, end: 15, original: '十二期', value: '12期' },
+        { type: 'replace' as const, start: 15, end: 17, original: '那格', value: '那个' },
       ],
+      semantic: {
+        intentTag: '条件咨询',
+        keywords: ['还款方式', '长'],
+        contextRef: '上文已讨论利率，客户主动转入还款期限话题',
+      },
+    },
+    // ── 第五轮：AI 基于上下文理解"长一点"指期限 ──
+    {
+      role: 'robot',
+      time: '00:00:52',
+      text: '可以的，续贷支持延长至三十六期，每月还款压力会小很多。以三十万为例，月供大约八千六百元左右。',
+      confidence: 0,
     },
     {
       role: 'customer',
-      time: '00:00:50',
-      text: '好的，明白了，我考虑一下。',
-      confidence: 96,
+      time: '00:01:00',
+      text: '那行，差不多，就这个吧。',
+      confidence: 94,
       endpoint: { vadDuration: 88, isEndpoint: true },
+      semantic: {
+        intentTag: '表达意向',
+        keywords: ['这个'],
+        contextRef: '指代上文「三十六期方案」，残缺代词消解',
+      },
+    },
+    // ── 第六轮：AI 确认意向并推进 ──
+    {
+      role: 'robot',
+      time: '00:01:05',
+      text: '好的，那为您登记续贷意向。请问您方便近期到网点办理手续吗？需要携带身份证和银行卡。',
+      confidence: 0,
+    },
+    {
+      role: 'customer',
+      time: '00:01:12',
+      text: '最近有点忙…能不能线上弄？',
+      confidence: 92,
+      endpoint: { vadDuration: 105, isEndpoint: true },
+      semantic: {
+        intentTag: '变更渠道',
+        keywords: ['线上'],
+        contextRef: '上文提议「到网点」，客户反向提出线上需求',
+      },
+    },
+    // ── 第七轮：AI 灵活应对变更需求 ──
+    {
+      role: 'robot',
+      time: '00:01:18',
+      text: '当然可以，我们支持手机银行线上办理续贷。稍后会把操作链接以短信发到您手机上，按提示操作即可。',
+      confidence: 0,
+    },
+    {
+      role: 'customer',
+      time: '00:01:25',
+      text: '好的好的，那就这样，谢谢啊。',
+      confidence: 96,
+      endpoint: { vadDuration: 78, isEndpoint: true },
+      semantic: {
+        intentTag: '确认结束',
+        keywords: ['谢谢'],
+        contextRef: '多轮讨论达成一致，客户主动结束对话',
+      },
+    },
+    // ── 第八轮：AI 结束语 ──
+    {
+      role: 'robot',
+      time: '00:01:29',
+      text: '不客气，祝您生活愉快！办理过程中如有疑问可随时拨打客服热线，再见。',
+      confidence: 0,
     },
   ];
   detailModalVisible.value = true;
 };
-
 
 // 导出 Excel
 const handleExportExcel = () => {
@@ -857,15 +913,15 @@ const handleExportExcel = () => {
   const wsData = [headers, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '人工通信接口外呼记录');
-  XLSX.writeFile(wb, '人工通信接口外呼记录.xlsx');
+  XLSX.utils.book_append_sheet(wb, ws, 'AI外呼记录');
+  XLSX.writeFile(wb, 'AI外呼记录.xlsx');
   exportModalVisible.value = false;
   message.success('导出成功');
 };
 </script>
 
 <style scoped>
-.manual-call-report {
+.ai-call-record {
   padding: 0;
 }
 
@@ -1262,5 +1318,46 @@ const handleExportExcel = () => {
   border-radius: 2px;
   padding: 0 4px;
   line-height: 16px;
+}
+
+/* 语义分析区域 */
+.semantic-section {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.semantic-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 22px;
+}
+
+.semantic-row + .semantic-row {
+  margin-top: 2px;
+}
+
+.semantic-label {
+  color: #999;
+  flex-shrink: 0;
+  font-size: 11px;
+  min-width: 32px;
+}
+
+.semantic-kw-tag {
+  background: #fff7e6 !important;
+  border-color: #ffd591 !important;
+  color: #d46b08 !important;
+  font-size: 11px !important;
+}
+
+.semantic-context {
+  color: #8c8c8c;
+  font-size: 11px;
+  font-style: italic;
 }
 </style>
