@@ -10,10 +10,6 @@
           </div>
           <div class="header-right">
             <a-space>
-              <a-button class="create-task-btn" @click="handleCreateSamplingRule">
-                <experiment-outlined />
-                新建抽检规则
-              </a-button>
               <a-button type="primary" class="create-task-btn" @click="handleCreateTask">
                 <plus-outlined />
                 新建质检任务

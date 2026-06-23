@@ -142,19 +142,19 @@
               </div>
               <!-- AI 质检评分汇总 -->
               <div class="score-summary-box">
-                <div class="score-summary-title">评分汇总</div>
+                <div class="score-summary-title">评分汇总（百分制）</div>
                 <div class="score-summary-items">
-                  <div class="score-item score-add">
-                    <span class="score-label">得分</span>
-                    <span class="score-value">+{{ aiScoreSummary.add }}分</span>
+                  <div class="score-item score-total-base">
+                    <span class="score-label">满分</span>
+                    <span class="score-value">100 分</span>
                   </div>
                   <div class="score-item score-deduct">
                     <span class="score-label">扣分</span>
-                    <span class="score-value">-{{ aiScoreSummary.deduct }}分</span>
+                    <span class="score-value">-{{ aiScoreSummary.totalDeductions }}分</span>
                   </div>
                   <div class="score-item score-total">
-                    <span class="score-label">合计</span>
-                    <span class="score-value" :class="aiScoreSummary.total >= 0 ? 'positive' : 'negative'">{{ aiScoreSummary.total >= 0 ? '+' : '' }}{{ aiScoreSummary.total }}分</span>
+                    <span class="score-label">最终得分</span>
+                    <span class="score-value" :class="aiScoreSummary.finalScore >= 80 ? 'positive' : aiScoreSummary.finalScore >= 60 ? 'warning' : 'negative'">{{ aiScoreSummary.finalScore }}分</span>
                   </div>
                 </div>
               </div>
@@ -230,19 +230,19 @@
               </div>
               <!-- 评分汇总 -->
               <div class="score-summary-box">
-                <div class="score-summary-title">评分汇总</div>
+                <div class="score-summary-title">评分汇总（百分制）</div>
                 <div class="score-summary-items">
-                  <div class="score-item score-add">
-                    <span class="score-label">得分</span>
-                    <span class="score-value">+{{ allScoreSummary.add }}分</span>
+                  <div class="score-item score-total-base">
+                    <span class="score-label">满分</span>
+                    <span class="score-value">100 分</span>
                   </div>
                   <div class="score-item score-deduct">
                     <span class="score-label">扣分</span>
-                    <span class="score-value">-{{ allScoreSummary.deduct }}分</span>
+                    <span class="score-value">-{{ allScoreSummary.totalDeductions }}分</span>
                   </div>
                   <div class="score-item score-total">
-                    <span class="score-label">合计</span>
-                    <span class="score-value" :class="allScoreSummary.total >= 0 ? 'positive' : 'negative'">{{ allScoreSummary.total >= 0 ? '+' : '' }}{{ allScoreSummary.total }}分</span>
+                    <span class="score-label">最终得分</span>
+                    <span class="score-value" :class="allScoreSummary.finalScore >= 80 ? 'positive' : allScoreSummary.finalScore >= 60 ? 'warning' : 'negative'">{{ allScoreSummary.finalScore }}分</span>
                   </div>
                 </div>
               </div>
@@ -320,19 +320,19 @@
               </div>
               <!-- 评分汇总 -->
               <div class="score-summary-box">
-                <div class="score-summary-title">评分汇总</div>
+                <div class="score-summary-title">评分汇总（百分制）</div>
                 <div class="score-summary-items">
-                  <div class="score-item score-add">
-                    <span class="score-label">得分</span>
-                    <span class="score-value">+{{ allScoreSummary.add }}分</span>
+                  <div class="score-item score-total-base">
+                    <span class="score-label">满分</span>
+                    <span class="score-value">100 分</span>
                   </div>
                   <div class="score-item score-deduct">
                     <span class="score-label">扣分</span>
-                    <span class="score-value">-{{ allScoreSummary.deduct }}分</span>
+                    <span class="score-value">-{{ allScoreSummary.totalDeductions }}分</span>
                   </div>
                   <div class="score-item score-total">
-                    <span class="score-label">合计</span>
-                    <span class="score-value" :class="allScoreSummary.total >= 0 ? 'positive' : 'negative'">{{ allScoreSummary.total >= 0 ? '+' : '' }}{{ allScoreSummary.total }}分</span>
+                    <span class="score-label">最终得分</span>
+                    <span class="score-value" :class="allScoreSummary.finalScore >= 80 ? 'positive' : allScoreSummary.finalScore >= 60 ? 'warning' : 'negative'">{{ allScoreSummary.finalScore }}分</span>
                   </div>
                 </div>
               </div>
@@ -513,27 +513,27 @@ const ruleKeywords: Record<string, string[]> = {
   'B2': ['身份证号码', '身份证号', '电话号码', '手机号', '银行卡号', '卡号', '账户余额', '资产', '存款', '理财金额', '投资金额', '您的尾号', '后四位', '前六位', '住址', '地址', '工作单位', '单位地址', '职业', '收入']
 }
 
-// 各质检规则的评分配置（与 QualityRule.vue 保持一致）
-const ruleScores: Record<string, { type: 'add' | 'deduct'; value: number }> = {
-  'A1': { type: 'deduct', value: 10 },
-  'A2': { type: 'deduct', value: 5 },
-  'A3': { type: 'deduct', value: 5 },
-  'B1': { type: 'deduct', value: 10 },
-  'B2': { type: 'deduct', value: 15 },
+// 各质检规则的扣分配置（百分制，满分 100，逐项扣分）
+const ruleScores: Record<string, number> = {
+  'A1': 5,
+  'A2': 5,
+  'A3': 10,
+  'B1': 10,
+  'B2': 15,
 }
 
 // 获取规则评分显示文本
 const getRuleScoreText = (ruleCode: string): string => {
-  const score = ruleScores[ruleCode]
-  if (!score) return ''
-  return `${score.type === 'add' ? '+' : '-'}${score.value}分`
+  const value = ruleScores[ruleCode]
+  if (!value) return ''
+  return `-${value}分`
 }
 
 // 获取规则评分颜色
 const getRuleScoreColor = (ruleCode: string): string => {
-  const score = ruleScores[ruleCode]
-  if (!score) return 'default'
-  return score.type === 'add' ? 'green' : 'red'
+  const value = ruleScores[ruleCode]
+  if (!value) return 'default'
+  return value >= 10 ? 'red' : 'orange'
 }
 
 // 高亮文本 - 根据对话触发的规则关键词进行高亮
@@ -788,39 +788,35 @@ const manualResults = computed(() => {
   return results
 })
 
-// AI 质检结果评分汇总
+// AI 质检结果评分汇总（百分制扣分）
 const aiScoreSummary = computed(() => {
-  let addScore = 0
-  let deductScore = 0
+  let totalDeductions = 0
   const seen = new Set<string>()
   aiResults.value.forEach(result => {
     if (seen.has(result.ruleCode)) return
     seen.add(result.ruleCode)
-    const score = ruleScores[result.ruleCode]
-    if (!score) return
-    if (score.type === 'add') addScore += score.value
-    else deductScore += score.value
+    const value = ruleScores[result.ruleCode]
+    if (!value) return
+    totalDeductions += value
   })
-  return { add: addScore, deduct: deductScore, total: addScore - deductScore }
+  return { totalDeductions, finalScore: 100 - totalDeductions }
 })
 
-// 全部触发规则评分汇总（从对话中提取所有触发的规则，去重后计算）
+// 全部触发规则评分汇总（百分制扣分，从对话中提取所有触发的规则，去重后计算）
 const allScoreSummary = computed(() => {
-  let addScore = 0
-  let deductScore = 0
+  let totalDeductions = 0
   const seen = new Set<string>()
   conversationList.value.forEach(msg => {
     if (!msg.triggerRules) return
     msg.triggerRules.forEach((rule: any) => {
       if (seen.has(rule.code)) return
       seen.add(rule.code)
-      const score = ruleScores[rule.code]
-      if (!score) return
-      if (score.type === 'add') addScore += score.value
-      else deductScore += score.value
+      const value = ruleScores[rule.code]
+      if (!value) return
+      totalDeductions += value
     })
   })
-  return { add: addScore, deduct: deductScore, total: addScore - deductScore }
+  return { totalDeductions, finalScore: 100 - totalDeductions }
 })
 
 // 获取规则描述
@@ -1533,13 +1529,13 @@ const handleNext = () => {
   font-weight: 600;
 }
 
-.score-item.score-add {
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
+.score-item.score-total-base {
+  background: #f0f5ff;
+  border: 1px solid #adc6ff;
 }
 
-.score-item.score-add .score-value {
-  color: #52c41a;
+.score-item.score-total-base .score-value {
+  color: #1677ff;
 }
 
 .score-item.score-deduct {
@@ -1558,6 +1554,10 @@ const handleNext = () => {
 
 .score-item.score-total .score-value.positive {
   color: #52c41a;
+}
+
+.score-item.score-total .score-value.warning {
+  color: #faad14;
 }
 
 .score-item.score-total .score-value.negative {

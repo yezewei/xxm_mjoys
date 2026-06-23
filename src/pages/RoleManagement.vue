@@ -311,6 +311,17 @@ const permissionTreeData: PermissionTreeNode[] = [
               { key: 'quality-manual-task-delete', title: '删除人工质检任务' },
             ],
           },
+          {
+            key: 'sampling-rule',
+            title: '抽检规则',
+            children: [
+              { key: 'sampling-rule-create', title: '新建抽检规则' },
+              { key: 'sampling-rule-view', title: '查看抽检规则' },
+              { key: 'sampling-rule-edit', title: '编辑抽检规则' },
+              { key: 'sampling-rule-delete', title: '删除抽检规则' },
+              { key: 'sampling-rule-toggle', title: '启用/停用抽检规则' },
+            ],
+          },
         ],
       },
       {

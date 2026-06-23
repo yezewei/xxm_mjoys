@@ -7,6 +7,32 @@
         <div class="page-title">{{ pageTitle }}</div>
       </div>
       <div class="header-right">
+        <!-- 软电话连接状态 -->
+        <a-popover placement="bottomRight" trigger="click">
+          <template #content>
+            <div class="soft-phone-info">
+              <div class="info-item">
+                <span class="info-label">分机号：</span>
+                <span class="info-value">{{ softPhoneInfo.extension }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">本机IP：</span>
+                <span class="info-value">{{ softPhoneInfo.ip }}</span>
+              </div>
+              <div v-if="!softPhoneConnected" class="info-item">
+                <span class="info-label">失败原因：</span>
+                <span class="info-value error">{{ softPhoneInfo.failReason }}</span>
+              </div>
+              <div v-if="!softPhoneConnected" class="info-item">
+                <a class="troubleshoot-link" @click="openTroubleshootModal">查看排查步骤</a>
+              </div>
+            </div>
+          </template>
+          <div class="soft-phone-status" :class="{ 'connected': softPhoneConnected }">
+            <PhoneOutlined />
+            <span class="status-text">{{ softPhoneConnected ? '小象通已连接' : '小象通连接失败' }}</span>
+          </div>
+        </a-popover>
         <a class="header-action">上传任务</a>
         <a class="header-action">下载任务</a>
         <a-badge class="header-action" count="9" size="small">
@@ -24,6 +50,34 @@
         </div>
       </div>
     </header>
+
+    <!-- 小象通排查弹窗 -->
+    <a-modal
+      v-model:open="troubleshootModalVisible"
+      title="小象通连接失败排查"
+      @cancel="closeTroubleshootModal"
+      :footer="null"
+      width="600px"
+    >
+      <div class="troubleshoot-content">
+        <div class="troubleshoot-section">
+          <div class="section-title">问题描述：</div>
+          <div class="section-desc">{{ troubleshootData.problem }}</div>
+        </div>
+        <div class="troubleshoot-section">
+          <div class="section-title">可能原因：</div>
+          <ul class="cause-list">
+            <li v-for="(cause, index) in troubleshootData.causes" :key="index">{{ cause }}</li>
+          </ul>
+        </div>
+        <div class="troubleshoot-section">
+          <div class="section-title">排查步骤：</div>
+          <ol class="step-list">
+            <li v-for="(step, index) in troubleshootData.steps" :key="index">{{ step }}</li>
+          </ol>
+        </div>
+      </div>
+    </a-modal>
 
     <div class="main-layout">
       <!-- 左侧菜单 -->
@@ -250,12 +304,50 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { UserOutlined } from '@ant-design/icons-vue';
+import { UserOutlined, PhoneOutlined } from '@ant-design/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
 const selectedKeys = ref(['exception']);
 const openKeys = ref<string[]>([]);
+
+// 软电话连接状态
+const softPhoneConnected = ref(false)
+const softPhoneInfo = ref({
+  extension: '1001',
+  ip: '192.168.1.100',
+  failReason: 'SIP服务器连接超时'
+})
+
+// 排查弹窗状态
+const troubleshootModalVisible = ref(false)
+const troubleshootData = ref({
+  problem: '小象通软电话无法连接到SIP服务器，导致坐席无法正常接听和拨打电话',
+  causes: [
+    '网络连接异常或防火墙拦截',
+    'SIP服务器地址或端口配置错误',
+    '小象通客户端版本过旧',
+    '本地SIP端口被其他程序占用',
+    '账号或密码认证失败'
+  ],
+  steps: [
+    '检查网络连接是否正常，尝试ping SIP服务器地址',
+    '确认SIP服务器地址和端口配置是否正确（默认端口5060）',
+    '检查防火墙设置，确保放行SIP相关端口（UDP 5060-5080）',
+    '关闭可能占用SIP端口的其他程序（如其他软电话）',
+    '更新小象通客户端到最新版本',
+    '重新输入账号密码进行认证',
+    '联系管理员确认SIP服务是否正常运行'
+  ]
+})
+
+const openTroubleshootModal = () => {
+  troubleshootModalVisible.value = true
+}
+
+const closeTroubleshootModal = () => {
+  troubleshootModalVisible.value = false
+}
 
 // 菜单项与路由的映射
 const menuRouteMap: Record<string, string> = {
@@ -533,6 +625,123 @@ watch(
 .admin-btn:hover {
   color: #1890ff;
   border-color: #1890ff;
+}
+
+/* 软电话连接状态 */
+.soft-phone-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 16px;
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 13px;
+  color: #ff4d4f;
+}
+
+.soft-phone-status.connected {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+  color: #52c41a;
+}
+
+.soft-phone-status:hover {
+  opacity: 0.8;
+}
+
+.status-text {
+  font-weight: 500;
+}
+
+.soft-phone-info {
+  min-width: 180px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.info-item:first-child {
+  padding-top: 0;
+}
+
+.info-item:last-child {
+  padding-bottom: 0;
+}
+
+.info-label {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+  min-width: 60px;
+}
+
+.info-value {
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.info-value.error {
+  color: #ff4d4f;
+}
+
+.troubleshoot-link {
+  color: #1890ff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.troubleshoot-link:hover {
+  color: #40a9ff;
+}
+
+/* 排查弹窗内容 */
+.troubleshoot-content {
+  padding: 8px 0;
+}
+
+.troubleshoot-section {
+  margin-bottom: 20px;
+}
+
+.troubleshoot-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.85);
+  margin-bottom: 12px;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.8;
+}
+
+.cause-list,
+.step-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.cause-list li,
+.step-list li {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.8;
+  margin-bottom: 4px;
+}
+
+.step-list li {
+  margin-bottom: 8px;
 }
 
 .user-info {

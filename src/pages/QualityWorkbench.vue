@@ -177,6 +177,45 @@
           </div>
         </a-card>
 
+        <!-- 评分汇总卡片 -->
+        <a-card v-if="currentTask" class="score-summary-card">
+          <div class="score-summary-header">
+            <span class="score-summary-title">评分汇总</span>
+            <a-tag color="blue">百分制</a-tag>
+          </div>
+          <div class="score-summary-stats">
+            <div class="stat-item">
+              <div class="stat-value">100</div>
+              <div class="stat-label">满分</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">0~100</div>
+              <div class="stat-label">评分区间</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value">{{ currentTask.scoreDeductions?.length || 0 }}</div>
+              <div class="stat-label">扣分项</div>
+            </div>
+          </div>
+          <div class="score-deduction-list">
+            <div class="deduction-title">扣分明细</div>
+            <div class="deduction-items">
+              <div
+                v-for="item in currentTask.scoreDeductions"
+                :key="item.ruleCode"
+                class="deduction-item"
+              >
+                <span class="deduction-code">{{ item.ruleCode }}</span>
+                <span class="deduction-desc">{{ item.ruleDesc }}</span>
+                <span class="deduction-value">-{{ item.maxDeduct }}分</span>
+              </div>
+            </div>
+          </div>
+          <div class="score-note">
+            评分规则：百分制满分 100 分，根据质检规则触发情况逐项扣分，最终得分 = 100 - 扣分总和
+          </div>
+        </a-card>
+
         <!-- 筛选区域 -->
         <div class="filter-card">
           <div class="intent-toolbar">
@@ -520,6 +559,12 @@ import {
 import QualityDetailModal from '@/components/QualityDetailModal.vue'
 
 // ============ 类型定义 ============
+interface ScoreDeduction {
+  ruleCode: string
+  ruleDesc: string
+  maxDeduct: number
+}
+
 interface TaskItem {
   id: number
   name: string
@@ -531,6 +576,7 @@ interface TaskItem {
   manualCount: number
   auditor?: string
   description?: string
+  scoreDeductions?: ScoreDeduction[]
 }
 
 // 允许 TaskItem 为 null 的类型
@@ -596,7 +642,14 @@ const taskList = ref<TaskItem[]>([
     aiCount: 0,
     manualCount: 0,
     auditor: '张三',
-    description: '2026 年 2 月金融产品外呼合规性检测专项任务'
+    description: '2026 年 2 月金融产品外呼合规性检测专项任务',
+    scoreDeductions: [
+      { ruleCode: 'A1', ruleDesc: '产品利率、收益、有效期等信息讲解错误', maxDeduct: 5 },
+      { ruleCode: 'A2', ruleDesc: '相关提醒不完整，遗漏或错误', maxDeduct: 5 },
+      { ruleCode: 'A3', ruleDesc: '未正面回答客户产品咨询问题', maxDeduct: 10 },
+      { ruleCode: 'B1', ruleDesc: '未确认客户身份直接进行业务营销', maxDeduct: 10 },
+      { ruleCode: 'B2', ruleDesc: '泄露客户个人信息（身份证、电话、资产等）', maxDeduct: 15 }
+    ]
   },
   {
     id: 28,
@@ -608,7 +661,12 @@ const taskList = ref<TaskItem[]>([
     aiCount: 50,
     manualCount: 20,
     auditor: '李四',
-    description: '2026 年 2 月营销活动客户购买意向识别与分析'
+    description: '2026 年 2 月营销活动客户购买意向识别与分析',
+    scoreDeductions: [
+      { ruleCode: 'A1', ruleDesc: '产品利率、收益、有效期等信息讲解错误', maxDeduct: 5 },
+      { ruleCode: 'A2', ruleDesc: '相关提醒不完整，遗漏或错误', maxDeduct: 5 },
+      { ruleCode: 'B2', ruleDesc: '泄露客户个人信息（身份证、电话、资产等）', maxDeduct: 15 }
+    ]
   },
   {
     id: 29,
@@ -620,7 +678,12 @@ const taskList = ref<TaskItem[]>([
     aiCount: 100,
     manualCount: 80,
     auditor: '王五',
-    description: '客服投诉专线通话质量监测与客户情绪分析'
+    description: '客服投诉专线通话质量监测与客户情绪分析',
+    scoreDeductions: [
+      { ruleCode: 'A1', ruleDesc: '产品利率、收益、有效期等信息讲解错误', maxDeduct: 5 },
+      { ruleCode: 'A3', ruleDesc: '未正面回答客户产品咨询问题', maxDeduct: 10 },
+      { ruleCode: 'B1', ruleDesc: '未确认客户身份直接进行业务营销', maxDeduct: 10 }
+    ]
   },
   {
     id: 30,
@@ -632,7 +695,14 @@ const taskList = ref<TaskItem[]>([
     aiCount: 0,
     manualCount: 0,
     auditor: '赵六',
-    description: '新入职坐席服务规范与合规性人工专项质检'
+    description: '新入职坐席服务规范与合规性人工专项质检',
+    scoreDeductions: [
+      { ruleCode: 'A1', ruleDesc: '产品利率、收益、有效期等信息讲解错误', maxDeduct: 5 },
+      { ruleCode: 'A2', ruleDesc: '相关提醒不完整，遗漏或错误', maxDeduct: 5 },
+      { ruleCode: 'A3', ruleDesc: '未正面回答客户产品咨询问题', maxDeduct: 10 },
+      { ruleCode: 'B1', ruleDesc: '未确认客户身份直接进行业务营销', maxDeduct: 10 },
+      { ruleCode: 'B2', ruleDesc: '泄露客户个人信息（身份证、电话、资产等）', maxDeduct: 15 }
+    ]
   }
 ])
 
@@ -1492,5 +1562,105 @@ const onSelectChange = (selectedKeys: number[]) => {
   border-top: 1px solid #f0f0f0;
   text-align: right;
   z-index: 1;
+}
+
+/* 评分汇总卡片样式 */
+.score-summary-card {
+  margin-bottom: 16px;
+}
+
+.score-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.score-summary-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+.score-summary-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1677ff;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #8f959e;
+  margin-top: 4px;
+}
+
+.score-deduction-list {
+  margin-bottom: 12px;
+}
+
+.deduction-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2329;
+  margin-bottom: 12px;
+}
+
+.deduction-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.deduction-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.deduction-code {
+  font-weight: 600;
+  color: #1677ff;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.deduction-desc {
+  flex: 1;
+  font-size: 13px;
+  color: #595959;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deduction-value {
+  font-weight: 600;
+  color: #ff4d4f;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.score-note {
+  font-size: 12px;
+  color: #8f959e;
+  line-height: 1.6;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
 }
 </style>
