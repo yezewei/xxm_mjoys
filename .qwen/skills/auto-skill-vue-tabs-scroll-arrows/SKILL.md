@@ -2,12 +2,12 @@
 name: vue-tabs-scroll-arrows
 description: 在 Ant Design Vue a-tabs 顶部添加左右箭头滚动按钮，支持溢出检测、平滑滚动、滚动条隐藏
 source: auto-skill
-extracted_at: '2026-06-23T09:20:00.000Z'
+extracted_at: '2026-06-25T03:13:41.366Z'
 ---
 
 # Vue Tabs 左右箭头滚动
 
-当 Tab 数量较多（如 10+）超出容器宽度时，在 tab 导航栏两端显示左右箭头按钮，点击平滑滚动。
+当 Tab 数量较多（如 10+）超出容器宽度时，在 tab 导航栏显示箭头按钮，点击平滑滚动。
 
 ## 适用场景
 
@@ -23,20 +23,20 @@ extracted_at: '2026-06-23T09:20:00.000Z'
   <div v-show="showLeftArrow" class="tabs-arrow tabs-arrow-left" @click="scrollTabs('left')">
     <left-outlined />
   </div>
-  <div v-show="showRightArrow" class="tabs-arrow tabs-arrow-right" @click="scrollTabs('right')">
-    <right-outlined />
-  </div>
+  <!-- 右侧箭头可选，通常只保留左侧即可 -->
   <a-tabs v-model:activeKey="activeTab" tab-position="top" size="middle">
     <!-- tab-panes ... -->
   </a-tabs>
 </div>
 ```
 
+> **箭头样式变体**：若不需要箭头外框，去掉 `background`、`border`、`border-radius`、`box-shadow`，仅保留纯图标。
+
 ### 2. Script：滚动逻辑
 
 ```ts
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue'
+import { LeftOutlined } from '@ant-design/icons-vue'
 
 const tabsWrapperRef = ref<HTMLElement>()
 const showLeftArrow = ref(false)
@@ -79,13 +79,14 @@ onBeforeUnmount(() => {
 })
 ```
 
-### 3. CSS：箭头样式 + 隐藏原生滚动条
+### 3. CSS：箭头样式 + 隐藏原生滚动条 + 隐藏溢出 "..." 按钮
 
 ```css
 .tabs-scroll-wrapper {
   position: relative;
 }
 
+/* 带边框版本 */
 .tabs-arrow {
   position: absolute;
   top: 4px;
@@ -105,9 +106,23 @@ onBeforeUnmount(() => {
   transition: color 0.2s, border-color 0.2s;
 }
 
+/* 无边框版本（纯图标） */
+.tabs-arrow--plain {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 14px;
+  color: #8f959e;
+}
+
 .tabs-arrow:hover {
   color: #1677ff;
   border-color: #1677ff;
+}
+
+.tabs-arrow--plain:hover {
+  border-color: transparent;
 }
 
 .tabs-arrow-left  { left: 0; }
@@ -127,6 +142,11 @@ onBeforeUnmount(() => {
 :deep(.ant-tabs-nav) {
   padding: 0 36px;
 }
+
+/* 隐藏 Ant Design Vue 4.x 右侧溢出的 "..." 下拉按钮 */
+:deep(.ant-tabs-nav-more) {
+  display: none !important;
+}
 ```
 
 ## 关键点
@@ -137,3 +157,5 @@ onBeforeUnmount(() => {
 - `scrollLeft > 2` 的 2px 容差避免浮点精度导致的闪烁
 - `onMounted` 中用 `nextTick` 确保 DOM 已渲染再获取 nav 元素
 - `resize` 事件也需监听，窗口大小变化时重新计算箭头显隐
+- **隐藏 "..." 溢出按钮**：Ant Design Vue 4.x 的 `a-tabs` 在 tab 溢出时会在右侧显示 `⋮` 或 `...` 下拉按钮（`.ant-tabs-nav-more`），用 `display: none !important` 隐藏它，让滚动箭头成为唯一的导航方式
+- **无边框箭头变体**：去掉 `background`/`border`/`box-shadow`，只保留纯图标 + hover 变色

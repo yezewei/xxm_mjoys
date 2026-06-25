@@ -33,27 +33,45 @@
           <!-- 排序选择 -->
           <div class="sort-bar">
             <span class="sort-label">排序：</span>
-            <a-select v-model:value="sortBy" style="flex: 1">
-              <a-select-option value="assignTime">按最新任务分配时间</a-select-option>
-              <a-select-option value="collabType">按场景人机协同类型</a-select-option>
+            <a-select v-model:value="sortBy" style="flex: 1" popupClassName="sort-dropdown">
+              <a-select-option value="assignTime">
+                <div class="sort-option">
+                  <span>按最新任务分配时间</span>
+                  <a-tooltip placement="right" :overlayStyle="{ maxWidth: '300px' }">
+                    <template #title>
+                      <div style="white-space: normal;">
+                        1、按照当前场景下的最新任务分配时间排序，最近有分配任务的场景优先排在最上边<br/>
+                        2、如果场景没有下发过任务，默认按照场景创建时间倒序
+                      </div>
+                    </template>
+                    <InfoCircleOutlined class="option-info-icon" />
+                  </a-tooltip>
+                </div>
+              </a-select-option>
+              <a-select-option value="collabType">
+                <div class="sort-option">
+                  <span>按场景人机协同类型</span>
+                  <a-tooltip placement="right" :overlayStyle="{ maxWidth: '300px' }">
+                    <template #title>
+                      <div style="white-space: normal;">
+                        排序逻辑：<br/>
+                        1、开启人机协同的「作业中」场景<br/>
+                        2、开启人机协同的「作业时间不满足」场景<br/>
+                        3、未开启人机协同的「作业中」场景<br/>
+                        4、未开启人机协同的「作业时间不满足」场景<br/>
+                        5、其他状态场景<br/>
+                        同类型场景按创建时间倒序
+                      </div>
+                    </template>
+                    <InfoCircleOutlined class="option-info-icon" />
+                  </a-tooltip>
+                </div>
+              </a-select-option>
             </a-select>
-            <a-tooltip placement="topLeft" :overlayStyle="{ maxWidth: '420px' }">
-              <template #title>
-                <div style="white-space: normal;" v-if="sortBy === 'assignTime'">
-                  1、按照当前场景下的最新任务分配时间排序，最近有分配任务的场景优先排在最上边<br/>
-                  2、如果场景没有下发过任务，默认按照场景创建时间倒序
-                </div>
-                <div style="white-space: normal;" v-else>
-                  排序逻辑：<br/>
-                  1、开启人机协同的「作业中」场景<br/>
-                  2、开启人机协同的「作业时间不满足」场景<br/>
-                  3、未开启人机协同的「作业中」场景<br/>
-                  4、未开启人机协同的「作业时间不满足」场景<br/>
-                  5、其他状态场景<br/>
-                  同类型场景按创建时间倒序
-                </div>
-              </template>
-              <InfoCircleOutlined style="color: #8f959e; cursor: pointer;" />
+            <a-tooltip title="刷新场景列表">
+              <a-button type="text" size="small" @click="handleRefreshSceneList" class="refresh-btn">
+                <ReloadOutlined />
+              </a-button>
             </a-tooltip>
           </div>
 
@@ -657,6 +675,11 @@ const handleBatchSms = () => {
 const handleColumnSetting = () => {
   message.info('列表显示设置')
 }
+
+const handleRefreshSceneList = () => {
+  message.success('场景列表已刷新')
+  // TODO: 调用接口刷新场景列表数据
+}
 </script>
 
 <style scoped>
@@ -785,6 +808,36 @@ const handleColumnSetting = () => {
   font-size: 13px;
   color: #595959;
   flex-shrink: 0;
+}
+
+.refresh-btn {
+  color: #8f959e;
+  flex-shrink: 0;
+}
+
+.refresh-btn:hover {
+  color: #1677ff;
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.option-info-icon {
+  color: #8f959e;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+.option-info-icon:hover {
+  color: #1677ff;
+}
+
+/* 下拉框宽度 */
+:global(.sort-dropdown) {
+  min-width: 200px !important;
 }
 
 /* 场景卡片列表 */

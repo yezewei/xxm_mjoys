@@ -719,69 +719,86 @@
           <!-- 12. 全局操作管理 -->
           <a-tab-pane key="operation" tab="全局操作管理">
             <div class="tab-content">
-              <div class="section-card">
-                <div class="section-header">
-                  <h3 class="section-title">操作权限与审批</h3>
-                  <p class="section-desc">管理全局操作权限、审批流程和操作日志保留策略。</p>
+              <!-- 1. 报表引擎维度同步 -->
+              <div class="func-module">
+                <div class="func-module-header">
+                  <div class="func-module-info">
+                    <h3 class="func-module-title">报表引擎维度同步</h3>
+                    <p class="func-module-desc">手动同步场景、批次、机构、坐席、主叫号码等基础维度数据，用于系统初始化或修复报表统计数据缺失。</p>
+                  </div>
+                  <a-button type="primary" :loading="operationSyncing" @click="handleSyncDimensions">
+                    <sync-outlined />
+                    立即同步
+                  </a-button>
                 </div>
-                <a-form layout="vertical">
-                  <a-row :gutter="24">
-                    <a-col :span="8">
-                      <a-form-item label="敏感操作需审批">
-                        <a-switch v-model:checked="operationForm.approvalRequired" checked-children="是" un-checked-children="否" />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="审批人角色">
-                        <a-select v-model:value="operationForm.approverRole" mode="multiple" placeholder="请选择审批人角色">
-                          <a-select-option value="admin">系统管理员</a-select-option>
-                          <a-select-option value="supervisor">主管</a-select-option>
-                          <a-select-option value="manager">经理</a-select-option>
-                        </a-select>
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="操作日志保留天数">
-                        <a-input-number v-model:value="operationForm.logRetentionDays" :min="30" :max="365" style="width: 100%" placeholder="请输入" />
-                      </a-form-item>
-                    </a-col>
-                  </a-row>
-                  <a-row :gutter="24">
-                    <a-col :span="8">
-                      <a-form-item label="批量操作单次上限">
-                        <a-input-number v-model:value="operationForm.batchLimit" :min="10" :max="100000" style="width: 100%" placeholder="请输入" />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="操作超时自动取消（分钟）">
-                        <a-input-number v-model:value="operationForm.operationTimeout" :min="5" :max="1440" style="width: 100%" placeholder="请输入" />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="启用操作审计">
-                        <a-switch v-model:checked="operationForm.auditEnabled" checked-children="开" un-checked-children="关" />
-                      </a-form-item>
-                    </a-col>
-                  </a-row>
-                  <a-row :gutter="24">
-                    <a-col :span="8">
-                      <a-form-item label="异常操作告警">
-                        <a-switch v-model:checked="operationForm.alertOnAbnormal" checked-children="开" un-checked-children="关" />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="IP 白名单">
-                        <a-switch v-model:checked="operationForm.ipWhitelist" checked-children="开" un-checked-children="关" />
-                      </a-form-item>
-                    </a-col>
-                    <a-col :span="8">
-                      <a-form-item label="登录失败锁定次数">
-                        <a-input-number v-model:value="operationForm.loginLockCount" :min="3" :max="20" style="width: 100%" placeholder="请输入" />
-                      </a-form-item>
-                    </a-col>
-                  </a-row>
-                </a-form>
               </div>
+
+              <!-- 2. 虚拟号查询真实号码展示 -->
+              <div class="func-module">
+                <div class="func-module-header">
+                  <div class="func-module-info">
+                    <h3 class="func-module-title">虚拟号查询真实号码展示</h3>
+                    <p class="func-module-desc">开启后，坐席在"去跟进"页面查看客户时，系统自动通过虚拟号查询对应的真实号码并展示。</p>
+                  </div>
+                  <a-switch v-model:checked="operationForm.showRealNumber" checked-children="开" un-checked-children="关" />
+                </div>
+                <div v-if="operationForm.showRealNumber" class="func-module-body">
+                  <div class="sub-option-row">
+                    <span class="sub-option-label">展示方式：</span>
+                    <a-radio-group v-model:value="operationForm.realNumberDisplayMode">
+                      <a-radio value="fixedMask">固定脱敏展示（统一打码）</a-radio>
+                      <a-radio value="permissionMask">按脱敏权限展示（根据坐席数据权限决定）</a-radio>
+                    </a-radio-group>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. 全局导出限制功能 -->
+              <div class="func-module">
+                <div class="func-module-header">
+                  <div class="func-module-info">
+                    <h3 class="func-module-title">全局导出限制功能</h3>
+                    <p class="func-module-desc">开启后，仅在周一至周五 9:00-18:00 允许导出数据；且单次导出最多选择 31 天的数据范围（覆盖工作台任务列表、AI/人工外呼记录等模块）。</p>
+                  </div>
+                  <a-switch v-model:checked="operationForm.exportLimit" checked-children="开" un-checked-children="关" />
+                </div>
+              </div>
+
+              <!-- 4. 通话录音转文本 -->
+              <div class="func-module">
+                <div class="func-module-header">
+                  <div class="func-module-info">
+                    <h3 class="func-module-title">通话录音转文本</h3>
+                    <p class="func-module-desc">开启后，系统在通话结束后自动将录音转写为文字。覆盖人工通话录音，以及人机协同模式中的人工服务部分录音。</p>
+                  </div>
+                  <a-switch v-model:checked="operationForm.recordingToText" checked-children="开" un-checked-children="关" />
+                </div>
+                <div v-if="operationForm.recordingToText" class="func-module-body">
+                  <div class="sub-option-row">
+                    <span class="sub-option-label">执行时间段：</span>
+                    <a-time-picker
+                      v-model:value="operationForm.recordingToTextStart"
+                      format="HH:mm"
+                      :minute-step="30"
+                      style="width: 120px"
+                      placeholder="开始时间"
+                      @change="handleRecordingTimeChange"
+                    />
+                    <span class="sub-option-separator">~</span>
+                    <a-checkbox v-model:checked="operationForm.recordingToTextNextDay" class="next-day-checkbox" @change="handleRecordingNextDayChange">次日</a-checkbox>
+                    <a-time-picker
+                      v-model:value="operationForm.recordingToTextEnd"
+                      format="HH:mm"
+                      :minute-step="30"
+                      style="width: 120px"
+                      placeholder="结束时间"
+                      :disabled-time="getDisabledEndTime"
+                      @change="handleRecordingTimeChange"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div class="tab-footer">
                 <a-space>
                   <a-button @click="handleReset('operation')">重置</a-button>
@@ -831,7 +848,8 @@ import {
   UploadOutlined,
   SendOutlined,
   ApiOutlined,
-  LeftOutlined
+  LeftOutlined,
+  SyncOutlined
 } from '@ant-design/icons-vue'
 
 // ============ Tab 状态 ============
@@ -1074,17 +1092,68 @@ const handleTestConnection = () => {
 }
 
 // ============ 12. 全局操作管理 ============
+const operationSyncing = ref(false)
 const operationForm = reactive({
-  approvalRequired: true,
-  approverRole: ['admin'],
-  logRetentionDays: 180,
-  batchLimit: 10000,
-  operationTimeout: 30,
-  auditEnabled: true,
-  alertOnAbnormal: true,
-  ipWhitelist: false,
-  loginLockCount: 5
+  showRealNumber: false,
+  realNumberDisplayMode: 'fixedMask',
+  exportLimit: false,
+  recordingToText: false,
+  recordingToTextStart: null as any,
+  recordingToTextEnd: null as any,
+  recordingToTextNextDay: false
 })
+
+const handleSyncDimensions = () => {
+  operationSyncing.value = true
+  setTimeout(() => {
+    operationSyncing.value = false
+    message.success('维度数据同步完成')
+  }, 2000)
+}
+
+// 次日模式下，结束时间不得大于开始时间
+const getDisabledEndTime = () => {
+  if (!operationForm.recordingToTextNextDay || !operationForm.recordingToTextStart) return {}
+  const startHour = operationForm.recordingToTextStart.hour()
+  const startMinute = operationForm.recordingToTextStart.minute()
+  return {
+    disabledHours: () => {
+      const disabled: number[] = []
+      for (let i = startHour + 1; i < 24; i++) disabled.push(i)
+      return disabled
+    },
+    disabledMinutes: (selectedHour: number) => {
+      if (selectedHour === startHour) {
+        const disabled: number[] = []
+        for (let i = startMinute + 1; i < 60; i++) disabled.push(i)
+        return disabled
+      }
+      return []
+    }
+  }
+}
+
+const handleRecordingTimeChange = () => {
+  if (!operationForm.recordingToTextNextDay || !operationForm.recordingToTextStart || !operationForm.recordingToTextEnd) return
+  const start = operationForm.recordingToTextStart.hour() * 60 + operationForm.recordingToTextStart.minute()
+  const end = operationForm.recordingToTextEnd.hour() * 60 + operationForm.recordingToTextEnd.minute()
+  if (end > start) {
+    operationForm.recordingToTextEnd = null
+    message.warning('次日模式下，结束时间不得大于开始时间')
+  }
+}
+
+const handleRecordingNextDayChange = () => {
+  // 勾选次日时校验当前结束时间
+  if (operationForm.recordingToTextNextDay && operationForm.recordingToTextStart && operationForm.recordingToTextEnd) {
+    const start = operationForm.recordingToTextStart.hour() * 60 + operationForm.recordingToTextStart.minute()
+    const end = operationForm.recordingToTextEnd.hour() * 60 + operationForm.recordingToTextEnd.minute()
+    if (end > start) {
+      operationForm.recordingToTextEnd = null
+      message.warning('次日模式下，结束时间不得大于开始时间，请重新选择')
+    }
+  }
+}
 
 // ============ 通用操作 ============
 const handleSave = (module: string) => {
@@ -1266,5 +1335,72 @@ const getModuleName = (key: string): string => {
   background-color: #e6f4ff;
   color: #1f2329;
   font-weight: 500;
+}
+
+/* 功能模块布局（全局操作管理） */
+.func-module {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 12px;
+}
+
+.func-module:last-of-type {
+  margin-bottom: 0;
+}
+
+.func-module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.func-module-info {
+  flex: 1;
+  margin-right: 24px;
+}
+
+.func-module-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2329;
+  margin: 0 0 6px 0;
+}
+
+.func-module-desc {
+  font-size: 13px;
+  color: #8f959e;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.func-module-body {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.sub-option-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub-option-label {
+  font-size: 13px;
+  color: #595959;
+  flex-shrink: 0;
+}
+
+.sub-option-separator {
+  font-size: 14px;
+  color: #8f959e;
+  margin: 0 4px;
+}
+
+.next-day-checkbox {
+  margin-left: 8px;
+  font-size: 13px;
 }
 </style>
