@@ -236,91 +236,172 @@
       <!-- 对话区域 -->
       <div class="chat-container">
         <div class="chat-messages">
-          <div
-            v-for="(item, index) in asrDialogList"
-            :key="index"
-            class="chat-row"
-            :class="item.role === 'robot' ? 'chat-row-left' : 'chat-row-right'"
-          >
-            <!-- 机器人：头像在左 -->
-            <template v-if="item.role === 'robot'">
-              <div class="chat-avatar">
-                <a-avatar :size="40" style="background-color: #722ed1">
-                  <template #icon><RobotOutlined /></template>
-                </a-avatar>
-              </div>
-              <div class="chat-bubble-wrap">
-                <div class="chat-name">
-                  <span>AI 机器人</span>
-                </div>
-                <div class="chat-bubble chat-bubble-left">{{ item.text }}</div>
-                <div class="asr-meta">
-                  <span class="asr-time">{{ item.time }}</span>
-                </div>
-              </div>
-            </template>
-            <!-- 客户：头像在右 -->
-            <template v-else>
-              <div class="chat-bubble-wrap chat-bubble-wrap-right">
-                <div class="chat-name chat-name-right">
-                  <a-tag v-if="item.confidence" class="asr-confidence-tag" size="small">
-                    置信度 {{ item.confidence }}%
-                  </a-tag>
-                  <a-tooltip v-if="item.endpoint">
-                    <template #title>
-                      端点检测：VAD 响应 {{ item.endpoint.vadDuration }}ms
-                    </template>
-                    <a-tag class="asr-endpoint-tag" color="green" size="small">
-                      <span class="asr-endpoint-dot"></span>端点检测
-                    </a-tag>
-                  </a-tooltip>
-                  <span>客户</span>
-                </div>
-                <div class="chat-bubble chat-bubble-right">
-                  <template v-for="(seg, si) in getTextSegments(item)" :key="si">
-                    <span v-if="seg.type === 'text'">{{ seg.content }}</span>
-                    <a-tooltip v-else>
-                      <template #title>
-                        <span>{{ seg.tooltip }}</span>
+          <!-- AI 对话部分 -->
+          <div class="chat-section">
+            <div class="chat-section-header">
+              <robot-outlined style="color: #722ed1; margin-right: 6px" />
+              <span>AI 对话</span>
+            </div>
+            <div class="chat-section-content">
+              <div
+                v-for="(item, index) in aiDialogList"
+                :key="'ai-' + index"
+                class="chat-row"
+                :class="item.role === 'robot' ? 'chat-row-left' : 'chat-row-right'"
+              >
+                <!-- 机器人：头像在左 -->
+                <template v-if="item.role === 'robot'">
+                  <div class="chat-avatar">
+                    <a-avatar :size="40" style="background-color: #722ed1">
+                      <template #icon><RobotOutlined /></template>
+                    </a-avatar>
+                  </div>
+                  <div class="chat-bubble-wrap">
+                    <div class="chat-name">
+                      <span>AI 机器人</span>
+                    </div>
+                    <div class="chat-bubble chat-bubble-left">{{ item.text }}</div>
+                    <div class="asr-meta">
+                      <span class="asr-time">{{ item.time }}</span>
+                    </div>
+                  </div>
+                </template>
+                <!-- 客户：头像在右 -->
+                <template v-else>
+                  <div class="chat-bubble-wrap chat-bubble-wrap-right">
+                    <div class="chat-name chat-name-right">
+                      <a-tag v-if="item.confidence" class="asr-confidence-tag" size="small">
+                        置信度 {{ item.confidence }}%
+                      </a-tag>
+                      <a-tooltip v-if="item.endpoint">
+                        <template #title>
+                          端点检测：VAD 响应 {{ item.endpoint.vadDuration }}ms
+                        </template>
+                        <a-tag class="asr-endpoint-tag" color="green" size="small">
+                          <span class="asr-endpoint-dot"></span>端点检测
+                        </a-tag>
+                      </a-tooltip>
+                      <span>客户</span>
+                    </div>
+                    <div class="chat-bubble chat-bubble-right">
+                      <template v-for="(seg, si) in getTextSegments(item)" :key="si">
+                        <span v-if="seg.type === 'text'">{{ seg.content }}</span>
+                        <a-tooltip v-else>
+                          <template #title>
+                            <span>{{ seg.tooltip }}</span>
+                          </template>
+                          <span :class="['asr-annotation', getAnnotationClass(seg.type)]">
+                            {{ seg.content }}
+                            <span class="asr-ann-badge">{{ getAnnotationLabel(seg.type) }}</span>
+                          </span>
+                        </a-tooltip>
                       </template>
-                      <span :class="['asr-annotation', getAnnotationClass(seg.type)]">
-                        {{ seg.content }}
-                        <span class="asr-ann-badge">{{ getAnnotationLabel(seg.type) }}</span>
-                      </span>
-                    </a-tooltip>
-                  </template>
-                  <div v-if="item.annotations && item.annotations.length > 0" class="asr-processed-mark asr-processed-mark-green">
-                    <check-circle-outlined /> 后处理
+                      <div v-if="item.annotations && item.annotations.length > 0" class="asr-processed-mark asr-processed-mark-green">
+                        <check-circle-outlined /> 后处理
+                      </div>
+                    </div>
+                    <div class="asr-meta asr-meta-right">
+                      <span class="asr-punctuation-tag">智能断句</span>
+                      <span class="asr-time">{{ item.time }}</span>
+                    </div>
+                    <!-- 语义分析标签 -->
+                    <div v-if="item.semantic" class="semantic-section">
+                      <div class="semantic-row" v-if="item.semantic.intentTag">
+                        <span class="semantic-label">意图</span>
+                        <a-tag color="blue" size="small">{{ item.semantic.intentTag }}</a-tag>
+                      </div>
+                      <div class="semantic-row" v-if="item.semantic.keywords && item.semantic.keywords.length > 0">
+                        <span class="semantic-label">关键词</span>
+                        <a-tag v-for="kw in item.semantic.keywords" :key="kw" size="small" class="semantic-kw-tag">{{ kw }}</a-tag>
+                      </div>
+                      <div class="semantic-row" v-if="item.semantic.contextRef">
+                        <span class="semantic-label">上下文</span>
+                        <span class="semantic-context">{{ item.semantic.contextRef }}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div class="asr-meta asr-meta-right">
-                  <span class="asr-punctuation-tag">智能断句</span>
-                  <span class="asr-time">{{ item.time }}</span>
-                </div>
-                <!-- 语义分析标签 -->
-                <div v-if="item.semantic" class="semantic-section">
-                  <div class="semantic-row" v-if="item.semantic.intentTag">
-                    <span class="semantic-label">意图</span>
-                    <a-tag color="blue" size="small">{{ item.semantic.intentTag }}</a-tag>
+                  <div class="chat-avatar">
+                    <a-avatar :size="40" style="background-color: #52c41a">
+                      <template #icon><UserOutlined /></template>
+                    </a-avatar>
                   </div>
-                  <div class="semantic-row" v-if="item.semantic.keywords && item.semantic.keywords.length > 0">
-                    <span class="semantic-label">关键词</span>
-                    <a-tag v-for="kw in item.semantic.keywords" :key="kw" size="small" class="semantic-kw-tag">{{ kw }}</a-tag>
-                  </div>
-                  <div class="semantic-row" v-if="item.semantic.contextRef">
-                    <span class="semantic-label">上下文</span>
-                    <span class="semantic-context">{{ item.semantic.contextRef }}</span>
-                  </div>
-                </div>
+                </template>
               </div>
-              <div class="chat-avatar">
-                <a-avatar :size="40" style="background-color: #52c41a">
-                  <template #icon><UserOutlined /></template>
-                </a-avatar>
-              </div>
-            </template>
+            </div>
           </div>
-          <a-empty v-if="asrDialogList.length === 0" description="暂无 ASR 数据" />
+
+          <!-- 分隔线 -->
+          <div v-if="aiDialogList.length > 0" class="chat-section-divider">
+            <div class="divider-line"></div>
+            <span class="divider-text">转接人工</span>
+            <div class="divider-line"></div>
+          </div>
+
+          <!-- 人工对话部分 -->
+          <div class="chat-section">
+            <div class="chat-section-header">
+              <user-outlined style="color: #1890ff; margin-right: 6px" />
+              <span>人工对话</span>
+            </div>
+            <div class="chat-section-content">
+              <div
+                v-for="(item, index) in manualAsrDialogList"
+                :key="'manual-' + index"
+                class="chat-row"
+                :class="item.role === 'agent' ? 'chat-row-left' : 'chat-row-right'"
+              >
+                <!-- 坐席：头像在左 -->
+                <template v-if="item.role === 'agent'">
+                  <div class="chat-avatar">
+                    <a-avatar :size="40" style="background-color: #1890ff">
+                      <template #icon><UserOutlined /></template>
+                    </a-avatar>
+                  </div>
+                  <div class="chat-bubble-wrap">
+                    <div class="chat-name">
+                      <span>人工坐席</span>
+                    </div>
+                    <div class="chat-bubble chat-bubble-left">{{ item.text }}</div>
+                    <div class="asr-meta">
+                      <span class="asr-time">{{ item.time }}</span>
+                    </div>
+                  </div>
+                </template>
+                <!-- 客户：头像在右 -->
+                <template v-else>
+                  <div class="chat-bubble-wrap chat-bubble-wrap-right">
+                    <div class="chat-name chat-name-right">
+                      <span>客户</span>
+                    </div>
+                    <div class="chat-bubble chat-bubble-right">{{ item.text }}</div>
+                    <div class="asr-meta asr-meta-right">
+                      <span class="asr-time">{{ item.time }}</span>
+                    </div>
+                  </div>
+                  <div class="chat-avatar">
+                    <a-avatar :size="40" style="background-color: #52c41a">
+                      <template #icon><UserOutlined /></template>
+                    </a-avatar>
+                  </div>
+                </template>
+              </div>
+
+              <!-- 人工对话为空时的提示 -->
+              <template v-if="manualAsrDialogList.length === 0">
+                <div v-if="isManualInAsrQueue(detailRecord)" class="asr-converting-tip">
+                  <check-circle-outlined style="color: #52c41a" />
+                  <span>已加入语音转文本队列，等待识别</span>
+                </div>
+                <div v-else class="asr-empty-tip">
+                  <a-empty description="暂无通话文本数据" />
+                  <a-button type="primary" @click="handleManualAsrConvert(detailRecord!)">
+                    <audio-outlined />
+                    语音转文本
+                  </a-button>
+                </div>
+              </template>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -382,6 +463,7 @@ import {
   DownOutlined,
   UpOutlined,
   CheckCircleOutlined,
+  AudioOutlined,
 } from '@ant-design/icons-vue';
 import type { TableColumnType } from 'ant-design-vue';
 import { message } from 'ant-design-vue';
@@ -469,6 +551,28 @@ const detailModalVisible = ref(false);
 const detailRecord = ref<ReportItem | null>(null);
 const detailExpanded = ref(true);
 
+// 语音转文本队列
+const asrQueue = ref<Set<string>>(new Set());
+
+const handleAsrConvert = (record: ReportItem) => {
+  asrQueue.value.add(record.callUuid);
+};
+
+const isInAsrQueue = (record: ReportItem | null) => {
+  return record ? asrQueue.value.has(record.callUuid) : false;
+};
+
+// 人工对话语音转文本队列
+const manualAsrQueue = ref<Set<string>>(new Set());
+
+const handleManualAsrConvert = (record: ReportItem) => {
+  manualAsrQueue.value.add(record.callUuid);
+};
+
+const isManualInAsrQueue = (record: ReportItem | null) => {
+  return record ? manualAsrQueue.value.has(record.callUuid) : false;
+};
+
 // 详情字段定义
 const detailFields = [
   { key: 'callUuid', label: '通话ID' },
@@ -528,6 +632,10 @@ interface AsrItem {
   semantic?: SemanticAnalysis;
 }
 const asrDialogList = ref<AsrItem[]>([]);
+
+// AI 对话和人工对话分开存储
+const aiDialogList = ref<AsrItem[]>([]);
+const manualAsrDialogList = ref<AsrItem[]>([]);
 
 interface TextSegment {
   type: 'text' | 'replace' | 'highlight' | 'number';
@@ -746,8 +854,16 @@ const handleColumnCancel = () => {};
 // 查看对话详情
 const handleViewDetail = (record: ReportItem) => {
   detailRecord.value = record;
+  // 未接通的通话没有ASR数据
+  if (record.answerResult === '空号' || record.answerResult === '关机') {
+    aiDialogList.value = [];
+    manualAsrDialogList.value = [];
+    detailModalVisible.value = true;
+    return;
+  }
   // TODO: 调用后端 API 获取 ASR 对话文本
-  asrDialogList.value = [
+  // AI 对话部分（始终有数据）
+  aiDialogList.value = [
     // ── 第一轮：开场确认身份 ──
     {
       role: 'robot',
@@ -886,14 +1002,60 @@ const handleViewDetail = (record: ReportItem) => {
         contextRef: '多轮讨论达成一致，客户主动结束对话',
       },
     },
-    // ── 第八轮：AI 结束语 ──
+    // ── 第八轮：AI 结束语，转人工 ──
     {
       role: 'robot',
       time: '00:01:29',
-      text: '不客气，祝您生活愉快！办理过程中如有疑问可随时拨打客服热线，再见。',
+      text: '不客气，我这边帮您转接人工坐席，为您办理后续手续，请稍等。',
       confidence: 0,
     },
   ];
+
+  // 人工对话部分（可能没有ASR数据）
+  // 模拟：部分记录有人工对话，部分没有
+  const hasManualDialog = Math.random() > 0.5;
+  if (hasManualDialog) {
+    manualAsrDialogList.value = [
+      {
+        role: 'agent',
+        time: '00:01:35',
+        text: '张先生您好，我是客服专员小李，刚才AI已经跟我说了您的情况，我来帮您办理续贷手续。',
+      },
+      {
+        role: 'customer',
+        time: '00:01:40',
+        text: '好的，需要什么材料吗？',
+      },
+      {
+        role: 'agent',
+        time: '00:01:45',
+        text: '您需要准备好身份证和银行卡，我这边先帮您核实一下信息。请问您的身份证尾号是？',
+      },
+      {
+        role: 'customer',
+        time: '00:01:52',
+        text: '1234',
+      },
+      {
+        role: 'agent',
+        time: '00:02:00',
+        text: '好的，信息已核实。续贷申请已经为您提交，预计3个工作日内会有审批结果，届时会短信通知您。',
+      },
+      {
+        role: 'customer',
+        time: '00:02:08',
+        text: '好的，谢谢。',
+      },
+      {
+        role: 'agent',
+        time: '00:02:12',
+        text: '不客气，祝您生活愉快，再见。',
+      },
+    ];
+  } else {
+    manualAsrDialogList.value = [];
+  }
+
   detailModalVisible.value = true;
 };
 
@@ -1104,6 +1266,26 @@ const handleExportExcel = () => {
   white-space: nowrap;
 }
 
+/* 语音转文本提示样式 */
+.asr-empty-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 0;
+}
+
+.asr-converting-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 60px 0;
+  color: #1890ff;
+  font-size: 14px;
+}
+
 /* 对话详情弹窗 - 聊天样式 */
 .chat-container {
   flex: 1;
@@ -1116,6 +1298,53 @@ const handleExportExcel = () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.chat-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-section-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  border-left: 3px solid #722ed1;
+}
+
+.chat-section-header:has(.anticon-user) {
+  border-left-color: #1890ff;
+}
+
+.chat-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+
+.divider-text {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
 }
 
 .chat-row {

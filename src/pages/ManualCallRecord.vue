@@ -1,12 +1,12 @@
 <template>
-  <div class="manual-call-report">
+  <div class="manual-call-record">
     <div class="quality-wrapper">
       <!-- 页面标题区域 -->
       <div class="page-header-section">
         <div class="page-header">
           <div class="header-left">
-            <h2 class="page-title">人工通信接口外呼记录</h2>
-            <p class="page-description">记录外部系统通过调用"人工外呼通信接口"，产生的人工外呼记录。</p>
+            <h2 class="page-title">人工外呼记录</h2>
+            <p class="page-description">记录坐席主动发起的人工外呼通话记录，支持查看对话详情与 ASR 识别结果。</p>
           </div>
         </div>
       </div>
@@ -88,12 +88,14 @@
               <a-col :span="6">
                 <a-form-item>
                   <a-select
-                    v-model:value="searchForm.dialMethod"
-                    placeholder="请选择外呼发起方式"
+                    v-model:value="searchForm.scene"
+                    placeholder="请选择外呼场景"
                     allow-clear
                   >
-                    <a-select-option value="坐席分机">坐席分机</a-select-option>
-                    <a-select-option value="坐席手机">坐席手机</a-select-option>
+                    <a-select-option value="贷款转存">贷款转存</a-select-option>
+                    <a-select-option value="信用卡营销">信用卡营销</a-select-option>
+                    <a-select-option value="理财推荐">理财推荐</a-select-option>
+                    <a-select-option value="客户回访">客户回访</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
@@ -142,7 +144,7 @@
               :loading="loading"
               row-key="callUuid"
               :row-selection="{ selectedRowKeys, onChange: onSelectChange }"
-              :scroll="{ x: 2000 }"
+              :scroll="{ x: 2200 }"
               @change="handleTableChange"
             >
               <!-- 通话状态列 -->
@@ -187,7 +189,7 @@
     <!-- 列设置弹窗 -->
     <ColumnSettingModal
       ref="columnSettingModalRef"
-      page-key="manual-call-report"
+      page-key="manual-call-record"
       :default-columns="allColumns"
       @save="handleColumnSave"
       @cancel="handleColumnCancel"
@@ -308,19 +310,14 @@
                       </span>
                     </a-tooltip>
                   </template>
-                  <div v-if="item.annotations && item.annotations.length > 0" class="asr-processed-mark asr-processed-mark-green">
+                  <div v-if="item.annotations && item.annotations.length > 0" class="asr-processed-mark">
                     <check-circle-outlined /> 后处理
                   </div>
                 </div>
-                <div class="asr-meta asr-meta-right">
-                  <span class="asr-punctuation-tag">智能断句</span>
+                <div class="asr-meta">
                   <span class="asr-time">{{ item.time }}</span>
+                  <span class="asr-punctuation-tag">智能断句</span>
                 </div>
-              </div>
-              <div class="chat-avatar">
-                <a-avatar :size="40" style="background-color: #52c41a">
-                  <template #icon><UserOutlined /></template>
-                </a-avatar>
               </div>
             </template>
           </div>
@@ -416,7 +413,7 @@ const searchForm = reactive({
   hangupBy: undefined as string | undefined,
   seatExtNum: '',
   callStatus: undefined as string | undefined,
-  dialMethod: undefined as string | undefined,
+  scene: undefined as string | undefined,
 });
 
 // 表格数据接口
@@ -426,9 +423,9 @@ interface ReportItem {
   callerPhoneNum: string;
   calleePhoneNum: string;
   calleeArea: string;
+  customerName: string;
   seatExtNum: string;
-  seatMobile: string;
-  dialMethod: string;
+  scene: string;
   dialTime: string;
   seatAnswerTime: string;
   custAnswerTime: string;
@@ -436,7 +433,7 @@ interface ReportItem {
   hangupBy: string;
   callStatus: string;
   callDuration: number;
-  dialContent: string;
+  intentResult: string;
 }
 
 // 表格数据
@@ -465,9 +462,9 @@ const allColumns: ColumnConfigItem[] = [
   { key: 'callerPhoneNum', title: '主叫号码', dataIndex: 'callerPhoneNum', width: 140, visible: true, order: 2 },
   { key: 'calleePhoneNum', title: '被叫号码', dataIndex: 'calleePhoneNum', width: 140, visible: true, order: 3 },
   { key: 'calleeArea', title: '被叫归属地', dataIndex: 'calleeArea', width: 120, visible: true, order: 4 },
-  { key: 'seatExtNum', title: '坐席分机号', dataIndex: 'seatExtNum', width: 120, visible: true, order: 5 },
-  { key: 'seatMobile', title: '坐席手机号', dataIndex: 'seatMobile', width: 140, visible: true, order: 6 },
-  { key: 'dialMethod', title: '外呼发起方式', dataIndex: 'dialMethod', width: 130, visible: true, order: 7 },
+  { key: 'customerName', title: '客户姓名', dataIndex: 'customerName', width: 100, visible: true, order: 5 },
+  { key: 'seatExtNum', title: '坐席分机号', dataIndex: 'seatExtNum', width: 120, visible: true, order: 6 },
+  { key: 'scene', title: '外呼场景', dataIndex: 'scene', width: 120, visible: true, order: 7 },
   { key: 'dialTime', title: '拨打时间', dataIndex: 'dialTime', width: 180, visible: true, order: 8 },
   { key: 'seatAnswerTime', title: '坐席接听时间', dataIndex: 'seatAnswerTime', width: 180, visible: true, order: 9 },
   { key: 'custAnswerTime', title: '客户接听时间', dataIndex: 'custAnswerTime', width: 180, visible: true, order: 10 },
@@ -475,7 +472,7 @@ const allColumns: ColumnConfigItem[] = [
   { key: 'hangupBy', title: '挂断方', dataIndex: 'hangupBy', width: 100, visible: true, order: 12 },
   { key: 'callStatus', title: '通话状态', dataIndex: 'callStatus', width: 100, visible: true, order: 13 },
   { key: 'callDuration', title: '通话时长', dataIndex: 'callDuration', width: 110, visible: true, order: 14 },
-  { key: 'dialContent', title: '拨号内容', dataIndex: 'dialContent', width: 300, visible: true, order: 15 },
+  { key: 'intentResult', title: '意向结果', dataIndex: 'intentResult', width: 120, visible: true, order: 15 },
   { key: 'action', title: '操作', dataIndex: 'action', width: 120, visible: true, order: 16 },
 ];
 
@@ -501,9 +498,9 @@ const detailFields = [
   { key: 'callerPhoneNum', label: '主叫号码' },
   { key: 'calleePhoneNum', label: '被叫号码' },
   { key: 'calleeArea', label: '被叫归属地' },
+  { key: 'customerName', label: '客户姓名' },
   { key: 'seatExtNum', label: '坐席分机号' },
-  { key: 'seatMobile', label: '坐席手机号' },
-  { key: 'dialMethod', label: '外呼发起方式' },
+  { key: 'scene', label: '外呼场景' },
   { key: 'dialTime', label: '拨打时间' },
   { key: 'seatAnswerTime', label: '坐席接听时间' },
   { key: 'custAnswerTime', label: '客户接听时间' },
@@ -511,7 +508,7 @@ const detailFields = [
   { key: 'hangupBy', label: '挂断方' },
   { key: 'callStatus', label: '通话状态' },
   { key: 'callDuration', label: '通话时长', format: 'duration' as const },
-  { key: 'dialContent', label: '拨号内容' },
+  { key: 'intentResult', label: '意向结果' },
   { key: 'callRecordPath', label: '通话录音路径' },
 ];
 
@@ -601,8 +598,6 @@ const exportFieldOptions = computed(() => {
     label: col.title as string,
     value: col.dataIndex as string,
   }));
-  // 追加"对话内容"
-  cols.push({ label: '对话内容', value: 'dialContent' });
   return cols;
 });
 
@@ -638,7 +633,7 @@ const visibleColumns = computed(() => {
 
 // 初始化时加载保存的列配置
 onMounted(() => {
-  const stored = localStorage.getItem('column_config_manual-call-report');
+  const stored = localStorage.getItem('column_config_manual-call-record');
   if (stored) {
     try {
       const savedConfig = JSON.parse(stored);
@@ -674,41 +669,25 @@ const loadData = () => {
   // TODO: 调用后端 API 获取数据
   setTimeout(() => {
     dataSource.value = Array.from({ length: 15 }, (_, index) => {
-      const isExt = index % 2 === 0;
-      const mobile = `139${String(80000000 + index * 1111).slice(0, 8)}`;
+      const scenes = ['贷款转存', '信用卡营销', '理财推荐', '客户回访'];
+      const intentResults = ['有意向', '无意向', '待跟进', '已成交', '拒绝'];
       return {
-        callUuid: `CALL-20260508-${String(index + 1).padStart(3, '0')}`,
-        callRecordPath: `/records/2026/05/08/${String(index + 1).padStart(3, '0')}.wav`,
-        callerPhoneNum: isExt ? `021-5555${String(1000 + index).slice(1)}` : mobile,
+        callUuid: `CALL-20260627-${String(index + 1).padStart(3, '0')}`,
+        callRecordPath: `/records/2026/06/27/${String(index + 1).padStart(3, '0')}.wav`,
+        callerPhoneNum: `021-6666${String(1000 + index).slice(1)}`,
         calleePhoneNum: `138${String(10000000 + index * 1111).slice(0, 8)}`,
         calleeArea: ['上海', '北京', '广州', '深圳', '杭州'][index % 5],
-        seatExtNum: isExt ? `8${String(100 + index)}` : '-',
-        seatMobile: isExt ? '-' : mobile,
-        dialMethod: isExt ? '坐席分机' : '坐席手机',
-        dialTime: `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:30`,
-        seatAnswerTime: `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:35`,
-        custAnswerTime: index % 3 === 0 ? '-' : `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:42`,
-        hangupTime: `2026-05-08 ${String(9 + (index % 8)).padStart(2, '0')}:${String(18 + index).padStart(2, '0')}:20`,
+        customerName: ['张三', '李四', '王五', '赵六', '钱七'][index % 5],
+        seatExtNum: `8${String(100 + index)}`,
+        scene: scenes[index % 4],
+        dialTime: `2026-06-27 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:30`,
+        seatAnswerTime: `2026-06-27 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:35`,
+        custAnswerTime: index % 3 === 0 ? '-' : `2026-06-27 ${String(9 + (index % 8)).padStart(2, '0')}:${String(15 + index).padStart(2, '0')}:42`,
+        hangupTime: `2026-06-27 ${String(9 + (index % 8)).padStart(2, '0')}:${String(18 + index).padStart(2, '0')}:20`,
         hangupBy: ['坐席挂断', '客户挂断'][index % 2],
         callStatus: index % 3 === 0 ? '未接通' : '已接通',
         callDuration: [158, 30, 457, 210, 95, 300, 180, 45, 520, 130, 60, 390, 240, 75, 480][index],
-        dialContent: [
-          '客户咨询理财产品到期续期事宜',
-          '信用卡账单提醒',
-          '贷款还款提醒及还款方案沟通',
-          '保险产品推荐',
-          '基金定投收益汇报',
-          '客户投诉处理跟进',
-          '新开户资料补充通知',
-          'VIP 客户专属活动邀请',
-          '房贷利率调整通知',
-          '信用卡额度提升邀请',
-          '理财产品到期提醒',
-          '客户回访满意度调查',
-          '贷款审批进度通知',
-          '账户异常交易提醒',
-          '贵宾服务升级通知',
-        ][index],
+        intentResult: intentResults[index % 5],
       };
     });
     total.value = 150;
@@ -735,7 +714,7 @@ const handleReset = () => {
   searchForm.hangupBy = undefined;
   searchForm.seatExtNum = '';
   searchForm.callStatus = undefined;
-  searchForm.dialMethod = undefined;
+  searchForm.scene = undefined;
   pagination.current = 1;
   loadData();
   message.success('重置成功');
@@ -848,24 +827,6 @@ const handleViewDetail = (record: ReportItem) => {
       confidence: 97,
       endpoint: { vadDuration: 75, isEndpoint: true },
     },
-    {
-      role: 'seat',
-      time: '00:00:45',
-      text: '贷款金额是三万五千元，分十二期还款。',
-      confidence: 92,
-      endpoint: { vadDuration: 200, isEndpoint: true },
-      annotations: [
-        { type: 'number' as const, start: 5, end: 10, original: '三万五千元', value: '35000元' },
-        { type: 'number' as const, start: 12, end: 15, original: '十二期', value: '12期' },
-      ],
-    },
-    {
-      role: 'customer',
-      time: '00:00:50',
-      text: '好的，明白了，我考虑一下。',
-      confidence: 96,
-      endpoint: { vadDuration: 88, isEndpoint: true },
-    },
   ];
   detailModalVisible.value = true;
 };
@@ -887,15 +848,15 @@ const handleExportExcel = () => {
   const wsData = [headers, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '人工通信接口外呼记录');
-  XLSX.writeFile(wb, '人工通信接口外呼记录.xlsx');
+  XLSX.utils.book_append_sheet(wb, ws, '人工外呼记录');
+  XLSX.writeFile(wb, '人工外呼记录.xlsx');
   exportModalVisible.value = false;
   message.success('导出成功');
 };
 </script>
 
 <style scoped>
-.manual-call-report {
+.manual-call-record {
   padding: 0;
 }
 
@@ -999,74 +960,72 @@ const handleExportExcel = () => {
 
 :deep(.ant-table-tbody > tr > td) {
   white-space: nowrap;
+  color: #555;
+}
+
+:deep(.ant-table-row:hover td) {
+  background: #f0f7ff;
+}
+
+:deep(.ant-table) {
+  border-radius: 0 0 6px 6px;
+}
+
+:deep(.ant-pagination) {
+  margin: 16px 0;
 }
 
 /* 对话详情弹窗 - 通话信息区域 */
 .detail-info-section {
   border-bottom: 1px solid #f0f0f0;
-  flex-shrink: 0;
 }
 
 .detail-info-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 12px 20px;
   cursor: pointer;
-  user-select: none;
+  background: #fafafa;
+  transition: background 0.2s;
 }
 
 .detail-info-header:hover {
-  background: #fafafa;
+  background: #f0f0f0;
 }
 
 .detail-info-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
 }
 
 .detail-info-toggle {
   color: #999;
-  font-size: 12px;
 }
 
 .detail-info-body {
-  max-height: 180px;
-  overflow-y: auto;
-  padding: 0 16px 12px;
-}
-
-.detail-info-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.detail-info-body::-webkit-scrollbar-thumb {
-  background: #d9d9d9;
-  border-radius: 3px;
-}
-
-.detail-info-body::-webkit-scrollbar-track {
-  background: transparent;
+  padding: 12px 20px 16px;
 }
 
 .detail-field-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px 24px;
+  gap: 12px 24px;
 }
 
 .detail-field-item {
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 4px;
 }
 
 .detail-field-label {
   font-size: 12px;
   color: #999;
-  line-height: 1;
-  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .detail-field-value {
@@ -1094,7 +1053,7 @@ const handleExportExcel = () => {
   justify-content: center;
   gap: 8px;
   padding: 60px 0;
-  color: #1890ff;
+  color: #52c41a;
   font-size: 14px;
 }
 
@@ -1136,7 +1095,9 @@ const handleExportExcel = () => {
 }
 
 .chat-bubble-wrap-right {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
 .chat-name {
@@ -1145,7 +1106,7 @@ const handleExportExcel = () => {
   margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .chat-name-right {
@@ -1155,139 +1116,75 @@ const handleExportExcel = () => {
 .chat-bubble {
   padding: 10px 14px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.6;
-  color: #333;
   word-break: break-word;
 }
 
 .chat-bubble-left {
   background: #fff;
+  color: #333;
   border: 1px solid #e8e8e8;
   border-top-left-radius: 2px;
 }
 
 .chat-bubble-right {
-  background: #95ec69;
-  border: 1px solid #84d65a;
+  background: #1890ff;
+  color: #fff;
   border-top-right-radius: 2px;
 }
 
-.chat-audio-bar {
-  padding: 12px 16px;
-  border-top: 1px solid #f0f0f0;
-  background: #fff;
-  flex-shrink: 0;
-}
-
-/* ASR 特性标签 */
-.asr-endpoint-tag {
-  font-size: 11px !important;
-  line-height: 18px !important;
-  padding: 0 5px !important;
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
-.asr-endpoint-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  margin-right: 3px;
-  vertical-align: middle;
-  animation: asr-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes asr-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-.asr-confidence-tag {
-  font-size: 11px !important;
-  line-height: 18px !important;
-  padding: 0 5px !important;
-  margin-left: 4px;
-  color: #8c8c8c !important;
-  background: #f5f5f5 !important;
-  border-color: #e8e8e8 !important;
-  vertical-align: middle;
-}
-
-/* ASR 后处理标注 */
+/* ASR 标注样式 */
 .asr-annotation {
   position: relative;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  padding-bottom: 1px;
-  transition: background 0.2s;
-}
-
-.asr-annotation:hover {
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 2px;
-}
-
-.asr-ann-replace {
-  border-bottom-color: #fa8c16;
-  color: #fa8c16;
-}
-
-.asr-ann-highlight {
-  border-bottom-color: #722ed1;
-  color: #722ed1;
-  background: rgba(114, 46, 209, 0.06);
-}
-
-.asr-ann-number {
-  border-bottom-color: #1890ff;
-  color: #1890ff;
+  border-bottom: 1px dashed;
 }
 
 .asr-ann-badge {
-  font-size: 9px;
-  line-height: 1;
-  padding: 1px 3px;
-  border-radius: 2px;
+  font-size: 10px;
+  padding: 0 4px;
+  border-radius: 3px;
+  margin-left: 2px;
   vertical-align: super;
-  margin-left: 1px;
-  font-weight: 500;
+}
+
+.asr-ann-replace {
+  border-color: #faad14;
+  background: rgba(250, 173, 20, 0.1);
 }
 
 .asr-ann-replace .asr-ann-badge {
-  background: #fff7e6;
-  color: #fa8c16;
+  background: #faad14;
+  color: #fff;
+}
+
+.asr-ann-highlight {
+  border-color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.1);
 }
 
 .asr-ann-highlight .asr-ann-badge {
-  background: #f9f0ff;
-  color: #722ed1;
+  background: #ff4d4f;
+  color: #fff;
+}
+
+.asr-ann-number {
+  border-color: #722ed1;
+  background: rgba(114, 46, 209, 0.1);
 }
 
 .asr-ann-number .asr-ann-badge {
-  background: #e6f7ff;
-  color: #1890ff;
+  background: #722ed1;
+  color: #fff;
 }
 
-/* 后处理标记 */
 .asr-processed-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
   font-size: 11px;
   color: #52c41a;
-  margin-top: 6px;
-  padding-top: 5px;
-  border-top: 1px dashed #e8e8e8;
+  margin-top: 4px;
 }
 
-.asr-processed-mark-green {
-  color: #389e0d;
-}
-
-/* 气泡下方元信息 */
 .asr-meta {
   display: flex;
   align-items: center;
@@ -1295,22 +1192,44 @@ const handleExportExcel = () => {
   margin-top: 4px;
 }
 
-.asr-meta-right {
-  justify-content: flex-end;
-}
-
 .asr-time {
   font-size: 11px;
   color: #bbb;
 }
 
+.asr-confidence-tag {
+  font-size: 11px;
+  margin: 0;
+}
+
+.asr-endpoint-tag {
+  font-size: 11px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.asr-endpoint-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
 .asr-punctuation-tag {
   font-size: 10px;
-  color: #52c41a;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 2px;
+  color: #999;
+  border: 1px solid #e8e8e8;
   padding: 0 4px;
-  line-height: 16px;
+  border-radius: 3px;
+}
+
+/* 底部录音播放 */
+.chat-audio-bar {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+  background: #fff;
 }
 </style>

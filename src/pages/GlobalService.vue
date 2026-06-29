@@ -774,6 +774,19 @@
                   <a-switch v-model:checked="operationForm.recordingToText" checked-children="开" un-checked-children="关" />
                 </div>
                 <div v-if="operationForm.recordingToText" class="func-module-body">
+                  <a-alert class="asr-scope-tip" type="info" show-icon>
+                    <template #message>
+                      <div class="asr-scope-content">
+                        <div class="asr-scope-title">语音转文本规则：</div>
+                        <ol class="asr-scope-list">
+                          <li><strong>数据处理范围：</strong>功能开启期间产生的人机协同通话记录、人工外呼记录、人工通信接口外呼记录</li>
+                          <li><strong>识别时机：</strong>系统会在预设的执行时间段内自动进行识别</li>
+                          <li><strong>关闭期间数据：</strong>仅识别功能开启期间产生的外呼记录，关闭期间的数据需手动前往对应话单中进行"语音转文本"</li>
+                          <li><strong>智能质检联动：</strong>若同时开启智能质检功能，质检任务中的话单记录、上传的录音将在全时间段识别，但需部署单独的服务器</li>
+                        </ol>
+                      </div>
+                    </template>
+                  </a-alert>
                   <div class="sub-option-row">
                     <span class="sub-option-label">执行时间段：</span>
                     <a-time-picker
@@ -1379,6 +1392,33 @@ const getModuleName = (key: string): string => {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
+}
+
+.asr-scope-tip {
+  margin-bottom: 16px;
+}
+
+.asr-scope-content {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.asr-scope-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.asr-scope-list {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.asr-scope-list li {
+  margin-bottom: 2px;
+}
+
+.asr-scope-list strong {
+  color: #fa8c16;
 }
 
 .sub-option-row {

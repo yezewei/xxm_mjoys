@@ -32,6 +32,11 @@ const routes = [
     component: () => import("./pages/ManualCallReport.vue"),
   },
   {
+    path: "/manual-call-record",
+    name: "ManualCallRecord",
+    component: () => import("./pages/ManualCallRecord.vue"),
+  },
+  {
     path: "/call-funnel",
     name: "CallFunnel",
     component: () => import("./pages/CallFunnel.vue"),
