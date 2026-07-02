@@ -780,9 +780,10 @@
                         <div class="asr-scope-title">语音转文本规则：</div>
                         <ol class="asr-scope-list">
                           <li><strong>数据处理范围：</strong>功能开启期间产生的人机协同通话记录、人工外呼记录、人工通信接口外呼记录</li>
-                          <li><strong>识别时机：</strong>系统会在预设的执行时间段内自动进行识别</li>
+                          <li><strong>识别时机：</strong>系统会在预设的执行时间段内自动进行识别，非执行时间段内不会进行识别</li>
+                          <li><strong>执行时间段：</strong>可自定义识别任务的执行时间范围，支持跨天配置（勾选"次日"），建议设置在业务低峰期以平衡系统负载</li>
+                          <li><strong>ASR并发数量：</strong>控制同一时间进行语音识别的任务数量，合理设置可优化识别效率与服务器资源占用</li>
                           <li><strong>关闭期间数据：</strong>仅识别功能开启期间产生的外呼记录，关闭期间的数据需手动前往对应话单中进行"语音转文本"</li>
-                          <li><strong>智能质检联动：</strong>若同时开启智能质检功能，质检任务中的话单记录、上传的录音将在全时间段识别，但需部署单独的服务器</li>
                         </ol>
                       </div>
                     </template>
@@ -808,6 +809,17 @@
                       :disabled-time="getDisabledEndTime"
                       @change="handleRecordingTimeChange"
                     />
+                  </div>
+                  <div class="sub-option-row">
+                    <span class="sub-option-label">ASR并发数量：</span>
+                    <a-input-number
+                      v-model:value="operationForm.asrConcurrency"
+                      :min="1"
+                      :max="50"
+                      style="width: 120px"
+                      placeholder="请输入"
+                    />
+                    <span class="sub-option-hint">同一时间进行语音识别的任务数量</span>
                   </div>
                 </div>
               </div>
@@ -1113,7 +1125,8 @@ const operationForm = reactive({
   recordingToText: false,
   recordingToTextStart: null as any,
   recordingToTextEnd: null as any,
-  recordingToTextNextDay: false
+  recordingToTextNextDay: false,
+  asrConcurrency: 5
 })
 
 const handleSyncDimensions = () => {
@@ -1425,6 +1438,11 @@ const getModuleName = (key: string): string => {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 12px;
+}
+
+.sub-option-row:first-child {
+  margin-top: 0;
 }
 
 .sub-option-label {
@@ -1442,5 +1460,11 @@ const getModuleName = (key: string): string => {
 .next-day-checkbox {
   margin-left: 8px;
   font-size: 13px;
+}
+
+.sub-option-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-left: 8px;
 }
 </style>

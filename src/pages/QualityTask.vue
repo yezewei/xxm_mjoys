@@ -101,6 +101,18 @@
                   </a-select>
                 </a-form-item>
               </a-col>
+              <a-col :span="6">
+                <a-form-item>
+                  <a-select
+                    v-model:value="searchForm.autoAppend"
+                    placeholder="请选择数据追加"
+                    allow-clear
+                  >
+                    <a-select-option value="true">开启</a-select-option>
+                    <a-select-option value="false">关闭</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
               <a-col :span="6" v-if="activeTab === 'ai'">
                 <a-form-item>
                   <a-select
@@ -660,6 +672,11 @@
                   </a-select>
                 </div>
 
+                <!-- 总抽检数量提示 -->
+                <div v-if="totalSamplingCount > 0" class="total-sampling-count-tip">
+                  总抽检数量：<strong>{{ totalSamplingCount }}</strong> 条
+                </div>
+
                 <a-alert
                   v-if="createTaskForm.samplingDimension === 'scene'"
                   message="各场景被抽中的录音数量符合预先设定的比例，且每个坐席被抽中的录音数量尽可能相等"
@@ -693,7 +710,10 @@
                     class="dimension-table"
                   >
                     <template #bodyCell="{ column, record: item, index: itemIndex }">
-                      <template v-if="column.key === 'sceneName'">
+                      <template v-if="column.key === 'group'">
+                        组{{ itemIndex + 1 }}
+                      </template>
+                      <template v-else-if="column.key === 'sceneName'">
                         <a-select
                           v-model:value="item.sceneName"
                           placeholder="请选择场景"
@@ -714,6 +734,9 @@
                       </template>
                       <template v-else-if="column.key === 'ratio'">
                         <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'samplingCount'">
+                        <span class="sampling-count-value">{{ samplingCountByRatio(item.ratio || 0) }}</span>
                       </template>
                       <template v-else-if="column.key === 'action'">
                         <a-button type="link" size="small" danger @click="handleDeleteSamplingSceneItem(itemIndex)">删除</a-button>
@@ -741,7 +764,10 @@
                     class="dimension-table"
                   >
                     <template #bodyCell="{ column, record: item, index: itemIndex }">
-                      <template v-if="column.key === 'agentId'">
+                      <template v-if="column.key === 'group'">
+                        组{{ itemIndex + 1 }}
+                      </template>
+                      <template v-else-if="column.key === 'agentId'">
                         <a-select
                           v-model:value="item.agentId"
                           placeholder="请选择坐席"
@@ -762,6 +788,9 @@
                       </template>
                       <template v-else-if="column.key === 'ratio'">
                         <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'samplingCount'">
+                        <span class="sampling-count-value">{{ samplingCountByRatio(item.ratio || 0) }}</span>
                       </template>
                       <template v-else-if="column.key === 'action'">
                         <a-button type="link" size="small" danger @click="handleDeleteSamplingAgentItem(itemIndex)">删除</a-button>
@@ -789,7 +818,10 @@
                     class="dimension-table"
                   >
                     <template #bodyCell="{ column, record: item, index: itemIndex }">
-                      <template v-if="column.key === 'range'">
+                      <template v-if="column.key === 'group'">
+                        组{{ itemIndex + 1 }}
+                      </template>
+                      <template v-else-if="column.key === 'range'">
                         <a-input-number v-model:value="item.minDuration" :min="0" :precision="0" size="small" style="width: 80px" placeholder="秒" />
                         <span class="range-separator">~</span>
                         <a-input-number v-model:value="item.maxDuration" :min="0" :precision="0" size="small" style="width: 80px" placeholder="秒" />
@@ -797,6 +829,9 @@
                       </template>
                       <template v-else-if="column.key === 'ratio'">
                         <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'samplingCount'">
+                        <span class="sampling-count-value">{{ samplingCountByRatio(item.ratio || 0) }}</span>
                       </template>
                       <template v-else-if="column.key === 'action'">
                         <a-button type="link" size="small" danger @click="handleDeleteSamplingDurationItem(itemIndex)">删除</a-button>
@@ -1022,11 +1057,17 @@
                     class="dimension-table"
                   >
                     <template #bodyCell="{ column, record: item, index: itemIndex }">
-                      <template v-if="column.key === 'sceneName'">
+                      <template v-if="column.key === 'group'">
+                        组{{ itemIndex + 1 }}
+                      </template>
+                      <template v-else-if="column.key === 'sceneName'">
                         <a-input v-model:value="item.sceneName" placeholder="场景名称" size="small" />
                       </template>
                       <template v-else-if="column.key === 'ratio'">
                         <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'samplingCount'">
+                        <span class="sampling-count-value">{{ samplingCountByRatio(item.ratio || 0) }}</span>
                       </template>
                       <template v-else-if="column.key === 'action'">
                         <a-button type="link" size="small" danger @click="handleDeleteSceneItem(dIndex, itemIndex)">删除</a-button>
@@ -1072,7 +1113,10 @@
                       class="dimension-table"
                     >
                       <template #bodyCell="{ column, record: item, index: itemIndex }">
-                        <template v-if="column.key === 'agentId'">
+                        <template v-if="column.key === 'group'">
+                          组{{ itemIndex + 1 }}
+                        </template>
+                        <template v-else-if="column.key === 'agentId'">
                           <a-input v-model:value="item.agentId" placeholder="坐席工号" size="small" />
                         </template>
                         <template v-else-if="column.key === 'count'">
@@ -1083,9 +1127,14 @@
                         </template>
                       </template>
                     </a-table>
-                    <a-button type="link" size="small" @click="handleAddAgentItem(dIndex)">
-                      <plus-outlined /> 添加坐席
-                    </a-button>
+                    <div class="dimension-table-footer">
+                      <a-button type="link" size="small" @click="handleAddAgentItem(dIndex)">
+                        <plus-outlined /> 添加坐席
+                      </a-button>
+                      <span class="count-total">
+                        合计：{{ agentListTotalCount }} 条
+                      </span>
+                    </div>
                   </template>
 
                   <template v-else>
@@ -1099,7 +1148,10 @@
                       class="dimension-table"
                     >
                       <template #bodyCell="{ column, record: item, index: itemIndex }">
-                        <template v-if="column.key === 'groupName'">
+                        <template v-if="column.key === 'group'">
+                          组{{ itemIndex + 1 }}
+                        </template>
+                        <template v-else-if="column.key === 'groupName'">
                           <a-input v-model:value="item.groupName" placeholder="分组名称（如：初级客服）" size="small" />
                         </template>
                         <template v-else-if="column.key === 'count'">
@@ -1110,9 +1162,14 @@
                         </template>
                       </template>
                     </a-table>
-                    <a-button type="link" size="small" @click="handleAddAgentGroup(dIndex)">
-                      <plus-outlined /> 添加分组
-                    </a-button>
+                    <div class="dimension-table-footer">
+                      <a-button type="link" size="small" @click="handleAddAgentGroup(dIndex)">
+                        <plus-outlined /> 添加分组
+                      </a-button>
+                      <span class="count-total">
+                        合计：{{ agentGroupTotalCount }} 条
+                      </span>
+                    </div>
                   </template>
                 </template>
 
@@ -1129,7 +1186,10 @@
                     class="dimension-table"
                   >
                     <template #bodyCell="{ column, record: item, index: itemIndex }">
-                      <template v-if="column.key === 'range'">
+                      <template v-if="column.key === 'group'">
+                        组{{ itemIndex + 1 }}
+                      </template>
+                      <template v-else-if="column.key === 'range'">
                         <a-input-number v-model:value="item.minDuration" :min="0" :precision="0" size="small" style="width: 80px" placeholder="秒" />
                         <span class="range-separator">~</span>
                         <a-input-number v-model:value="item.maxDuration" :min="0" :precision="0" size="small" style="width: 80px" placeholder="秒" />
@@ -1137,6 +1197,9 @@
                       </template>
                       <template v-else-if="column.key === 'ratio'">
                         <a-input-number v-model:value="item.ratio" :min="0" :max="100" :precision="0" size="small" style="width: 80px" /> %
+                      </template>
+                      <template v-else-if="column.key === 'samplingCount'">
+                        <span class="sampling-count-value">{{ samplingCountByRatio(item.ratio || 0) }}</span>
                       </template>
                       <template v-else-if="column.key === 'action'">
                         <a-button type="link" size="small" danger @click="handleDeleteDurationInterval(dIndex, itemIndex)">删除</a-button>
@@ -1446,6 +1509,7 @@ interface QualityTaskItem {
   qualityModel: string
   qualityObject: string
   qualityScope: 'full' | 'sampling'
+  autoAppend: boolean
   status: 'running' | 'paused' | 'completed' | 'pending'
   auditStatus: string
   auditor: string | string[]
@@ -1463,6 +1527,7 @@ interface SearchFormData {
   qualityObject: string | undefined
   qualityModel: string | undefined
   qualityScope: string | undefined
+  autoAppend: string | undefined
   auditor: string | undefined
   inspector: string | undefined
 }
@@ -1599,8 +1664,10 @@ const samplingDurationItems = ref<Array<{ minDuration: number | null; maxDuratio
 
 // 按坐席表格列
 const agentColumns = [
+  { title: '组别', key: 'group', width: 80 },
   { title: '坐席', key: 'agentId', width: 200 },
   { title: '比例', key: 'ratio', width: 140 },
+  { title: '抽检条数', key: 'samplingCount', width: 120 },
   { title: '操作', key: 'action', width: 80, align: 'center' as const },
 ]
 
@@ -1656,6 +1723,14 @@ const columns = computed(() => {
       width: 110,
       ellipsis: true as any,
       customRender: ({ text }: { text: string }) => getQualityScopeLabel(text),
+    },
+    {
+      title: '数据追加',
+      dataIndex: 'autoAppend',
+      key: 'autoAppend',
+      width: 100,
+      ellipsis: true as any,
+      customRender: ({ text }: { text: boolean }) => text ? '开启' : '关闭',
     },
     { title: '质检对象', dataIndex: 'qualityObject', key: 'qualityObject', width: 130, ellipsis: true as any },
     { title: '任务状态', dataIndex: 'status', key: 'status', width: 110, ellipsis: true as any },
@@ -1801,9 +1876,42 @@ const isRatioValid = computed(() => {
 
 // 根据占比计算数量
 const samplingCountByRatio = (ratio: number) => {
-  if (!createTaskForm.samplingCount || !ratio) return 0
-  return Math.floor(createTaskForm.samplingCount * ratio / 100)
+  if (!createTaskForm.allocationValue || !ratio) return 0
+  
+  // 根据分配方式计算总抽检数量
+  let totalCount = 0
+  if (createTaskForm.allocationMethod === 'total') {
+    // 按总数：直接使用用户输入的值
+    totalCount = createTaskForm.allocationValue
+  } else if (createTaskForm.allocationMethod === 'ratio') {
+    // 按比例：总数 = 查询结果 × 百分比 / 100
+    if (!queryResult.value) return 0
+    totalCount = Math.floor(queryResult.value * createTaskForm.allocationValue / 100)
+  } else if (createTaskForm.allocationMethod === 'perPerson') {
+    // 人均数量：总数 = 每人数量 × 质检员人数
+    const inspectorCount = createTaskForm.inspector?.length || 1
+    totalCount = createTaskForm.allocationValue * inspectorCount
+  }
+  
+  // 根据比例计算当前行的抽检条数
+  return Math.floor(totalCount * ratio / 100)
 }
+
+// 计算总抽检数量（用于显示）
+const totalSamplingCount = computed(() => {
+  if (!createTaskForm.allocationValue) return 0
+  
+  if (createTaskForm.allocationMethod === 'total') {
+    return createTaskForm.allocationValue
+  } else if (createTaskForm.allocationMethod === 'ratio') {
+    if (!queryResult.value) return 0
+    return Math.floor(queryResult.value * createTaskForm.allocationValue / 100)
+  } else if (createTaskForm.allocationMethod === 'perPerson') {
+    const inspectorCount = createTaskForm.inspector?.length || 1
+    return createTaskForm.allocationValue * inspectorCount
+  }
+  return 0
+})
 
 // ============ 抽检策略 - 数据范围筛选 ============
 const dataRangeFilters = ref<DataRangeFilter[]>([
@@ -1855,13 +1963,16 @@ const agentOptions = [
 
 // 按场景表格列
 const sceneColumns = [
+  { title: '组别', key: 'group', width: 80 },
   { title: '场景名称', key: 'sceneName', width: 200 },
   { title: '比例', key: 'ratio', width: 140 },
+  { title: '抽检条数', key: 'samplingCount', width: 120 },
   { title: '操作', key: 'action', width: 80, align: 'center' as const },
 ]
 
 // 按坐席列表表格列
 const agentListColumns = [
+  { title: '组别', key: 'group', width: 80 },
   { title: '坐席工号', key: 'agentId', width: 200 },
   { title: '抽取条数', key: 'count', width: 140 },
   { title: '操作', key: 'action', width: 80, align: 'center' as const },
@@ -1869,6 +1980,7 @@ const agentListColumns = [
 
 // 按坐席分组表格列
 const agentGroupColumns = [
+  { title: '组别', key: 'group', width: 80 },
   { title: '分组名称', key: 'groupName', width: 200 },
   { title: '每人抽取', key: 'count', width: 160 },
   { title: '操作', key: 'action', width: 80, align: 'center' as const },
@@ -1876,10 +1988,21 @@ const agentGroupColumns = [
 
 // 按通话时长表格列
 const durationColumns = [
+  { title: '组别', key: 'group', width: 80 },
   { title: '时长区间', key: 'range', width: 240 },
   { title: '比例', key: 'ratio', width: 140 },
+  { title: '抽检条数', key: 'samplingCount', width: 120 },
   { title: '操作', key: 'action', width: 80, align: 'center' as const },
 ]
+
+// 按坐席总抽取条数计算
+const agentListTotalCount = computed(() => {
+  return samplingAgentItems.value.reduce((sum, item) => sum + (item.count || 0), 0)
+})
+
+const agentGroupTotalCount = computed(() => {
+  return samplingAgentItems.value.reduce((sum, item) => sum + (item.count || 0), 0)
+})
 
 // ============ 抽检策略 - 全局配额 ============
 const globalQuotas = reactive<GlobalQuotas>({
@@ -2086,6 +2209,7 @@ const searchForm = reactive<SearchFormData>({
   qualityObject: undefined,
   qualityModel: undefined,
   qualityScope: undefined,
+  autoAppend: undefined,
   auditor: undefined,
   inspector: undefined,
 })
@@ -2117,6 +2241,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '合规质检',
     qualityObject: '人工外呼录音',
     qualityScope: 'full',
+    autoAppend: true,
     status: 'paused',
     auditStatus: 'auditing',
     auditor: ['张三', '李四'],
@@ -2133,6 +2258,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '营销意向',
     qualityObject: '人工外呼录音',
     qualityScope: 'sampling',
+    autoAppend: false,
     status: 'running',
     auditStatus: 'auditing',
     auditor: ['李四', '王五'],
@@ -2149,6 +2275,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '投诉倾向',
     qualityObject: '人工外呼录音',
     qualityScope: 'sampling',
+    autoAppend: true,
     status: 'running',
     auditStatus: 'auditing',
     auditor: ['王五'],
@@ -2165,6 +2292,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '合规质检',
     qualityObject: '呼入录音',
     qualityScope: 'full',
+    autoAppend: false,
     status: 'running',
     auditStatus: 'auditing',
     auditor: ['admin', '张三'],
@@ -2181,6 +2309,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '营销意向',
     qualityObject: '人工外呼录音',
     qualityScope: 'full',
+    autoAppend: true,
     status: 'running',
     auditStatus: 'auditing',
     auditor: ['admin'],
@@ -2197,6 +2326,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '投诉倾向',
     qualityObject: '人机协同录音',
     qualityScope: 'sampling',
+    autoAppend: false,
     status: 'running',
     auditStatus: 'auditing',
     auditor: ['admin'],
@@ -2214,6 +2344,7 @@ const mockData: QualityTaskItem[] = [
     qualityModel: '合规质检（人工）',
     qualityObject: '人机协同录音',
     qualityScope: 'full',
+    autoAppend: true,
     status: 'running',
     auditStatus: 'running',
     auditor: ['张三', '李四', '王五'],
@@ -2260,6 +2391,11 @@ const tableData = computed(() => {
 
   if (searchForm.qualityScope) {
     filtered = filtered.filter(item => item.qualityScope === searchForm.qualityScope)
+  }
+
+  if (searchForm.autoAppend !== undefined) {
+    const appendValue = searchForm.autoAppend === 'true'
+    filtered = filtered.filter(item => item.autoAppend === appendValue)
   }
 
   if (searchForm.inspector && activeTab.value === 'manual') {
@@ -2317,6 +2453,7 @@ const handleReset = () => {
     qualityObject: undefined,
     qualityModel: undefined,
     qualityScope: undefined,
+    autoAppend: undefined,
     auditor: undefined,
     inspector: undefined,
   })
@@ -3313,6 +3450,17 @@ const getDimensionDurationRatio = (dIndex: number) => {
   font-weight: 500;
 }
 
+/* 总抽检数量提示 */
+.total-sampling-count-tip {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #52c41a;
+}
+
 .dimension-tip-alert {
   margin-bottom: 16px;
 }
@@ -3344,8 +3492,21 @@ const getDimensionDurationRatio = (dIndex: number) => {
   font-weight: 500;
 }
 
+.count-total {
+  font-size: 14px;
+  color: #595959;
+  font-weight: 500;
+}
+
 .ratio-total.ratio-error {
   color: #ff4d4f;
+}
+
+/* 抽检条数 */
+.sampling-count-value {
+  font-size: 14px;
+  color: #1677ff;
+  font-weight: 500;
 }
 
 .range-separator {

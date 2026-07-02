@@ -2,7 +2,7 @@
 name: vue-crud-add-field
 description: 在 Vue 3 + Ant Design Vue CRUD 页面中新增字段，并传播到关联组件的系统化步骤
 source: auto-skill
-extracted_at: '2026-06-03T09:02:08.322Z'
+extracted_at: '2026-06-30T02:33:12.374Z'
 ---
 
 # 在 Vue CRUD 页面新增字段
@@ -49,7 +49,72 @@ extracted_at: '2026-06-03T09:02:08.322Z'
 - 汇总逻辑需对规则编号去重（`Set`），避免同一规则被多次计入。
 - 返回值统一为 `{ add, deduct, total }` 结构，模板中按需展示。
 
-## 10. 数值区间搜索
+## 10. 新增可搜索筛选字段
+
+当需要在列表搜索区域添加新的下拉筛选字段时：
+
+### SearchFormData 接口
+添加 `fieldName: string | undefined` 字段。
+
+### searchForm 响应式数据
+在 `reactive({ ... })` 中添加 `fieldName: undefined`。
+
+### 搜索区域 UI
+在 `<a-row>` 中添加 `<a-col :span="6">` 包裹的 `<a-select>`：
+```html
+<a-col :span="6">
+  <a-form-item>
+    <a-select
+      v-model:value="searchForm.fieldName"
+      placeholder="请选择XXX"
+      allow-clear
+    >
+      <a-select-option value="value1">选项1</a-select-option>
+      <a-select-option value="value2">选项2</a-select-option>
+    </a-select>
+  </a-form-item>
+</a-col>
+```
+
+### tableData 计算属性过滤逻辑
+在 `tableData` computed 中添加过滤条件：
+```typescript
+if (searchForm.fieldName) {
+  filtered = filtered.filter(item => item.fieldName === searchForm.fieldName)
+}
+```
+
+> **注意**：对于布尔类型字段（如"数据追加"开关），需要特殊处理：
+> 
+> **表格列 customRender**：将布尔值转为中文显示：
+> ```typescript
+> {
+>   title: '数据追加',
+>   dataIndex: 'autoAppend',
+>   key: 'autoAppend',
+>   width: 100,
+>   customRender: ({ text }: { text: boolean }) => text ? '开启' : '关闭',
+> }
+> ```
+> 
+> **搜索值存储为字符串** `'true'`/`'false'`，过滤时需转换：
+> ```typescript
+> if (searchForm.autoAppend !== undefined) {
+>   const appendValue = searchForm.autoAppend === 'true'
+>   filtered = filtered.filter(item => item.autoAppend === appendValue)
+> }
+> ```
+> 
+> **搜索下拉选项**：
+> ```html
+> <a-select-option value="true">开启</a-select-option>
+> <a-select-option value="false">关闭</a-select-option>
+> ```
+
+### handleReset 重置
+在 `Object.assign(searchForm, { ... })` 中添加 `fieldName: undefined`。
+
+## 11. 数值区间搜索
 当新字段是数值类型且需要按区间搜索时：
 
 ### FilterForm 扩展

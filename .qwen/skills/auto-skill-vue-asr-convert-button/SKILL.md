@@ -82,7 +82,7 @@ import { AudioOutlined } from '@ant-design/icons-vue';
   justify-content: center;
   gap: 8px;
   padding: 60px 0;
-  color: #1890ff;
+  color: #52c41a;
   font-size: 14px;
 }
 ```
@@ -91,7 +91,7 @@ import { AudioOutlined } from '@ant-design/icons-vue';
 
 1. **无ASR数据时**：显示"暂无 ASR 数据"提示和"语音转文本"按钮
 2. **点击按钮后**：将通话ID加入asrQueue集合
-3. **在队列中时**：显示loading动画和"正在语音转文本，请稍后..."提示
+3. **在队列中时**：使用静态绿色对勾图标 + "已加入语音转文本队列，等待识别"提示
 4. **识别完成后**：需从asrQueue中移除（当前为模拟状态，实际需接后端接口）
 
 ## 注意事项
@@ -100,3 +100,5 @@ import { AudioOutlined } from '@ant-design/icons-vue';
 - 使用 `callUuid` 作为唯一标识
 - 样式需添加到页面的 `<style>` 标签中
 - 实际项目中需接后端接口获取识别结果并刷新页面
+- **队列提示用静态图标（check-circle-outlined）而非 a-spin**：因为 ASR 不是实时处理，避免给用户造成"正在处理"的误解
+- 如果对话详情需要拆分为 AI 对话 + 人工对话两段，参见 **vue-split-chat-dialog** 技能

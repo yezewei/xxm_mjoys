@@ -126,9 +126,8 @@
                 <span class="item-value">{{ currentTask?.auditor || '-' }}</span>
               </div>
               <div class="info-item">
-                <span class="item-label">质检对象：</span>
-                <a class="item-link">人工通话录音</a>
-                <span class="item-note">（新数据自动追加）</span>
+                <span class="item-label">质检数据范围：</span>
+                <a class="data-range-link" @click="dataRangeVisible = true">查看</a>
               </div>
             </div>
             <div class="info-row">
@@ -174,45 +173,6 @@
                 </div>
               </div>
             </div>
-          </div>
-        </a-card>
-
-        <!-- 评分汇总卡片 -->
-        <a-card v-if="currentTask" class="score-summary-card">
-          <div class="score-summary-header">
-            <span class="score-summary-title">评分汇总</span>
-            <a-tag color="blue">百分制</a-tag>
-          </div>
-          <div class="score-summary-stats">
-            <div class="stat-item">
-              <div class="stat-value">100</div>
-              <div class="stat-label">满分</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">0~100</div>
-              <div class="stat-label">评分区间</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-value">{{ currentTask.scoreDeductions?.length || 0 }}</div>
-              <div class="stat-label">扣分项</div>
-            </div>
-          </div>
-          <div class="score-deduction-list">
-            <div class="deduction-title">扣分明细</div>
-            <div class="deduction-items">
-              <div
-                v-for="item in currentTask.scoreDeductions"
-                :key="item.ruleCode"
-                class="deduction-item"
-              >
-                <span class="deduction-code">{{ item.ruleCode }}</span>
-                <span class="deduction-desc">{{ item.ruleDesc }}</span>
-                <span class="deduction-value">-{{ item.maxDeduct }}分</span>
-              </div>
-            </div>
-          </div>
-          <div class="score-note">
-            评分规则：百分制满分 100 分，根据质检规则触发情况逐项扣分，最终得分 = 100 - 扣分总和
           </div>
         </a-card>
 
@@ -542,6 +502,101 @@
       </a-col>
     </a-row>
     
+    <!-- 质检数据范围弹窗 -->
+    <a-modal
+      v-model:open="dataRangeVisible"
+      title="质检数据范围"
+      :footer="null"
+      width="640px"
+    >
+      <div class="data-range-content">
+        <!-- 质检范围 -->
+        <div class="data-range-section">
+          <div class="section-label">质检范围</div>
+          <div class="section-value">{{ currentTask?.qualityScope === 'sampling' ? '部分抽检' : '全量质检' }}</div>
+        </div>
+
+        <!-- 录音类型 -->
+        <div class="data-range-section">
+          <div class="section-label">录音类型</div>
+          <div class="section-value">{{ getRecordTypeLabel(currentTask?.recordType) }}</div>
+        </div>
+
+        <!-- 条件筛选 -->
+        <div class="data-range-section" v-if="currentTask?.conditionExpressions?.length">
+          <div class="section-label">条件筛选</div>
+          <div class="condition-expressions">
+            <div
+              v-for="(expr, eIndex) in currentTask.conditionExpressions"
+              :key="eIndex"
+              class="condition-expression-item"
+            >
+              <div class="expression-conditions">
+                <span
+                  v-for="(cond, cIndex) in expr.conditions"
+                  :key="cIndex"
+                >
+                  <span class="condition-field">{{ getFieldTypeLabel(cond.fieldType) }}</span>
+                  <span class="condition-operator">{{ getOperatorLabel(cond.operator) }}</span>
+                  <span class="condition-value">{{ cond.value }}{{ cond.value2 ? ` ~ ${cond.value2}` : '' }}</span>
+                  <span v-if="cIndex < expr.conditions.length - 1" class="condition-connector">且</span>
+                </span>
+              </div>
+              <span v-if="eIndex < currentTask.conditionExpressions.length - 1" class="expression-connector">或</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 自动追加新数据 -->
+        <div class="data-range-section" v-if="currentTask?.autoAppend">
+          <div class="section-label">自动追加新数据</div>
+          <div class="auto-append-info">
+            <div class="append-item">
+              <span class="append-label">执行时间：</span>
+              <span class="append-value">每天 {{ currentTask.autoAppendExecTime || '08:00' }} 点</span>
+            </div>
+            <div class="append-item">
+              <span class="append-label">查询时间范围：</span>
+              <span class="append-value">
+                {{ currentTask.autoAppendStartType === 'today' ? '当天' : '昨天' }} {{ currentTask.autoAppendRangeStart || '00:00' }}
+                ~
+                {{ currentTask.autoAppendEndType === 'today' ? '当天' : '昨天' }} {{ currentTask.autoAppendRangeEnd || '23:59' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 抽检配置 -->
+        <div class="data-range-section" v-if="currentTask?.qualityScope === 'sampling'">
+          <div class="section-label">抽检配置</div>
+          <div class="sampling-info">
+            <div class="sampling-item">
+              <span class="sampling-label">采样数量：</span>
+              <span class="sampling-value">
+                <template v-if="currentTask.allocationMethod === 'total'">按总户数 {{ currentTask.allocationValue || '-' }}条</template>
+                <template v-else-if="currentTask.allocationMethod === 'ratio'">按比例 {{ currentTask.allocationValue || '-' }}%</template>
+                <template v-else-if="currentTask.allocationMethod === 'perPerson'">按人均数量每人 {{ currentTask.allocationValue || '-' }}条</template>
+                <template v-else>-</template>
+              </span>
+            </div>
+            <div class="sampling-item">
+              <span class="sampling-label">抽样方式：</span>
+              <span class="sampling-value">{{ getSamplingMethodLabel(currentTask.samplingMethod) }}</span>
+            </div>
+            <div class="sampling-item" v-if="currentTask.samplingMethod === 'ratio'">
+              <span class="sampling-label">抽样维度：</span>
+              <span class="sampling-value">
+                {{ getSamplingDimensionLabel(currentTask.samplingDimensionType) }}
+                <template v-if="currentTask.samplingDimensionDetails?.length">
+                  <span class="dimension-detail">{{ getSamplingDimensionDetailText(currentTask) }}</span>
+                </template>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </a-modal>
+
     <!-- 质检详情弹窗 -->
     <QualityDetailModal ref="qualityDetailRef" />
   </div>
@@ -577,6 +632,27 @@ interface TaskItem {
   auditor?: string
   description?: string
   scoreDeductions?: ScoreDeduction[]
+  qualityScope?: 'full' | 'sampling'
+  recordType?: string
+  conditionExpressions?: Array<{
+    conditions: Array<{
+      fieldType: string
+      operator: string
+      value: string
+      value2?: string
+    }>
+  }>
+  autoAppend?: boolean
+  autoAppendExecTime?: string
+  autoAppendStartType?: 'today' | 'yesterday'
+  autoAppendRangeStart?: string
+  autoAppendEndType?: 'today' | 'yesterday'
+  autoAppendRangeEnd?: string
+  allocationMethod?: 'total' | 'ratio' | 'perPerson'
+  allocationValue?: number
+  samplingMethod?: 'average' | 'ratio'
+  samplingDimensionType?: 'scene' | 'agent' | 'callDuration'
+  samplingDimensionDetails?: { name: string; value: number }[]
 }
 
 // 允许 TaskItem 为 null 的类型
@@ -629,6 +705,7 @@ const currentPage = ref(1)
 const totalTasks = ref(4)
 const leftPanelCollapsed = ref(false)
 const drawerVisible = ref(false)
+const dataRangeVisible = ref(false)
 
 // ============ 任务列表数据 ============
 const taskList = ref<TaskItem[]>([
@@ -649,7 +726,37 @@ const taskList = ref<TaskItem[]>([
       { ruleCode: 'A3', ruleDesc: '未正面回答客户产品咨询问题', maxDeduct: 10 },
       { ruleCode: 'B1', ruleDesc: '未确认客户身份直接进行业务营销', maxDeduct: 10 },
       { ruleCode: 'B2', ruleDesc: '泄露客户个人信息（身份证、电话、资产等）', maxDeduct: 15 }
-    ]
+    ],
+    qualityScope: 'sampling',
+    recordType: 'ai_assisted',
+    conditionExpressions: [
+      {
+        conditions: [
+          { fieldType: 'callTime', operator: 'between', value: '2026-02-01 00:00', value2: '2026-02-28 23:59' },
+        ]
+      },
+      {
+        conditions: [
+          { fieldType: 'callDuration', operator: '>', value: '60' },
+          { fieldType: 'intent', operator: 'contains', value: '金融产品' },
+        ]
+      }
+    ],
+    autoAppend: true,
+    autoAppendExecTime: '09:00',
+    autoAppendStartType: 'yesterday',
+    autoAppendRangeStart: '08:00',
+    autoAppendEndType: 'today',
+    autoAppendRangeEnd: '20:00',
+    allocationMethod: 'total',
+    allocationValue: 100,
+    samplingMethod: 'average',
+    samplingDimensionType: 'scene',
+    samplingDimensionDetails: [
+      { name: '贷款转存-接通即转', value: 40 },
+      { name: '存款营销-到期提醒', value: 30 },
+      { name: '信用卡推广-新客', value: 30 },
+    ],
   },
   {
     id: 28,
@@ -666,7 +773,23 @@ const taskList = ref<TaskItem[]>([
       { ruleCode: 'A1', ruleDesc: '产品利率、收益、有效期等信息讲解错误', maxDeduct: 5 },
       { ruleCode: 'A2', ruleDesc: '相关提醒不完整，遗漏或错误', maxDeduct: 5 },
       { ruleCode: 'B2', ruleDesc: '泄露客户个人信息（身份证、电话、资产等）', maxDeduct: 15 }
-    ]
+    ],
+    qualityScope: 'full',
+    recordType: 'manual_outbound',
+    conditionExpressions: [
+      {
+        conditions: [
+          { fieldType: 'callTime', operator: 'between', value: '2026-02-01 00:00', value2: '2026-02-28 23:59' },
+          { fieldType: 'agent', operator: '=', value: '营销坐席' },
+        ]
+      }
+    ],
+    autoAppend: true,
+    autoAppendExecTime: '08:00',
+    autoAppendStartType: 'today',
+    autoAppendRangeStart: '00:00',
+    autoAppendEndType: 'today',
+    autoAppendRangeEnd: '23:59',
   },
   {
     id: 29,
@@ -683,7 +806,27 @@ const taskList = ref<TaskItem[]>([
       { ruleCode: 'A1', ruleDesc: '产品利率、收益、有效期等信息讲解错误', maxDeduct: 5 },
       { ruleCode: 'A3', ruleDesc: '未正面回答客户产品咨询问题', maxDeduct: 10 },
       { ruleCode: 'B1', ruleDesc: '未确认客户身份直接进行业务营销', maxDeduct: 10 }
-    ]
+    ],
+    qualityScope: 'sampling',
+    recordType: 'manual_outbound',
+    conditionExpressions: [
+      {
+        conditions: [
+          { fieldType: 'callTime', operator: 'between', value: '2026-02-01 00:00', value2: '2026-02-28 23:59' },
+        ]
+      }
+    ],
+    autoAppend: false,
+    allocationMethod: 'ratio',
+    allocationValue: 15,
+    samplingMethod: 'ratio',
+    samplingDimensionType: 'agent',
+    samplingDimensionDetails: [
+      { name: '张三', value: 20 },
+      { name: '李四', value: 30 },
+      { name: '王五', value: 25 },
+      { name: '赵六', value: 25 },
+    ],
   },
   {
     id: 30,
@@ -702,7 +845,23 @@ const taskList = ref<TaskItem[]>([
       { ruleCode: 'A3', ruleDesc: '未正面回答客户产品咨询问题', maxDeduct: 10 },
       { ruleCode: 'B1', ruleDesc: '未确认客户身份直接进行业务营销', maxDeduct: 10 },
       { ruleCode: 'B2', ruleDesc: '泄露客户个人信息（身份证、电话、资产等）', maxDeduct: 15 }
-    ]
+    ],
+    qualityScope: 'full',
+    recordType: 'manual_outbound',
+    conditionExpressions: [
+      {
+        conditions: [
+          { fieldType: 'callTime', operator: 'between', value: '2026-02-01 00:00', value2: '2026-02-28 23:59' },
+          { fieldType: 'agent', operator: '=', value: '新入职坐席' },
+        ]
+      }
+    ],
+    autoAppend: true,
+    autoAppendExecTime: '08:00',
+    autoAppendStartType: 'today',
+    autoAppendRangeStart: '00:00',
+    autoAppendEndType: 'today',
+    autoAppendRangeEnd: '23:59',
   }
 ])
 
@@ -1114,6 +1273,72 @@ const handleFilterSearch = () => {
 const onSelectChange = (selectedKeys: number[]) => {
   selectedRowKeys.value = selectedKeys
 }
+
+// 数据范围弹窗辅助函数
+const getRecordTypeLabel = (type: string) => {
+  const map: Record<string, string> = {
+    ai_assisted: '人机协同录音',
+    manual_outbound: '人工外呼录音',
+    manual_upload: '手动上传录音',
+  }
+  return map[type] || '-'
+}
+
+const getFieldTypeLabel = (type: string) => {
+  const map: Record<string, string> = {
+    callTime: '通话时间',
+    callDuration: '通话时长',
+    intent: '客户意图',
+    agent: '坐席工号',
+  }
+  return map[type] || type
+}
+
+const getOperatorLabel = (operator: string) => {
+  const map: Record<string, string> = {
+    '=': '等于',
+    '>': '大于',
+    '<': '小于',
+    '>=': '大于等于',
+    '<=': '小于等于',
+    '!=': '不等于',
+    'contains': '包含',
+    'between': '介于',
+  }
+  return map[operator] || operator
+}
+
+const getAllocationMethodLabel = (method: string) => {
+  const map: Record<string, string> = {
+    total: '按总户数',
+    ratio: '按比例',
+    perPerson: '按人均数量',
+  }
+  return map[method] || '-'
+}
+
+const getSamplingMethodLabel = (method: string) => {
+  const map: Record<string, string> = {
+    average: '平均采样',
+    ratio: '按比例采样',
+  }
+  return map[method] || '-'
+}
+
+const getSamplingDimensionLabel = (dimension: string) => {
+  const map: Record<string, string> = {
+    scene: '按场景',
+    agent: '按坐席',
+    callDuration: '按通话时长',
+  }
+  return map[dimension] || '-'
+}
+
+const getSamplingDimensionDetailText = (task: TaskItem) => {
+  if (!task.samplingDimensionDetails?.length) return ''
+  const unit = task.samplingDimensionType === 'callDuration' ? '秒' : '%'
+  return task.samplingDimensionDetails.map(d => `${d.name} ${d.value}${unit}`).join('、')
+}
 </script>
 
 <style scoped>
@@ -1395,16 +1620,6 @@ const onSelectChange = (selectedKeys: number[]) => {
   color: #595959;
 }
 
-.item-link {
-  color: #1677ff;
-}
-
-.item-note {
-  color: #8f959e;
-  font-size: 12px;
-  margin-left: 4px;
-}
-
 .progress-group {
   display: flex;
   align-items: center;
@@ -1564,103 +1779,117 @@ const onSelectChange = (selectedKeys: number[]) => {
   z-index: 1;
 }
 
-/* 评分汇总卡片样式 */
-.score-summary-card {
-  margin-bottom: 16px;
+/* 数据范围弹窗样式 */
+.data-range-link {
+  color: #1677ff;
+  cursor: pointer;
+  font-size: 14px;
 }
 
-.score-summary-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
+.data-range-link:hover {
+  color: #4096ff;
+  text-decoration: underline;
 }
 
-.score-summary-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2329;
+.data-range-content {
+  padding: 8px 0;
 }
 
-.score-summary-stats {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 16px;
-  padding-bottom: 16px;
+.data-range-section {
+  padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
 }
 
-.stat-item {
-  flex: 1;
-  text-align: center;
+.data-range-section:last-child {
+  border-bottom: none;
 }
 
-.stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1677ff;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: #8f959e;
-  margin-top: 4px;
-}
-
-.score-deduction-list {
-  margin-bottom: 12px;
-}
-
-.deduction-title {
+.section-label {
   font-size: 14px;
-  font-weight: 500;
-  color: #1f2329;
-  margin-bottom: 12px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
 }
 
-.deduction-items {
+.section-value {
+  font-size: 14px;
+  color: #595959;
+}
+
+.condition-expressions {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.deduction-item {
+.condition-expression-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  background: #fafafa;
-  border-radius: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.deduction-code {
-  font-weight: 600;
+.expression-conditions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.condition-field {
   color: #1677ff;
-  font-size: 13px;
-  flex-shrink: 0;
+  font-weight: 500;
 }
 
-.deduction-desc {
-  flex: 1;
-  font-size: 13px;
-  color: #595959;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.condition-operator {
+  color: #8c8c8c;
+  margin: 0 4px;
 }
 
-.deduction-value {
-  font-weight: 600;
+.condition-value {
+  color: #262626;
+}
+
+.condition-connector {
+  color: #8c8c8c;
+  margin: 0 8px;
+}
+
+.expression-connector {
   color: #ff4d4f;
-  font-size: 13px;
-  flex-shrink: 0;
+  font-weight: 500;
+  margin: 0 8px;
 }
 
-.score-note {
-  font-size: 12px;
-  color: #8f959e;
-  line-height: 1.6;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
+.auto-append-info,
+.sampling-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.append-item,
+.sampling-item {
+  display: flex;
+  align-items: center;
+}
+
+.append-label,
+.sampling-label {
+  color: #8c8c8c;
+  font-size: 14px;
+  min-width: 100px;
+}
+
+.append-value,
+.sampling-value {
+  color: #262626;
+  font-size: 14px;
+}
+
+.dimension-detail {
+  display: block;
+  margin-top: 4px;
+  color: #8c8c8c;
+  font-size: 13px;
 }
 </style>
