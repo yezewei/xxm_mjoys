@@ -1,7 +1,7 @@
 <template>
   <div class="layout">
     <!-- 顶部菜单 -->
-    <header class="header">
+    <header v-if="!isEmbed" class="header">
       <div class="header-left">
         <img src="/system_demo/logo.png" alt="AI 直营平台" class="logo-img" />
         <div class="page-title">{{ pageTitle }}</div>
@@ -135,9 +135,9 @@
       </div>
     </a-modal>
 
-    <div class="main-layout">
+    <div class="main-layout" :class="{ 'is-embed': isEmbed }">
       <!-- 左侧菜单 -->
-      <aside class="sider">
+      <aside v-if="!isEmbed" class="sider">
         <a-menu
           v-model:selectedKeys="selectedKeys"
           v-model:openKeys="openKeys"
@@ -367,6 +367,9 @@ import { UserOutlined, PhoneOutlined, QuestionCircleOutlined, RightOutlined, Lef
 
 const route = useRoute();
 const router = useRouter();
+
+// 嵌入模式：当 route.query.embed 为 true 时隐藏侧边栏
+const isEmbed = computed(() => route.query.embed === 'true');
 const selectedKeys = ref(['exception']);
 const openKeys = ref<string[]>([]);
 
@@ -1009,6 +1012,10 @@ watch(
   min-height: 0;
 }
 
+.is-embed.main-layout {
+  margin-top: 0;
+}
+
 .sider {
   background: #fff;
   border-right: 1px solid #e8e8e8;
@@ -1040,6 +1047,12 @@ watch(
   background: #fff;
   height: calc(100vh - 64px);
   overflow-y: auto;
+}
+
+/* 嵌入模式：隐藏侧边栏和顶部导航 */
+.is-embed .content {
+  margin-left: 0;
+  height: 100vh;
 }
 
 /* FAQ样式 */

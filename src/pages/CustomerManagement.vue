@@ -559,7 +559,7 @@ const searchFormRef = ref<any>();
 const searchForm = reactive({
   keyword: '', // 客户号/客户名称
   phone: '', // 联系方式
-  bankOrgCode: '', // 银行机构号
+  bankOrgCode: undefined as string | undefined, // 银行机构号
   seatNo: '', // 直营坐席工号/姓名
   createTimeRange: undefined as [Dayjs, Dayjs] | undefined, // 创建时间范围
   updateTimeRange: undefined as [Dayjs, Dayjs] | undefined, // 更新时间范围
@@ -686,7 +686,7 @@ const groupFormData = ref<any>({
   groupOperationType: 'create', // 'create' 或 'add'
   newGroupName: '',
   newGroupDescription: '',
-  existingGroupId: '',
+  existingGroupId: undefined,
 });
 
 // 新增客群表单验证规则
@@ -714,10 +714,10 @@ const formData = ref<any>({
   id: undefined,
   customerNo: '',
   customerName: '',
-  gender: '',
+  gender: undefined,
   phone: '',
-  bankOrgCode: '',
-  seatNo: '',
+  bankOrgCode: undefined,
+  seatNo: undefined,
 });
 
 // 标签字段定义
@@ -927,7 +927,7 @@ const handleAddToGroup = () => {
     groupOperationType: 'create',
     newGroupName: '',
     newGroupDescription: '',
-    existingGroupId: '',
+    existingGroupId: undefined,
   };
   
   // 加载固定客群选项
@@ -985,10 +985,10 @@ const handleAdd = () => {
     id: undefined,
     customerNo: '',
     customerName: '',
-    gender: '',
+    gender: undefined,
     phone: '',
-    bankOrgCode: '',
-    seatNo: '',
+    bankOrgCode: undefined,
+    seatNo: undefined,
   };
   // 重置已选择的标签字段
   selectedTagFields.value = [];
@@ -1279,7 +1279,8 @@ onMounted(() => {
 }
 
 .tag-field-item {
-  display: block;
+  display: flex;
+  align-items: center;
   margin-bottom: 8px;
 }
 

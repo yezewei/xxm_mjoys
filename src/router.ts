@@ -258,4 +258,14 @@ const router = createRouter({
   routes,
 });
 
+// 路由守卫：确保 embed 参数持续存在
+router.beforeEach((to, from, next) => {
+  // 如果来源路由有 embed=true 参数，确保目标路由也有
+  if (from.query.embed === 'true' && to.query.embed !== 'true') {
+    next({ ...to, query: { ...to.query, embed: 'true' } });
+  } else {
+    next();
+  }
+});
+
 export default router;

@@ -464,7 +464,7 @@ const searchFormRef = ref<any>();
 // 搜索表单
 const searchForm = reactive({
   groupName: '',
-  groupType: '',
+  groupType: undefined as string | undefined,
   creator: '',
   createTimeRange: undefined as [any, any] | undefined,
 });
@@ -805,7 +805,7 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   searchForm.groupName = '';
-  searchForm.groupType = '';
+  searchForm.groupType = undefined;
   searchForm.creator = '';
   searchForm.createTimeRange = undefined;
   pagination.current = 1;
