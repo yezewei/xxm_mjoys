@@ -9,10 +9,12 @@
             <p class="page-description">管理客户标签字段，定义标签类型和字典值。</p>
           </div>
           <div class="header-right">
-            <a-button type="primary" @click="handleAdd">
-              <plus-outlined />
-              新增标签
-            </a-button>
+            <a-space>
+              <a-button type="primary" @click="handleAdd">
+                <plus-outlined />
+                新增标签
+              </a-button>
+            </a-space>
           </div>
         </div>
       </div>
@@ -29,6 +31,16 @@
               @press-enter="handleSearch"
               style="width: 240px;"
             />
+            <a-select
+              v-model:value="searchForm.status"
+              placeholder="审核状态"
+              allow-clear
+              style="width: 150px;"
+            >
+              <a-select-option value="pending">待审核</a-select-option>
+              <a-select-option value="approved">已通过</a-select-option>
+              <a-select-option value="rejected">已拒绝</a-select-option>
+            </a-select>
             <a-button @click="handleReset">
               <reload-outlined />
               重置
@@ -71,6 +83,12 @@
                 <template v-else-if="column.key === 'required'">
                   <span>{{ record.required ? '是' : '否' }}</span>
                 </template>
+                <!-- 审核状态列 -->
+                <template v-else-if="column.key === 'status'">
+                  <a-tag :color="getStatusColor(record.status)">
+                    {{ getStatusText(record.status) }}
+                  </a-tag>
+                </template>
                 <!-- 字典列 -->
                 <template v-else-if="column.key === 'dictionary'">
                   <div class="tags-container" v-if="record.dictionary && record.dictionary.length > 0">
@@ -89,6 +107,14 @@
                   <a-space>
                     <a-button type="link" size="small" @click="handleEdit(record)">
                       编辑
+                    </a-button>
+                    <a-button
+                      v-if="record.status === 'pending'"
+                      type="link"
+                      size="small"
+                      @click="handleReview(record)"
+                    >
+                      审核
                     </a-button>
                     <a-button type="link" size="small" danger @click="handleDelete(record)">
                       删除
@@ -109,6 +135,36 @@
         </div>
       </div>
     </div>
+
+    <!-- 审核弹窗 -->
+    <a-modal
+      v-model:open="reviewModalVisible"
+      title="标签审核"
+      width="500px"
+      :confirm-loading="reviewConfirmLoading"
+      ok-text="确定"
+      cancel-text="取消"
+      @ok="handleReviewOk"
+    >
+      <a-form layout="vertical">
+        <a-form-item label="标签名称">
+          <a-input :value="reviewData.fieldName" disabled />
+        </a-form-item>
+        <a-form-item label="审核结果">
+          <a-radio-group v-model:value="reviewData.status">
+            <a-radio value="approved">通过</a-radio>
+            <a-radio value="rejected">拒绝</a-radio>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item label="审核意见" v-if="reviewData.status === 'rejected'">
+          <a-textarea
+            v-model:value="reviewData.remark"
+            placeholder="请输入拒绝原因"
+            :rows="3"
+          />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 新增/编辑弹窗 -->
     <a-modal
@@ -200,6 +256,7 @@ const router = useRouter();
 // 搜索表单
 const searchForm = reactive({
   fieldName: '',
+  status: undefined as string | undefined,
 });
 
 // 表格数据
@@ -240,7 +297,13 @@ const columns: TableColumnType[] = [
     title: '字典',
     dataIndex: 'dictionary',
     key: 'dictionary',
-    width: 500,
+    width: 400,
+  },
+  {
+    title: '审核状态',
+    dataIndex: 'status',
+    key: 'status',
+    width: 100,
   },
   {
     title: '最后修改时间',
@@ -263,6 +326,16 @@ const columns: TableColumnType[] = [
 const modalVisible = ref(false);
 const isEditMode = ref(false);
 const modalConfirmLoading = ref(false);
+
+// 审核弹窗控制
+const reviewModalVisible = ref(false);
+const reviewConfirmLoading = ref(false);
+const reviewData = ref({
+  id: undefined as number | undefined,
+  fieldName: '',
+  status: 'approved',
+  remark: '',
+});
 
 // 表单数据
 const formData = ref<any>({
@@ -296,6 +369,26 @@ const handleFieldTypeChange = (value: string) => {
   }
 };
 
+// 获取审核状态颜色
+const getStatusColor = (status: string) => {
+  const colorMap: Record<string, string> = {
+    pending: 'warning',
+    approved: 'success',
+    rejected: 'error',
+  };
+  return colorMap[status] || 'default';
+};
+
+// 获取审核状态文本
+const getStatusText = (status: string) => {
+  const textMap: Record<string, string> = {
+    pending: '待审核',
+    approved: '已通过',
+    rejected: '已拒绝',
+  };
+  return textMap[status] || status;
+};
+
 // 加载数据
 const loadData = () => {
   loading.value = true;
@@ -309,6 +402,7 @@ const loadData = () => {
         fieldTip: '请选择客户等级',
         fieldType: 'single',
         dictionary: ['VIP 客户', '高价值客户', '潜力客户', '普通客户', '流失风险'],
+        status: 'approved',
         updateTime: '2025-04-16 17:13:51',
       },
       {
@@ -317,6 +411,7 @@ const loadData = () => {
         fieldTip: '请选择跟进状态',
         fieldType: 'multiple',
         dictionary: ['会到网点', '办理中', '再联系', '已联系', '考虑中', '已加微信', '已拒绝', '不符合条件', '已办理过'],
+        status: 'approved',
         updateTime: '2025-04-15 14:30:22',
       },
       {
@@ -325,6 +420,7 @@ const loadData = () => {
         fieldTip: '请选择风险等级',
         fieldType: 'single',
         dictionary: ['高风险', '中风险', '低风险', '无风险'],
+        status: 'pending',
         updateTime: '2025-04-10 09:15:33',
       },
       {
@@ -333,6 +429,7 @@ const loadData = () => {
         fieldTip: '请选择产品意向',
         fieldType: 'multiple',
         dictionary: ['存款', '贷款', '理财', '保险', '基金', '信用卡'],
+        status: 'pending',
         updateTime: '2025-04-08 16:45:12',
       },
       {
@@ -341,6 +438,7 @@ const loadData = () => {
         fieldTip: '请输入备注说明',
         fieldType: 'text',
         dictionary: [],
+        status: 'rejected',
         updateTime: '2025-04-05 11:20:45',
       },
       {
@@ -349,6 +447,7 @@ const loadData = () => {
         fieldTip: '请选择联系偏好',
         fieldType: 'single',
         dictionary: ['电话', '短信', '微信', '邮件', '上门'],
+        status: 'approved',
         updateTime: '2025-04-01 10:00:00',
       },
     ];
@@ -368,6 +467,7 @@ const handleSearch = () => {
 // 重置
 const handleReset = () => {
   searchForm.fieldName = '';
+  searchForm.status = undefined;
   pagination.current = 1;
   loadData();
   message.success('重置成功');
@@ -394,6 +494,7 @@ const handleAdd = () => {
     fieldTip: '',
     fieldType: 'text',
     dictionary: [],
+    status: 'pending',
   };
   modalVisible.value = true;
 };
@@ -422,6 +523,29 @@ const handleDelete = (record: any) => {
       loadData();
     },
   });
+};
+
+// 审核
+const handleReview = (record: any) => {
+  reviewData.value = {
+    id: record.id,
+    fieldName: record.fieldName,
+    status: 'approved',
+    remark: '',
+  };
+  reviewModalVisible.value = true;
+};
+
+// 审核确定
+const handleReviewOk = () => {
+  reviewConfirmLoading.value = true;
+  // TODO: 调用后端 API 审核
+  setTimeout(() => {
+    message.success(`审核${reviewData.value.status === 'approved' ? '通过' : '拒绝'}成功`);
+    reviewModalVisible.value = false;
+    reviewConfirmLoading.value = false;
+    loadData();
+  }, 500);
 };
 
 // 弹窗确定

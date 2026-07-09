@@ -243,6 +243,8 @@
                 <a-radio-button value="all">全部</a-radio-button>
                 <a-radio-button value="follow">跟进</a-radio-button>
                 <a-radio-button value="call">拨打</a-radio-button>
+                <a-radio-button value="import">导入</a-radio-button>
+                <a-radio-button value="update">更新</a-radio-button>
               </a-radio-group>
             </div>
           </template>
@@ -290,6 +292,97 @@
                         {{ item.callDetail.sceneName }}
                       </a-descriptions-item>
                     </a-descriptions>
+                  </div>
+                  <!-- 导入客户详情 -->
+                  <div v-if="item.type === 'import' && item.importDetail" class="timeline-detail-card">
+                    <div class="detail-content">
+                      <div class="detail-row">
+                        <span class="detail-label">客户号：</span>
+                        <span class="detail-value">{{ item.importDetail.customerNo }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">客户名称：</span>
+                        <span class="detail-value">{{ item.importDetail.customerName }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">性别：</span>
+                        <span class="detail-value">{{ item.importDetail.gender }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">联系方式：</span>
+                        <span class="detail-value">{{ item.importDetail.contactPhone }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">归属坐席：</span>
+                        <span class="detail-value">{{ item.importDetail.ownershipSeat }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">直营坐席：</span>
+                        <span class="detail-value">{{ item.importDetail.directSeat }}</span>
+                      </div>
+                      <div class="detail-row" v-if="item.importDetail.tags?.length">
+                        <span class="detail-label">标签：</span>
+                        <span class="detail-value">
+                          <a-tag v-for="(tag, i) in item.importDetail.tags" :key="i" color="blue" size="small">{{ tag }}</a-tag>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 批次创建客户详情 -->
+                  <div v-if="item.type === 'batch_create' && item.batchDetail" class="timeline-detail-card">
+                    <div class="detail-content">
+                      <div class="detail-row">
+                        <span class="detail-label">批次编号：</span>
+                        <span class="detail-value">{{ item.batchDetail.batchNo }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">客户号：</span>
+                        <span class="detail-value">{{ item.batchDetail.customerNo }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">客户名称：</span>
+                        <span class="detail-value">{{ item.batchDetail.customerName }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">性别：</span>
+                        <span class="detail-value">{{ item.batchDetail.gender }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">联系方式：</span>
+                        <span class="detail-value">{{ item.batchDetail.contactPhone }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">归属坐席：</span>
+                        <span class="detail-value">{{ item.batchDetail.ownershipSeat }}</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">直营坐席：</span>
+                        <span class="detail-value">{{ item.batchDetail.directSeat }}</span>
+                      </div>
+                      <div class="detail-row" v-if="item.batchDetail.tags?.length">
+                        <span class="detail-label">标签：</span>
+                        <span class="detail-value">
+                          <a-tag v-for="(tag, i) in item.batchDetail.tags" :key="i" color="cyan" size="small">{{ tag }}</a-tag>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 更新客户详情 -->
+                  <div v-if="item.type === 'update' && item.updateDetail" class="timeline-detail-card">
+                    <div class="detail-content">
+                      <div class="detail-row">
+                        <span class="detail-label">批次编号：</span>
+                        <span class="detail-value">{{ item.updateDetail.batchNo }}</span>
+                      </div>
+                      <div class="update-list">
+                        <div v-for="(update, i) in item.updateDetail.updates" :key="i" class="update-item">
+                          <span class="update-field">{{ update.field }}：</span>
+                          <span class="update-old">{{ update.oldValue }}</span>
+                          <span class="update-arrow">→</span>
+                          <span class="update-new">{{ update.newValue }}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </a-timeline-item>
@@ -540,23 +633,66 @@ const loadCustomerTimeline = () => {
       },
     },
     {
-      type: 'other',
-      title: '客户导入',
-      description: '客户通过数据批次导入系统',
+      type: 'import',
+      title: '导入客户',
+      description: '手动在页面导入了当前客户',
       time: '2026-04-15 10:00:00',
-      operator: '系统',
+      operator: '张经理',
+      importDetail: {
+        customerNo: 'C202604200001',
+        customerName: '张三',
+        gender: '男',
+        contactPhone: '138****1234',
+        ownershipSeat: '李四',
+        directSeat: '李四',
+        tags: ['VIP 客户', '高价值客户', '住房贷款'],
+      },
+    },
+    {
+      type: 'batch_create',
+      title: '批次创建客户',
+      description: '系统上传了批次 B20260415001，从批次中同步了创建当前客户',
+      time: '2026-04-15 09:30:00',
+      operator: '系统管理员',
+      batchDetail: {
+        batchNo: 'B20260415001',
+        customerNo: 'C202604200001',
+        customerName: '张三',
+        gender: '男',
+        contactPhone: '138****1234',
+        ownershipSeat: '李四',
+        directSeat: '李四',
+        tags: ['VIP 客户', '高价值客户', '住房贷款'],
+      },
+    },
+    {
+      type: 'update',
+      title: '更新客户',
+      description: '系统上传了批次 B20260418001，系统根据获取了当前客户最新的信息进行更新，更新内容如下',
+      time: '2026-04-18 11:00:00',
+      operator: '系统管理员',
+      updateDetail: {
+        batchNo: 'B20260418001',
+        updates: [
+          { field: '联系方式', oldValue: '138****1234', newValue: '139****5678' },
+          { field: '标签1', oldValue: 'VIP 客户', newValue: '超级VIP 客户' },
+          { field: '备注', oldValue: '重要客户', newValue: '重要客户，需重点维护' },
+        ],
+      },
     },
   ];
 
   // 根据筛选条件过滤
   if (timelineFilter.value !== 'all') {
-    const typeMap: Record<string, string> = {
-      follow: 'follow',
-      call: 'call',
-      other: 'other',
+    const typeMap: Record<string, string[]> = {
+      follow: ['follow'],
+      call: ['call'],
+      import: ['import', 'batch_create'],
+      update: ['update'],
     };
+    const allowedTypes = typeMap[timelineFilter.value] || [];
     timelineList.value = timelineList.value.filter(
-      (item) => item.type === typeMap[timelineFilter.value]
+      (item) => allowedTypes.includes(item.type)
     );
   }
 };
@@ -566,6 +702,9 @@ const getTimelineColor = (type: string) => {
   const colorMap: Record<string, string> = {
     follow: 'blue',
     call: 'green',
+    import: 'purple',
+    batch_create: 'cyan',
+    update: 'orange',
     other: 'gray',
   };
   return colorMap[type] || 'gray';
@@ -985,5 +1124,67 @@ onMounted(() => {
 .relation-time {
   color: #999;
   font-size: 12px;
+}
+
+/* 详情内容样式 */
+.detail-content {
+  font-size: 13px;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 6px;
+  line-height: 1.6;
+}
+
+.detail-label {
+  color: #999;
+  flex-shrink: 0;
+  width: 70px;
+}
+
+.detail-value {
+  color: #333;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 更新列表样式 */
+.update-list {
+  margin-top: 8px;
+}
+
+.update-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: #f9f9f9;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.update-field {
+  color: #666;
+  flex-shrink: 0;
+  width: 70px;
+}
+
+.update-old {
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 8px;
+}
+
+.update-arrow {
+  color: #999;
+  margin-right: 8px;
+}
+
+.update-new {
+  color: #52c41a;
+  font-weight: 500;
 }
 </style>

@@ -177,6 +177,36 @@ const routes = [
     component: () => import("./pages/CustomerGroupManagement.vue"),
   },
   {
+    path: "/customer-analysis",
+    name: "CustomerAnalysis",
+    component: () => import("./pages/CustomerAnalysis.vue"),
+  },
+  {
+    path: "/customer-analysis/cross",
+    name: "CrossAnalysis",
+    component: () => import("./pages/CrossAnalysis.vue"),
+  },
+  {
+    path: "/customer-analysis/cross/:id",
+    name: "CrossAnalysisDetail",
+    component: () => import("./pages/CrossAnalysisDetail.vue"),
+  },
+  {
+    path: "/customer-analysis/indicators",
+    name: "IndicatorManagement",
+    component: () => import("./pages/IndicatorManagement.vue"),
+  },
+  {
+    path: "/customer-analysis/templates",
+    name: "ReportTemplate",
+    component: () => import("./pages/ReportTemplate.vue"),
+  },
+  {
+    path: "/customer-analysis/reports",
+    name: "ReportWarehouse",
+    component: () => import("./pages/ReportWarehouse.vue"),
+  },
+  {
     path: "/data-lake",
     name: "DataLake",
     component: () => import("./pages/DataLake.vue"),
@@ -250,6 +280,16 @@ const routes = [
     path: "/platform-account",
     name: "PlatformAccount",
     component: () => import("./pages/PlatformAccount.vue"),
+  },
+  {
+    path: "/mobile",
+    name: "MobileWorkbench",
+    component: () => import("./pages/MobileWorkbench.vue"),
+  },
+  {
+    path: "/mobile/task-detail/:id",
+    name: "MobileTaskDetail",
+    component: () => import("./pages/MobileTaskDetail.vue"),
   },
 ];
 

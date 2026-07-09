@@ -250,6 +250,9 @@
             <a-menu-item key="customer-group-management">
               <span>客群管理</span>
             </a-menu-item>
+            <a-menu-item key="customer-analysis">
+              <span>客户分析</span>
+            </a-menu-item>
           </a-sub-menu>
 
           <a-menu-item key="data-lake">
@@ -609,6 +612,7 @@ const menuRouteMap: Record<string, string> = {
   'customer-management': '/customer-management',
   'customer-tag-management': '/customer-tag-management',
   'customer-group-management': '/customer-group-management',
+  'customer-analysis': '/customer-analysis',
   'data-lake': '/data-lake',
   'global-service': '/global-service',
   'system-security': '/system-security',
@@ -656,6 +660,7 @@ const menuTitleMap: Record<string, string> = {
   'customer-management': '客户管理',
   'customer-tag-management': '客户标签管理',
   'customer-group-management': '客群管理',
+  'customer-analysis': '客户分析',
   'data-lake': '数据湖',
   'data-board': '数据看板',
   'data-board-group': '数据看板',
@@ -729,6 +734,7 @@ watch(
       '/customer-management': 'customer-management',
       '/customer-tag-management': 'customer-tag-management',
       '/customer-group-management': 'customer-group-management',
+      '/customer-analysis': 'customer-analysis',
       '/data-lake': 'data-lake',
       '/data-board': 'data-board',
       '/ai-call-report': 'ai-call-report',
@@ -760,7 +766,7 @@ watch(
       'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule', 'sampling-rule'],
       seat: ['seat-config', 'seat-monitor', 'skill-group'],
       knowledge: ['knowledge-word', 'knowledge-intent', 'knowledge-qa', 'knowledge-scene'],
-      customer: ['customer-management', 'customer-tag-management', 'customer-group-management'],
+      customer: ['customer-management', 'customer-tag-management', 'customer-group-management', 'customer-analysis'],
       engineering: ['global-service', 'system-security', 'device-management', 'system-monitor', 'route-settings'],
       'data-engine': ['app-management', 'task-management', 'write-off', 'schedule-log', 'external-integration', 'data-market'],
       platform: ['role-management', 'bank-account', 'platform-account', 'operation-log', 'menu-management'],
