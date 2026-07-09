@@ -1654,7 +1654,7 @@ const samplingSceneItems = ref<Array<{ sceneName: string | undefined; ratio: num
   { sceneName: undefined, ratio: null },
 ])
 
-const samplingAgentItems = ref<Array<{ agentId: string | undefined; ratio: number | null }>>([
+const samplingAgentItems = ref<Array<{ agentId: string | undefined; ratio: number | null; count?: number }>>([
   { agentId: undefined, ratio: null },
 ])
 

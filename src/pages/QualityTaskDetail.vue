@@ -478,10 +478,10 @@
                   <span class="condition-field">{{ getFieldTypeLabel(cond.fieldType) }}</span>
                   <span class="condition-operator">{{ getOperatorLabel(cond.operator) }}</span>
                   <span class="condition-value">{{ cond.value }}{{ cond.value2 ? ` ~ ${cond.value2}` : '' }}</span>
-                  <span v-if="cIndex < expr.conditions.length - 1" class="condition-connector">且</span>
+                  <span v-if="Number(cIndex) < expr.conditions.length - 1" class="condition-connector">且</span>
                 </span>
               </div>
-              <span v-if="eIndex < currentTask.conditionExpressions.length - 1" class="expression-connector">或</span>
+              <span v-if="Number(eIndex) < currentTask.conditionExpressions.length - 1" class="expression-connector">或</span>
             </div>
           </div>
         </div>

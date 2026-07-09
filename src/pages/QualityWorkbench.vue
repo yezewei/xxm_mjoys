@@ -1275,7 +1275,8 @@ const onSelectChange = (selectedKeys: number[]) => {
 }
 
 // 数据范围弹窗辅助函数
-const getRecordTypeLabel = (type: string) => {
+const getRecordTypeLabel = (type: string | undefined) => {
+  if (!type) return '-'
   const map: Record<string, string> = {
     ai_assisted: '人机协同录音',
     manual_outbound: '人工外呼录音',
@@ -1317,7 +1318,8 @@ const getAllocationMethodLabel = (method: string) => {
   return map[method] || '-'
 }
 
-const getSamplingMethodLabel = (method: string) => {
+const getSamplingMethodLabel = (method: string | undefined) => {
+  if (!method) return '-'
   const map: Record<string, string> = {
     average: '平均采样',
     ratio: '按比例采样',
@@ -1325,7 +1327,8 @@ const getSamplingMethodLabel = (method: string) => {
   return map[method] || '-'
 }
 
-const getSamplingDimensionLabel = (dimension: string) => {
+const getSamplingDimensionLabel = (dimension: string | undefined) => {
+  if (!dimension) return '-'
   const map: Record<string, string> = {
     scene: '按场景',
     agent: '按坐席',

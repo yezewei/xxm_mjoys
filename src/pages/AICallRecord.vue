@@ -623,7 +623,7 @@ interface SemanticAnalysis {
 }
 
 interface AsrItem {
-  role: 'robot' | 'customer';
+  role: 'robot' | 'customer' | 'agent';
   time: string;
   text: string;
   confidence: number;
@@ -1020,36 +1020,43 @@ const handleViewDetail = (record: ReportItem) => {
         role: 'agent',
         time: '00:01:35',
         text: '张先生您好，我是客服专员小李，刚才AI已经跟我说了您的情况，我来帮您办理续贷手续。',
+        confidence: 0.98,
       },
       {
         role: 'customer',
         time: '00:01:40',
         text: '好的，需要什么材料吗？',
+        confidence: 0.95,
       },
       {
         role: 'agent',
         time: '00:01:45',
         text: '您需要准备好身份证和银行卡，我这边先帮您核实一下信息。请问您的身份证尾号是？',
+        confidence: 0.97,
       },
       {
         role: 'customer',
         time: '00:01:52',
         text: '1234',
+        confidence: 0.92,
       },
       {
         role: 'agent',
         time: '00:02:00',
         text: '好的，信息已核实。续贷申请已经为您提交，预计3个工作日内会有审批结果，届时会短信通知您。',
+        confidence: 0.99,
       },
       {
         role: 'customer',
         time: '00:02:08',
         text: '好的，谢谢。',
+        confidence: 0.96,
       },
       {
         role: 'agent',
         time: '00:02:12',
         text: '不客气，祝您生活愉快，再见。',
+        confidence: 0.98,
       },
     ];
   } else {
