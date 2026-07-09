@@ -54,7 +54,7 @@
             <a-row :gutter="16" style="margin-top: -12px;">
               <a-col :span="6">
                 <a-form-item>
-                  <a-space class="search-btn-space">
+                  <a-space>
                     <a-button @click="handleReset">
                       <reload-outlined />
                       重置
@@ -76,11 +76,15 @@
             <span class="selection-info">共 {{ total }} 条</span>
           </div>
           <div class="table-toolbar-right">
+            <a-button @click="handleGoAnalysis">
+              <bar-chart-outlined />
+              客户分析
+            </a-button>
             <a-button @click="handleCreateBatch">
               <file-add-outlined />
               创建任务批次
             </a-button>
-            <a-button type="primary" @click="handleAdd" style="margin-left: 12px">
+            <a-button type="primary" @click="handleAdd">
               <plus-outlined />
               新增客群
             </a-button>
@@ -313,17 +317,70 @@
     <!-- 查看详情弹窗 -->
     <a-modal
       v-model:open="viewModalVisible"
-      title="客群详情"
-      width="800px"
+      :title="`客群详情 - ${viewData.groupName}`"
+      width="1000px"
       :footer="null"
     >
-      <a-descriptions bordered :column="2">
+      <a-descriptions bordered :column="2" style="margin-bottom: 16px;">
         <a-descriptions-item label="客群编号">{{ viewData.groupNo }}</a-descriptions-item>
         <a-descriptions-item label="客群名称">{{ viewData.groupName }}</a-descriptions-item>
+        <a-descriptions-item label="客群类型">
+          <a-tag :color="viewData.groupType === 'fixed' ? 'blue' : 'green'">
+            {{ viewData.groupType === 'fixed' ? '固定客群' : '规则客群' }}
+          </a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item label="客户数量">{{ viewData.customerCount || 0 }}</a-descriptions-item>
         <a-descriptions-item label="客群说明" :span="2">{{ viewData.groupDescription || '-' }}</a-descriptions-item>
         <a-descriptions-item label="创建人">{{ viewData.creator || '-' }}</a-descriptions-item>
         <a-descriptions-item label="创建时间">{{ viewData.createTime }}</a-descriptions-item>
       </a-descriptions>
+
+      <!-- 规则客群显示筛选条件 -->
+      <template v-if="viewData.groupType === 'rule' && viewData.conditions && viewData.conditions.length > 0">
+        <a-divider>筛选条件</a-divider>
+        <div class="view-conditions">
+          <div v-for="(expression, exprIndex) in viewData.conditions" :key="expression.id" class="view-expression-item">
+            <div class="view-expression-header">
+              <span class="view-expression-title">表达式{{ exprIndex + 1 }}</span>
+              <span v-if="exprIndex < viewData.conditions.length - 1" class="view-expression-logic">
+                {{ expression.nextLogic || 'AND' }}
+              </span>
+            </div>
+            <div class="view-expression-conditions">
+              <div v-for="(condition, condIndex) in expression.conditions" :key="condIndex" class="view-condition-item">
+                <a-tag color="blue">{{ getConditionLabel(condition.field) }}</a-tag>
+                <span class="view-condition-operator">{{ getOperatorLabel(condition.field, condition.operator) }}</span>
+                <a-tag color="green">{{ condition.value }}</a-tag>
+                <span v-if="condIndex < expression.conditions.length - 1" class="view-condition-logic">AND</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <a-divider>客户列表</a-divider>
+
+      <a-table
+        :columns="customerColumns"
+        :data-source="customerList"
+        :pagination="customerPagination"
+        row-key="id"
+        :loading="customerLoading"
+        :scroll="{ x: 900 }"
+        size="small"
+        @change="handleCustomerTableChange"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'gender'">
+            {{ record.gender === 'male' ? '男' : '女' }}
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <a-button type="link" size="small" @click="handleViewCustomerDetail(record)">
+              查看详情
+            </a-button>
+          </template>
+        </template>
+      </a-table>
     </a-modal>
 
     <!-- 创建任务批次弹窗 -->
@@ -446,6 +503,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   SearchOutlined,
   PlusOutlined,
@@ -454,9 +512,12 @@ import {
   InfoCircleOutlined,
   MinusCircleOutlined,
   FileAddOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons-vue';
 import type { TableColumnType } from 'ant-design-vue';
 import { message, Modal } from 'ant-design-vue';
+
+const router = useRouter();
 
 // 搜索表单引用
 const searchFormRef = ref<any>();
@@ -482,6 +543,11 @@ const pagination = reactive({
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total: number) => `共 ${total} 条`,
+  locale: {
+    items_per_page: '条/页',
+    jump_to: '跳至',
+    page: '页',
+  },
 });
 
 // 表格列配置
@@ -601,6 +667,48 @@ const formData = ref<any>({
 
 // 查看详情数据
 const viewData = ref<any>({});
+
+// 辅助函数：获取条件项中文标签
+const getConditionLabel = (field: string): string => {
+  const item = CONDITION_ITEMS.find(i => i.value === field);
+  return item ? item.label : field;
+};
+
+// 辅助函数：获取操作符中文标签
+const getOperatorLabel = (field: string, operator: string): string => {
+  const operators = OPERATORS[field];
+  if (!operators) return operator;
+  const op = operators.find(o => o.value === operator);
+  return op ? op.label : operator;
+};
+
+// 客户列表相关
+const customerList = ref<any[]>([]);
+const customerLoading = ref(false);
+const customerPagination = reactive({
+  current: 1,
+  pageSize: 5,
+  total: 0,
+  showSizeChanger: true,
+  showTotal: (total: number) => `共 ${total} 条`,
+  locale: {
+    items_per_page: '条/页',
+    jump_to: '跳至',
+    page: '页',
+  },
+});
+
+// 客户列表列配置
+const customerColumns: TableColumnType[] = [
+  { title: '客户姓名', dataIndex: 'customerName', key: 'customerName', width: 100 },
+  { title: '手机号', dataIndex: 'phone', key: 'phone', width: 120 },
+  { title: '性别', dataIndex: 'gender', key: 'gender', width: 60 },
+  { title: '年龄', dataIndex: 'age', key: 'age', width: 60 },
+  { title: '地区', dataIndex: 'region', key: 'region', width: 120 },
+  { title: '客户标签', dataIndex: 'tags', key: 'tags', width: 150, ellipsis: true },
+  { title: '价值等级', dataIndex: 'valueLevel', key: 'valueLevel', width: 100 },
+  { title: '操作', key: 'action', width: 100, align: 'center', fixed: 'right' },
+];
 
 // 表单引用
 const formRef = ref<any>();
@@ -795,6 +903,11 @@ const loadData = () => {
   }, 500);
 };
 
+// 跳转到客户分析
+const handleGoAnalysis = () => {
+  router.push('/customer-analysis');
+};
+
 // 搜索
 const handleSearch = () => {
   pagination.current = 1;
@@ -846,6 +959,36 @@ const handleEdit = (record: any) => {
 const handleView = (record: any) => {
   viewData.value = { ...record };
   viewModalVisible.value = true;
+  loadCustomerList(record.id);
+};
+
+// 加载客户列表
+const loadCustomerList = (groupId: string) => {
+  customerLoading.value = true;
+  // TODO: 调用后端 API 获取该客群下的客户列表
+  setTimeout(() => {
+    customerList.value = [
+      { id: '1', customerName: '张三', phone: '138****1234', gender: 'male', age: 35, region: '北京市', tags: 'VIP客户,高价值', valueLevel: '高价值' },
+      { id: '2', customerName: '李四', phone: '139****5678', gender: 'female', age: 28, region: '上海市', tags: '活跃客户', valueLevel: '中等价值' },
+      { id: '3', customerName: '王五', phone: '137****9012', gender: 'male', age: 42, region: '广州市', tags: '潜在客户', valueLevel: '高价值' },
+      { id: '4', customerName: '赵六', phone: '136****3456', gender: 'female', age: 31, region: '深圳市', tags: '新客户', valueLevel: '低价值' },
+      { id: '5', customerName: '钱七', phone: '135****7890', gender: 'male', age: 45, region: '杭州市', tags: 'VIP客户', valueLevel: '高价值' },
+    ];
+    customerPagination.total = 5;
+    customerLoading.value = false;
+  }, 500);
+};
+
+// 客户列表分页变化
+const handleCustomerTableChange = (pag: any) => {
+  customerPagination.current = pag.current;
+  customerPagination.pageSize = pag.pageSize;
+  loadCustomerList(viewData.value.id);
+};
+
+// 查看客户详情
+const handleViewCustomerDetail = (record: any) => {
+  router.push(`/customer-detail/${record.id}`);
 };
 
 // 删除
@@ -971,8 +1114,9 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
-.search-btn-space {
-  float: right;
+.table-toolbar-right {
+  display: flex;
+  gap: 12px;
 }
 
 .table-toolbar {
@@ -1072,6 +1216,65 @@ onMounted(() => {
 
 .add-condition-btn {
   color: #1890ff;
+}
+
+/* 查看条件样式 */
+.view-conditions {
+  background: #fafafa;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.view-expression-item {
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.view-expression-item:last-child {
+  margin-bottom: 0;
+}
+
+.view-expression-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.view-expression-title {
+  font-weight: 500;
+  color: #1f2329;
+}
+
+.view-expression-logic {
+  margin-left: 8px;
+  color: #ff7a00;
+  font-weight: 500;
+}
+
+.view-expression-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.view-condition-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view-condition-operator {
+  color: #646a73;
+}
+
+.view-condition-logic {
+  color: #ff7a00;
+  font-weight: 500;
 }
 
 /* 新增表达式按钮 */
