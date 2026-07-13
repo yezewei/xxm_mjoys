@@ -235,6 +235,9 @@
             <a-menu-item key="knowledge-scene">
               <span>场景知识库</span>
             </a-menu-item>
+            <a-menu-item key="real-time-model">
+              <span>实时模型管理</span>
+            </a-menu-item>
           </a-sub-menu>
 
           <a-sub-menu key="customer">
@@ -609,6 +612,7 @@ const menuRouteMap: Record<string, string> = {
   'knowledge-intent': '/knowledge-intent',
   'knowledge-qa': '/knowledge-qa',
   'knowledge-scene': '/knowledge-scene',
+  'real-time-model': '/real-time-model',
   'customer-management': '/customer-management',
   'customer-tag-management': '/customer-tag-management',
   'customer-group-management': '/customer-group-management',
@@ -656,6 +660,7 @@ const menuTitleMap: Record<string, string> = {
   'knowledge-intent': '内置意图',
   'knowledge-qa': '内置 QA',
   'knowledge-scene': '场景知识库',
+  'real-time-model': '实时模型管理',
   customer: '客户中心',
   'customer-management': '客户管理',
   'customer-tag-management': '客户标签管理',
@@ -731,6 +736,8 @@ watch(
       '/knowledge-intent': 'knowledge-intent',
       '/knowledge-qa': 'knowledge-qa',
       '/knowledge-scene': 'knowledge-scene',
+      '/real-time-model': 'real-time-model',
+      '/real-time-model-config': 'real-time-model',
       '/customer-management': 'customer-management',
       '/customer-tag-management': 'customer-tag-management',
       '/customer-group-management': 'customer-group-management',
@@ -765,7 +772,7 @@ watch(
       'phone-work': ['phone-work-home', 'phone-work-workbench'],
       'quality-inspection': ['quality-home', 'quality-workbench', 'quality-model', 'quality-task', 'quality-rule', 'sampling-rule'],
       seat: ['seat-config', 'seat-monitor', 'skill-group'],
-      knowledge: ['knowledge-word', 'knowledge-intent', 'knowledge-qa', 'knowledge-scene'],
+      knowledge: ['knowledge-word', 'knowledge-intent', 'knowledge-qa', 'knowledge-scene', 'real-time-model'],
       customer: ['customer-management', 'customer-tag-management', 'customer-group-management', 'customer-analysis'],
       engineering: ['global-service', 'system-security', 'device-management', 'system-monitor', 'route-settings'],
       'data-engine': ['app-management', 'task-management', 'write-off', 'schedule-log', 'external-integration', 'data-market'],

@@ -319,6 +319,32 @@
                         <span class="semantic-context">{{ item.semantic.contextRef }}</span>
                       </div>
                     </div>
+                    <!-- 情绪分析标签 -->
+                    <div v-if="item.emotion" class="emotion-section">
+                      <div class="emotion-row">
+                        <span class="emotion-label">情绪</span>
+                        <a-tag :color="emotionColorMap[item.emotion.primary]" size="small">
+                          {{ emotionLabelMap[item.emotion.primary] }}
+                        </a-tag>
+                        <span class="emotion-intensity-value">强度 {{ item.emotion.intensity }}%</span>
+                      </div>
+                      <div v-if="item.emotion.strategy && item.emotion.strategy.executed" class="emotion-strategy-row">
+                        <check-circle-outlined />
+                        <span>{{ item.emotion.strategy.description }}</span>
+                      </div>
+                      <div
+                        v-if="item.emotion.alert"
+                        class="emotion-alert-row"
+                        :class="'emotion-alert-' + item.emotion.alert.level"
+                      >
+                        <alert-outlined />
+                        <span>{{ item.emotion.alert.message }}</span>
+                        <span v-if="item.emotion.alert.triggerProcess" class="emotion-trigger-process">
+                          应急流程：{{ item.emotion.alert.triggerProcess }}
+                          <a-tag v-if="item.emotion.alert.triggered" color="red" size="small">已触发</a-tag>
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div class="chat-avatar">
                     <a-avatar :size="40" style="background-color: #52c41a">
@@ -622,6 +648,26 @@ interface SemanticAnalysis {
   contextRef?: string;
 }
 
+interface EmotionStrategy {
+  action: 'transfer' | 'soothe' | 'accelerate' | 'none';
+  description: string;
+  executed: boolean;
+}
+
+interface EmotionAlert {
+  level: 'warning' | 'danger';
+  message: string;
+  triggerProcess?: string;
+  triggered: boolean;
+}
+
+interface EmotionAnalysis {
+  primary: 'angry' | 'anxious' | 'impatient' | 'neutral' | 'satisfied' | 'happy';
+  intensity: number;
+  strategy?: EmotionStrategy;
+  alert?: EmotionAlert;
+}
+
 interface AsrItem {
   role: 'robot' | 'customer' | 'agent';
   time: string;
@@ -630,6 +676,7 @@ interface AsrItem {
   endpoint?: AsrEndpoint;
   annotations?: AsrAnnotation[];
   semantic?: SemanticAnalysis;
+  emotion?: EmotionAnalysis;
 }
 const asrDialogList = ref<AsrItem[]>([]);
 
@@ -682,6 +729,21 @@ const getAnnotationLabel = (type: AsrAnnotation['type']): string => {
 const getAnnotationClass = (type: AsrAnnotation['type']): string => {
   const map: Record<string, string> = { replace: 'asr-ann-replace', highlight: 'asr-ann-highlight', number: 'asr-ann-number' };
   return map[type] || '';
+};
+
+// 情绪分析相关
+const emotionColorMap: Record<string, string> = {
+  angry: 'red', anxious: 'orange', impatient: 'gold',
+  neutral: 'default', satisfied: 'green', happy: 'blue',
+};
+const emotionLabelMap: Record<string, string> = {
+  angry: '愤怒', anxious: '焦虑', impatient: '不耐烦',
+  neutral: '中性', satisfied: '满意', happy: '愉悦',
+};
+const getIntensityColor = (v: number): string => {
+  if (v >= 70) return '#f5222d';
+  if (v >= 40) return '#fa8c16';
+  return '#52c41a';
 };
 
 // 导出弹窗相关状态
@@ -881,6 +943,10 @@ const handleViewDetail = (record: ReportItem) => {
         intentTag: '确认身份',
         keywords: ['是'],
       },
+      emotion: {
+        primary: 'neutral',
+        intensity: 10,
+      },
     },
     // ── 第二轮：AI 引出业务，客户残缺意图表达 ──
     {
@@ -903,6 +969,10 @@ const handleViewDetail = (record: ReportItem) => {
         keywords: ['贷款', '之前'],
         contextRef: '关联上文「个人消费贷款」，补充指代消解',
       },
+      emotion: {
+        primary: 'anxious',
+        intensity: 35,
+      },
     },
     // ── 第三轮：AI 基于上下文补全信息 ──
     {
@@ -921,6 +991,15 @@ const handleViewDetail = (record: ReportItem) => {
         intentTag: '议价咨询',
         keywords: ['利率', '低'],
         contextRef: '承接上文「年化利率4.35%」，延续利率话题',
+      },
+      emotion: {
+        primary: 'anxious',
+        intensity: 55,
+        strategy: {
+          action: 'soothe',
+          description: '触发安抚话术：强调老客户专属优惠利率',
+          executed: true,
+        },
       },
     },
     // ── 第四轮：AI 识别议价意图并引导 ──
@@ -944,6 +1023,10 @@ const handleViewDetail = (record: ReportItem) => {
         keywords: ['还款方式', '长'],
         contextRef: '上文已讨论利率，客户主动转入还款期限话题',
       },
+      emotion: {
+        primary: 'anxious',
+        intensity: 30,
+      },
     },
     // ── 第五轮：AI 基于上下文理解"长一点"指期限 ──
     {
@@ -962,6 +1045,10 @@ const handleViewDetail = (record: ReportItem) => {
         intentTag: '表达意向',
         keywords: ['这个'],
         contextRef: '指代上文「三十六期方案」，残缺代词消解',
+      },
+      emotion: {
+        primary: 'satisfied',
+        intensity: 45,
       },
     },
     // ── 第六轮：AI 确认意向并推进 ──
@@ -982,6 +1069,15 @@ const handleViewDetail = (record: ReportItem) => {
         keywords: ['线上'],
         contextRef: '上文提议「到网点」，客户反向提出线上需求',
       },
+      emotion: {
+        primary: 'impatient',
+        intensity: 60,
+        strategy: {
+          action: 'accelerate',
+          description: '触发加速流程：优先推荐线上办理方案',
+          executed: true,
+        },
+      },
     },
     // ── 第七轮：AI 灵活应对变更需求 ──
     {
@@ -1001,12 +1097,42 @@ const handleViewDetail = (record: ReportItem) => {
         keywords: ['谢谢'],
         contextRef: '多轮讨论达成一致，客户主动结束对话',
       },
+      emotion: {
+        primary: 'satisfied',
+        intensity: 55,
+      },
     },
-    // ── 第八轮：AI 结束语，转人工 ──
+    // ── 第八轮：客户情绪爆发 ──
+    {
+      role: 'customer',
+      time: '00:01:28',
+      text: '说了半天还是这些套路！每次都一样，能不能来个真人跟我说？烦死了！',
+      confidence: 88,
+      endpoint: { vadDuration: 60, isEndpoint: true },
+      annotations: [
+        { type: 'highlight' as const, start: 18, end: 20, original: '烦死', value: '烦死' },
+      ],
+      emotion: {
+        primary: 'angry',
+        intensity: 85,
+        strategy: {
+          action: 'transfer',
+          description: '立即转接人工坐席处理',
+          executed: true,
+        },
+        alert: {
+          level: 'danger',
+          message: '检测到客户强烈不满情绪，已触发应急流程',
+          triggerProcess: '投诉升级处理',
+          triggered: true,
+        },
+      },
+    },
+    // ── 第九轮：AI 安抚并转人工 ──
     {
       role: 'robot',
-      time: '00:01:29',
-      text: '不客气，我这边帮您转接人工坐席，为您办理后续手续，请稍等。',
+      time: '00:01:32',
+      text: '非常抱歉给您带来不好的体验，我理解您的心情。这边马上为您转接专属人工坐席，请您稍等片刻。',
       confidence: 0,
     },
   ];
@@ -1595,5 +1721,81 @@ const handleExportExcel = () => {
   color: #8c8c8c;
   font-size: 11px;
   font-style: italic;
+}
+
+/* 情绪分析区域 */
+.emotion-section {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #f6ffed;
+  border: 1px solid #d9f7be;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.emotion-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 22px;
+}
+
+.emotion-label {
+  color: #999;
+  flex-shrink: 0;
+  font-size: 11px;
+  min-width: 28px;
+}
+
+.emotion-intensity-value {
+  color: #8c8c8c;
+  font-size: 11px;
+  min-width: 30px;
+}
+
+.emotion-strategy-row {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #1890ff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 20px;
+}
+
+.emotion-alert-row {
+  margin-top: 4px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border-left: 4px solid;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+  line-height: 18px;
+}
+
+.emotion-alert-warning {
+  background: #fff7e6;
+  border-color: #fa8c16;
+  color: #d46b08;
+}
+
+.emotion-alert-danger {
+  background: #fff1f0;
+  border-color: #f5222d;
+  color: #cf1322;
+  animation: alert-pulse 2s ease-in-out infinite;
+}
+
+.emotion-trigger-process {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+@keyframes alert-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 </style>

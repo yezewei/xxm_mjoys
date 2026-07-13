@@ -157,6 +157,16 @@ const routes = [
     component: () => import("./pages/KnowledgeScene.vue"),
   },
   {
+    path: "/real-time-model",
+    name: "RealTimeModel",
+    component: () => import("./pages/RealTimeModel.vue"),
+  },
+  {
+    path: "/real-time-model-config",
+    name: "RealTimeModelConfig",
+    component: () => import("./pages/RealTimeModelConfig.vue"),
+  },
+  {
     path: "/customer-management",
     name: "CustomerManagement",
     component: () => import("./pages/CustomerManagement.vue"),

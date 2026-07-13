@@ -341,6 +341,7 @@ const permissionTreeData: PermissionTreeNode[] = [
           { key: 'knowledge-intent', title: '内置意图' },
           { key: 'knowledge-qa', title: '内置 QA' },
           { key: 'knowledge-scene', title: '场景知识库' },
+          { key: 'real-time-model', title: '实时模型管理' },
         ],
       },
       { key: 'data-lake', title: '数据湖' },
